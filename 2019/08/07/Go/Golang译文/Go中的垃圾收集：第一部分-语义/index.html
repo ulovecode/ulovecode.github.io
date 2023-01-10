@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) Go中的垃圾收集：第一部分 - 语义 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="这是三部分系列中的第一篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。这篇文章重点介绍了收集器语义的基础材料。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) Go中的垃圾收集：第一部分 - 语义">
+<meta property="og:url" content="https://www.ulovecode.com/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86-%E8%AF%AD%E4%B9%89/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="这是三部分系列中的第一篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。这篇文章重点介绍了收集器语义的基础材料。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/78/bf/78efcb41b7ff05ca4a3e0a226e74dfbf.jpg?x-oss-process=image/crop,x_379,w_5405,h_4014/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-08-07T06:32:00.000Z">
+<meta property="article:modified_time" content="2019-08-07T06:32:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go中的垃圾收集">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/78/bf/78efcb41b7ff05ca4a3e0a226e74dfbf.jpg?x-oss-process=image/crop,x_379,w_5405,h_4014/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的垃圾收集：第一部分 - 语义" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//static001.infoq.cn/resource/image/78/bf/78efcb41b7ff05ca4a3e0a226e74dfbf.jpg?x-oss-process=image/crop,x_379,w_5405,h_4014/resize,w_1280,h_847" alt="(译) Go中的垃圾收集：第一部分 - 语义">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-07T06:32:00.000Z">2019-08-07</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E8%AF%91%E6%96%87/">Golang译文</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    43 分钟 读完 (大约 6447 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) Go中的垃圾收集：第一部分 - 语义
+            
+        </h1>
+        <div class="content">
+            <p>这是三部分系列中的第一篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。这篇文章重点介绍了收集器语义的基础材料。</p>
+<a id="more"></a>
+<p>三部分系列的索引：<br>1）Go中的垃圾收集：第一部分 - 语义<br>2）Go中的垃圾收集：第二部分 - GC跟踪<br>3）Go中的垃圾收集：第三部分 - GC步伐</p>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>垃圾收集器负责跟踪堆内存分配,释放不再需要的分配,并保留仍在使用中的分配。语言决定如何实现此行为很复杂,但应该不应该让应用程序开发人员了解细节以构建软件。此外,对于语言的VM或运行时的不同版本,这些系统的实现总是在变化和发展。对于应用程序开发人员来说,重要的是保持一个良好的工作模型,了解垃圾收集器对其语言的行为以及如何在不关心实现的情况下对这种行为表示支持。</p>
+<p>从版本1.12开始,Go编程语言使用非代数并发三色标记和扫描收集器。如果你想直观地看到标记和扫描收集器是如何工作的,Ken Fox写了这篇伟大的文章并提供动画。Go的收集器的实现随着Go的每个版本的变化而发生变化。因此,一旦发布下一版本的语言,任何谈论实现细节的帖子将不再准确。</p>
+<p>尽管如此,我将在本文中做的建模不会关注实际的实现细节。建模将关注你将经历的行为以及你应该在未来几年看到的行为。在这篇文章中,我将与你分享收集者的行为,并解释如何对该行为表示支持,无论当前的实施情况如何或未来如何变化。这将使你成为更好的Go开发人员。</p>
+<p>注意：这里有更多关于<a href="https://github.com/ardanlabs/gotraining/tree/master/reading#garbage-collection" target="_blank" rel="noopener">垃圾收集器</a>和Go的实际收集器的解读。</p>
+<h1 id="堆不是容器"><a href="#堆不是容器" class="headerlink" title="堆不是容器"></a>堆不是容器</h1><p>我永远不会将堆称为可以存储或释放值的容器。重要的是要理解没有线性遏制内存来定义“堆”。认为为进程空间中的应用程序使用保留的任何内存都可用于堆内存分配。虚拟或物理存储任何给定的堆内存分配与我们的模型无关。这种理解将帮助你更好地了解垃圾收集器的工作原理。</p>
+<h1 id="收集器行为"><a href="#收集器行为" class="headerlink" title="收集器行为"></a>收集器行为</h1><p>收集开始时,收集器将运行三个阶段的工作。其中两个阶段会产生Stop The World（STW）延迟,另一个阶段会产生延迟,从而降低应用程序的吞吐量。这三个阶段是：</p>
+<ul>
+<li>标记设置 - STW</li>
+<li>标记 - 并发</li>
+<li>标记终止 - STW</li>
+</ul>
+<p>这是每个阶段的细分。</p>
+<h2 id="标记设置-STW"><a href="#标记设置-STW" class="headerlink" title="标记设置 - STW"></a>标记设置 - STW</h2><p>收集器开始时,必须执行的第一个活动是打开写屏障。写屏障的目的是允许收集器在收集器期间维护堆上的数据完整性,因为收集器和应用程序Goroutine将同时运行。</p>
+<p>为了打开写屏障,必须停止每个运行Goroutine的应用程序。此活动通常非常快,平均在10到30微秒之内。也就是说,只要应用程序Goroutines表现正常。</p>
+<p>注意：为了更好地理解这些调度程序图,请务必阅读<a href="https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part1.html" target="_blank" rel="noopener">Go Scheduler</a>上的这一系列帖子</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure1.png" alt=""><br>图1</p>
+<p>图1显示了在收集器开始之前运行的4个应用程序Goroutine。必须停止这4个Goroutine中的每一个。唯一的方法是让收集器观察并等待每个Goroutine进行函数调用。函数调用保证Goroutine处于安全点停止。如果其中一个Goroutine不进行函数调用而其他函数执行,会发生什么？</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure2.png" alt=""><br>图2</p>
+<p>图2显示了一个真正的问题。在P4上运行的Goroutine停止之前,收集器无法启动,并且这种情况不会发生,因为它处于执行某些数学运算的<a href="https://github.com/golang/go/issues/10958" target="_blank" rel="noopener">紧密循环中</a>。</p>
+<p>清单1</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">01</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">add</span><span class="hljs-params">(numbers []<span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line"><span class="hljs-number">02</span>     <span class="hljs-keyword">var</span> v <span class="hljs-keyword">int</span></span><br><span class="line"><span class="hljs-number">03</span>     <span class="hljs-keyword">for</span> _, n := <span class="hljs-keyword">range</span> numbers &#123;</span><br><span class="line"><span class="hljs-number">04</span>         v += n</span><br><span class="line"><span class="hljs-number">05</span>     &#125;</span><br><span class="line"><span class="hljs-number">06</span>     <span class="hljs-keyword">return</span> v</span><br><span class="line"><span class="hljs-number">07</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>清单1显示了在P4上运行的Goroutine正在执行的代码。根据切片的大小,Goroutine可能会运行一段不合理的时间而无法停止。这种代码可以阻止收集器启动。更糟糕的是,当收集器等待时,其他P不能为任何其他Goroutine提供服务。Goroutines在合理的时间范围内进行函数调用至关重要。</p>
+<p>注意：这是语言团队希望通过向调度程序添加<a href="https://github.com/golang/go/issues/24543" target="_blank" rel="noopener">抢先技术</a>来在1.14中进行更正的内容。</p>
+<h2 id="标记-并发"><a href="#标记-并发" class="headerlink" title="标记 - 并发"></a>标记 - 并发</h2><p>一旦写屏障打开,收集器就开始标记阶段。收集器所做的第一件事就是占用自身可用CPU容量的25％。收集器使用Goroutines进行收集工作,并且需要与Goroutines使用的应用程序相同的P和M. 这意味着对于我们的4线程Go程序,一个完整的P将专门用于收集工作。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure3.png" alt=""><br>图3</p>
+<p>图3显示了收集器在收集过程中如何为自己收集P1。现在收集器可以开始标记阶段。标记阶段包括在堆内存中标记仍在使用中的值。这项工作首先检查所有现有Goroutine的堆栈,以找到堆内存的根指针。然后收集器必须从那些根指针遍历堆内存图。当标记工作在P1上进行时,应用程序工作可以在P2,P3和P4上同时继续进行。这意味着收集器的影响已最小化到当前CPU容量的25％。</p>
+<p>我希望这是故事的结局,但事实并非如此。如果在收集过程中确定在P1上专用于GC的Goroutine在使用中的堆内存达到极限之前无法完成标记工作,该怎么办？如果3个Goroutines中只有一个进行应用工作使收集器无法及时完成的​​原因怎么办？在这种情况下,新的分配必须放慢速度,特别是从那个Goroutine。</p>
+<p>如果收集器确定它需要减慢分配,它将招募应用程序Goroutines以协助标记工作。这称为协助标记。任何应用程序Goroutine放置在协助标记中的时间长度与它添加到堆内存中的数据量成正比。协助标记的一个积极的副作用是它有助于更​​快地完成收集。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure4.png" alt=""><br>图4</p>
+<p>图4显示了在P3上运行的应用程序Goroutine现在如何执行协助标记并帮助进行收集工作。希望其他应用程序Goroutines也不需要参与其中。分配重的应用程序可以看到大多数正在运行的Goroutines在收集期间执行少量协助标记。</p>
+<p>收集器的一个目标是消除对协助标记的需求。如果任何给定的收集器最终需要大量的协助标记,则收集器可以更早地开始下一个垃圾收集。这样做是为了减少下一次收集所需的协助标记量。</p>
+<h2 id="标记终止-STW"><a href="#标记终止-STW" class="headerlink" title="标记终止 - STW"></a>标记终止 - STW</h2><p>标记工作完成后,下一阶段是标记终止。这是当写屏障关闭时,执行各种清理任务,并计算下一个收集目标。在标记阶段发现自己处于紧密循环中的Goroutines也可能导致标记终止, STW 延迟延长。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure5.png" alt=""><br>图5</p>
+<p>图5显示了标记终止阶段完成后所有Goroutines是如何停止的。此活动通常平均在60到90微秒之内。这个阶段可以在没有STW的情况下完成,但是通过使用STW,代码更简单,并且增加的复杂性不值得小的增益。</p>
+<p>收集完成后,应用程序Goroutines可以再次使用每个P,应用程序将恢复全油门。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure6.png" alt=""><br>图6</p>
+<p>图6显示了收集完成后,所有可用的P现在如何处理应用程序的工作。应用程序恢复到收集开始之前的全油门。</p>
+<h2 id="清扫-并发"><a href="#清扫-并发" class="headerlink" title="清扫 - 并发"></a>清扫 - 并发</h2><p>完成一个名为清扫的收集器后会发生另一个活动。清除是指回收与堆内存中未标记为使用中的值相关联的内存。当应用程序Goroutines尝试在堆内存中分配新值时,会发生此活动。清扫的延迟被添加到在堆内存中执行分配的成本中,并且不依赖于与垃圾收集相关的任何延迟。</p>
+<p>以下是我的机器上的跟踪示例,其中有12个硬件线程可用于执行Goroutines。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure7.png" alt=""><br>图7</p>
+<p>图7显示了跟踪的部分快照。你可以在此收集器中看到如何（将你的视图保持在顶部的蓝色GC行中）,十二个P中的三个专用于GC。你可以看到Goroutine 2450,1978和2696在这段时间里正在执行协助标记的工作,而不是它的应用工作。在收集器的最后,只有一个P专用于GC并最终执行STW（标记终止）工作。</p>
+<p>收集完成后,应用程序将恢复全油门运行。除了你看到Goroutines下面有很多玫瑰色的线条。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure8.png" alt=""><br>图8</p>
+<p>图8显示了那些玫瑰色线条代表Goroutine执行清扫工作而非其应用工作的时刻。这些是Goroutine试图在堆内存中分配新值的时刻。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure9.png" alt=""><br>图9</p>
+<p>图9显示了Sweep活动中其中一个Goroutines的堆栈跟踪结束。调用runtime.mallocgc是调用在堆内存中分配新值。调用runtime.(*mcache).nextFree导致Sweep活动。一旦堆内存中没有更多的分配要回收,nextFree就不会再看到调用了。</p>
+<p>刚刚描述的收集器行为仅在收集器已启动并正在运行时发生。GC百分比配置选项在确定收集器何时开始时起着重要作用。</p>
+<h1 id="GC百分比"><a href="#GC百分比" class="headerlink" title="GC百分比"></a>GC百分比</h1><p>运行时中有一个名为GC Percentage的配置选项,默认情况下设置为100。此值表示在下一个收集器必须启动之前可以分配多少新堆内存的比率。将GC百分比设置为100意味着,基于在收集完成后标记为活动的堆内存量,下一个收集器必须在100％以上的新分配添加到堆内存时启动。</p>
+<p>举个例子,假设一个收集器在使用中有2MB的堆内存。</p>
+<p>注意：使用Go时,本文中堆内存的图表不代表真实的配置文件。Go中的堆内存通常会碎片化并且混乱,并且你没有图像所代表的干净分离。这些图提供了一种以更容易理解的方式可视化堆内存的方法,该方式对于你将体验的行为是准确的。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure10.png" alt=""><br>图10</p>
+<p>图10显示了最后一次收集完成后正在使用的2MB堆内存。由于GC百分比设置为100％,因此下一个收集器需要在添加 2MB 堆内存时或之前启动。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure11.png" alt=""><br>图11</p>
+<p>图11显示现在正在使用2个MB的堆内存。这将触发一个收集器。查看所有这些操作的方法是为每个发生的收集器生成GC跟踪。</p>
+<h1 id="GC跟踪"><a href="#GC跟踪" class="headerlink" title="GC跟踪"></a>GC跟踪</h1><p>运行任何Go应用程序时,可以通过在环境变量中<code>GODEBUG</code>包含<code>gctrace=1</code>选项来生成GC跟踪。每次发生收集器时,运行时都会将GC跟踪信息写入<code>stderr</code>。</p>
+<p>清单2</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">GODEBUG=gctrace=1 ./app</span><br><span class="line"></span><br><span class="line">gc 1405 @6.068s 11%: 0.058+1.2+0.083 ms clock, 0.70+2.5/1.5/0+0.99 ms cpu, 7-&gt;11-&gt;6 MB, 10 MB goal, 12 P</span><br><span class="line"></span><br><span class="line">gc 1406 @6.070s 11%: 0.051+1.8+0.076 ms clock, 0.61+2.0/2.5/0+0.91 ms cpu, 8-&gt;11-&gt;6 MB, 13 MB goal, 12 P</span><br><span class="line"></span><br><span class="line">gc 1407 @6.073s 11%: 0.052+1.8+0.20 ms clock, 0.62+1.5/2.2/0+2.4 ms cpu, 8-&gt;14-&gt;8 MB, 13 MB goal, 12 P</span><br></pre></td></tr></table></figure>
+<p>清单2显示了如何使用该GODEBUG变量生成GC跟踪。该列表还显示了正在运行的Go应用程序生成的3条跟踪。</p>
+<p>以下是通过查看清单中的第一个GC跟踪线来细分GC跟踪中每个值的含义。</p>
+<p>清单3</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">gc 1405 @6.068s 11%: 0.058+1.2+0.083 ms clock, 0.70+2.5/1.5/0+0.99 ms cpu, 7-&gt;11-&gt;6 MB, 10 MB goal, 12 P</span><br><span class="line"></span><br><span class="line">// General</span><br><span class="line">gc 1404     : The 1404 GC run since the program started</span><br><span class="line">@6.068s     : Six seconds since the program started</span><br><span class="line">11%         : Eleven percent of the available CPU so far has been spent <span class="hljs-keyword">in</span> GC</span><br><span class="line"></span><br><span class="line">// Wall-Clock</span><br><span class="line">0.058ms     : STW        : Mark Start       - Write Barrier on</span><br><span class="line">1.2ms       : Concurrent : Marking</span><br><span class="line">0.083ms     : STW        : Mark Termination - Write Barrier off and clean up</span><br><span class="line"></span><br><span class="line">// CPU Time</span><br><span class="line">0.70ms      : STW        : Mark Start</span><br><span class="line">2.5ms       : Concurrent : Mark - Assist Time (GC performed <span class="hljs-keyword">in</span> line with allocation)</span><br><span class="line">1.5ms       : Concurrent : Mark - Background GC time</span><br><span class="line">0ms         : Concurrent : Mark - Idle GC time</span><br><span class="line">0.99ms      : STW        : Mark Term</span><br><span class="line"></span><br><span class="line">// Memory</span><br><span class="line">7MB         : Heap memory <span class="hljs-keyword">in</span>-use before the Marking started</span><br><span class="line">11MB        : Heap memory <span class="hljs-keyword">in</span>-use after the Marking finished</span><br><span class="line">6MB         : Heap memory marked as live after the Marking finished</span><br><span class="line">10MB        : Collection goal <span class="hljs-keyword">for</span> heap memory <span class="hljs-keyword">in</span>-use after Marking finished</span><br><span class="line"></span><br><span class="line">// Threads</span><br><span class="line">12P         : Number of logical processors or threads used to run Goroutines</span><br></pre></td></tr></table></figure>
+<p>清单3显示了第一个GC跟踪线的实际数字,按行值分解。我最终将讨论大多数这些值,但现在只关注跟踪1405的GC跟踪的内存部分。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure12.png" alt=""><br>图12</p>
+<p>清单4</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">// Memory</span><br><span class="line">7MB         : Heap memory <span class="hljs-keyword">in</span>-use before the Marking started</span><br><span class="line">11MB        : Heap memory <span class="hljs-keyword">in</span>-use after the Marking finished</span><br><span class="line">6MB         : Heap memory marked as live after the Marking finished</span><br><span class="line">10MB        : Collection goal <span class="hljs-keyword">for</span> heap memory <span class="hljs-keyword">in</span>-use after Marking finished</span><br></pre></td></tr></table></figure>
+<p>此GC跟踪行在清单4中告诉你的是,在标记工作开始之前,正在使用的堆内存量为7MB。标记工作完成后,正在使用的堆内存量达到11MB。这意味着在收集过程中还有4MB的分配。标记工作完成后标记为活动的堆内存量为6MB。这意味着在下一个收集器需要启动之前,应用程序可以将正在使用的堆内存量增加到12MB（实时堆大小为6MB的100％）。</p>
+<p>你可以看到收集器错过了1MB的目标。标记工作完成后正在使用的堆内存量为11MB而不是10MB。没关系,因为目标是根据当前正在使用的堆内存量,标记为实时的堆内存量以及有关在收集器运行时将发生的其他分配的计时计算来计算的。在这种情况下,应用程序做了一些事情,需要在Marking之后使用更多堆内存而不是预期。</p>
+<p>如果查看下一个GC跟踪线（1406）,你将看到事情在2ms内发生了变化</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure13.png" alt=""><br>图13</p>
+<p>清单5<br><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">gc 1406 @6.070s 11%: 0.051+1.8+0.076 ms clock, 0.61+2.0/2.5/0+0.91 ms cpu, 8-&gt;11-&gt;6 MB, 13 MB goal, 12 P</span><br><span class="line"></span><br><span class="line">// Memory</span><br><span class="line">8MB         : Heap memory <span class="hljs-keyword">in</span>-use before the Marking started</span><br><span class="line">11MB        : Heap memory <span class="hljs-keyword">in</span>-use after the Marking finished</span><br><span class="line">6MB         : Heap memory marked as live after the Marking finished</span><br><span class="line">13MB        : Collection goal <span class="hljs-keyword">for</span> heap memory <span class="hljs-keyword">in</span>-use after Marking finished</span><br></pre></td></tr></table></figure></p>
+<p>清单5显示了这个收集器在上一个收集器开始后2ms（6.068s对6.070s）的启动情况,即使使用中的堆内存仅达到允许的12MB的8MB。重要的是要注意,如果收集者决定更早开始收集它会更好。在这种情况下,它可能更早开始,因为应用程序分配很多,收集器希望减少此收集器期间的协助标记延迟量。</p>
+<p>还有两点需要注意。这次收集器保持在其目标之内。标记完成后正在使用的堆内存量为11MB而不是13MB,少了2 MB。标记完成后标记为活动的堆内存量在6MB时相同。</p>
+<p>作为旁注。你可以通过添加<code>gcpacertrace=1</code>标志从GC跟踪中获取更多详细信息。这会导致收集器打印有关并发步伐器内部状态的信息。</p>
+<p>清单6<br><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="hljs-built_in">export</span> GODEBUG=gctrace=1,gcpacertrace=1 ./app</span><br><span class="line"></span><br><span class="line">Sample output:</span><br><span class="line">gc 5 @0.071s 0%: 0.018+0.46+0.071 ms clock, 0.14+0/0.38/0.14+0.56 ms cpu, 29-&gt;29-&gt;29 MB, 30 MB goal, 8 P</span><br><span class="line"></span><br><span class="line">pacer: sweep <span class="hljs-keyword">done</span> at heap size 29MB; allocated 0MB of spans; swept 3752 pages at +6.183550e-004 pages/byte</span><br><span class="line"></span><br><span class="line">pacer: assist ratio=+1.232155e+000 (scan 1 MB <span class="hljs-keyword">in</span> 70-&gt;71 MB) workers=2+0</span><br><span class="line"></span><br><span class="line">pacer: H_m_prev=30488736 h_t=+2.334071e-001 H_T=37605024 h_a=+1.409842e+000 H_a=73473040 h_g=+1.000000e+000 H_g=60977472 u_a=+2.500000e-001 u_g=+2.500000e-001 W_a=308200 goalΔ=+7.665929e-001 actualΔ=+1.176435e+000 u_a/u_g=+1.000000e+000</span><br></pre></td></tr></table></figure><br>运行GC跟踪可以告诉你很多关于应用程序的运行状况和收集器的速度。收集器运行的速度在收集过程中起着重要作用。</p>
+<h1 id="步伐"><a href="#步伐" class="headerlink" title="步伐"></a>步伐</h1><p>收集器具有调步算法,该算法用于确定何时开始收集。该算法依赖于收集器用于收集有关正在运行的应用程序的信息以及应用程序放在堆上的压力的反馈循环。压力可以定义为应用程序在给定时间内分配堆内存的速度。正是压力决定了收集器需要的速度。</p>
+<p>在收集器开始收集之前,它会计算它认为完成收集所需的时间。然后,一旦收集器运行,将在正在运行的应用程序上造成延迟,这将减慢应用程序的工作。每个收集器都会增加应用程序的整体延迟。</p>
+<p>一种误解是认为减慢收集器的速度是提高性能的一种方法。这个想法是,如果你可以推迟下一个收集器的开始,那么你将延迟它将造成的延迟。支持收集器并不是要放慢步伐。</p>
+<p>你可以决定将GC百分比值更改为大于100的值。这将增加在下一个收集器必须启动之前可以分配的堆内存量。这可能导致收集速度减慢。不要考虑这样做。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure14.png" alt=""><br>图14</p>
+<p>图14显示了更改GC百分比如何更改在下一个收集器必须启动之前允许分配的堆内存量。你可以直观地了解收集器在等待更多堆内存使用时如何减慢速度。</p>
+<p>试图直接影响收集的速度与收集者的支持无关。这真的是在每个收集器之间或收集器期间完成更多的工作。你可以通过减少任何工作添加到堆内存的分配数量或数量来影响它。</p>
+<p>注意：这个想法也是为了用尽可能小的堆来实现所需的吞吐量。请记住,在云环境中运行时,最小化堆内存等资源的使用非常重要。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure15.png" alt=""><br>图15</p>
+<p>清单15显示了将在本系列的下一部分中使用的正在运行的Go应用程序的一些统计信息。蓝色版本显示应用程序的统计信息,而不通过应用程序处理10k请求时进行任何优化。在发现4.48GB的非生产性内存分配后,绿色版本显示统计数据,并从应用程序中删除相同的10k请求。</p>
+<p>查看两个版本的平均收集速度（2.08ms vs 1.96ms）。它们几乎相同,约为2.0毫秒。这两个版本之间的根本变化是每个收集器之间的工作量。该应用程序从每个收集器处理3.98到7.13个请求。这是以同样的速度完成工作量增加79.1％。正如你所看到的,该收集器并没有随着这些分配的减少而减慢,但保持不变。获胜来自于在每个系列之间完成更多工作。</p>
+<p>调整收集器的速度以延迟延迟成本并不是你提高应用程序性能的方式。它是关于减少收集器运行所需的时间,这反过来将减少造成的延迟成本。已经解释了收集器造成的延迟成本,但为了清楚起见,让我再次总结一下。</p>
+<h1 id="收集器延迟成本"><a href="#收集器延迟成本" class="headerlink" title="收集器延迟成本"></a>收集器延迟成本</h1><p>每个收集器在运行的应用程序上有两种类型的延迟。</p>
+<p>首先是窃取CPU容量。这种被盗CPU容量的影响意味着你的应用程序在收集过程中没有全速运行。应用程序Goroutines现在与收集器的Goroutines共享P或帮助收集（Mark Assist）。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure16.png" alt=""><br>图16</p>
+<p>图16显示了应用程序如何仅将75％的CPU容量用于应用程序工作。这是因为收集器本身就有专用的P1。这将是大部分收集器。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure17.png" alt=""><br>图17</p>
+<p>图17显示了应用程序在这个时刻（通常只有几微秒）现在只能将其CPU容量的一半用于应用程序工作。这是因为P3上的Goroutine正在执行协助标记,并且收集器为自己设置了专用P1。</p>
+<p>注意：标记通常需要每MB实时堆4个CPU毫秒（例如,估计标记阶段将运行多少毫秒,以MB为单位取实时堆大小除以CPU *的数量）。标记实际上以大约1 MB / ms的速度运行,但只有四分之一的CPU。</p>
+<p>造成的第二个延迟是收集期间发生的STW延迟量。STW时间是没有应用程序Goroutines执行任何应用程序工作的时间。该应用程序基本上已停止。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/100_figure18.png" alt=""><br>图18</p>
+<p>图18显示了所有Goroutines停止的STW延迟。每次收集都会发生两次。如果你的应用程序运行正常,则收集器应该能够将大部分收集器的总STW时间保持在100微秒或以下。</p>
+<p>你现在知道收集器的不同阶段,内存的大小,调整的工作方式以及收集器对正在运行的应用程序造成的不同延迟。有了这些知识,最终可以回答你如何与收集器支持的问题。</p>
+<h1 id="支持"><a href="#支持" class="headerlink" title="支持"></a>支持</h1><p>对收集器表示支持是为了减少堆内存的压力。请记住,压力可以定义为应用程序在给定时间内分配堆内存的速度。当压力减小时,收集器造成的延迟将会减少。这是GC延迟会降低你的应用程序速度。</p>
+<p>减少GC延迟的方法是从应用程序中识别并删除不必要的分配。这样做有助于收集器的几种方式。</p>
+<p>帮助收集器：</p>
+<ul>
+<li>尽可能保持最小的堆。</li>
+<li>找到最佳的一致步伐。</li>
+<li>保持每个收集器的目标。</li>
+<li>最小化每个收集器,STW和Mark Assist的持续时间。</li>
+</ul>
+<p>所有这些都有助于减少收集器对正在运行的应用程序造成的延迟。这将提高应用程序的性能和吞吐量。收集的速度与它无关。这些是你可以做的其他事情,以帮助做出更好的工程决策,减少堆上的压力。</p>
+<h2 id="了解应用程序执行工作负载的性质"><a href="#了解应用程序执行工作负载的性质" class="headerlink" title="了解应用程序执行工作负载的性质"></a>了解应用程序执行工作负载的性质</h2><p>了解工作负载意味着确保使用合理数量的Goroutine来完成你已完成的工作。CPU与IO绑定的工作负载不同,需要不同的工程决策。</p>
+<p><a href="https://www.ardanlabs.com/blog/2018/12/scheduling-in-go-part3.html" target="_blank" rel="noopener">https://www.ardanlabs.com/blog/2018/12/scheduling-in-go-part3.html</a></p>
+<h2 id="了解已定义的数据及其在应用程序中的传递方式"><a href="#了解已定义的数据及其在应用程序中的传递方式" class="headerlink" title="了解已定义的数据及其在应用程序中的传递方式"></a>了解已定义的数据及其在应用程序中的传递方式</h2><p>了解数据意味着了解你要解决的问题。数据语义一致性是维护数据完整性的关键部分,并允许你在堆栈上选择堆分配时知道（通过读取代码）。</p>
+<p><a href="https://www.ardanlabs.com/blog/2017/06/design-philosophy-on-data-and-semantics.html" target="_blank" rel="noopener">https://www.ardanlabs.com/blog/2017/06/design-philosophy-on-data-and-semantics.html</a></p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>如果你花时间专注于减少分配,那么你就像Go开发人员一样,对垃圾收集器表示支持。你不打算编写零分配应用程序,因此重要的是要认识到有效的分配（帮助应用程序的分配）和那些没有生产力的分配（那些损害应用程序）之间的差异。然后将你的信任和信任放在垃圾收集器中,以保持堆健康并使你的应用程序始终如一地运行。</p>
+<p>拥有垃圾收集器是一个很好的权衡。我将花费垃圾收集的成本,所以我没有内存管理的负担。Go是关于允许你作为开发人员提高工作效率,同时仍然编写足够快的应用程序。垃圾收集器是实现这一目标的重要组成部分。在下一篇文章中,我将向你展示一个示例Web应用程序以及如何使用该工具查看所有这些操作。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" rel="tag">Go中的垃圾收集</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/08/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86-GC%E7%97%95%E8%BF%B9/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Go中的垃圾收集：第二部分 - GC痕迹</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACIII%E9%83%A8%E5%88%86-%E5%B9%B6%E5%8F%91/">
+                <span class="level-item">(译) Go中的调度：第III部分 - 并发</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '5b035192c1e482d443a78b4c4b1da89d',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#介绍">
+        <span class="has-mr-6">1</span>
+        <span>介绍</span>
+        </a></li><li>
+        <a class="is-flex" href="#堆不是容器">
+        <span class="has-mr-6">2</span>
+        <span>堆不是容器</span>
+        </a></li><li>
+        <a class="is-flex" href="#收集器行为">
+        <span class="has-mr-6">3</span>
+        <span>收集器行为</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#标记设置-STW">
+        <span class="has-mr-6">3.1</span>
+        <span>标记设置 - STW</span>
+        </a></li><li>
+        <a class="is-flex" href="#标记-并发">
+        <span class="has-mr-6">3.2</span>
+        <span>标记 - 并发</span>
+        </a></li><li>
+        <a class="is-flex" href="#标记终止-STW">
+        <span class="has-mr-6">3.3</span>
+        <span>标记终止 - STW</span>
+        </a></li><li>
+        <a class="is-flex" href="#清扫-并发">
+        <span class="has-mr-6">3.4</span>
+        <span>清扫 - 并发</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#GC百分比">
+        <span class="has-mr-6">4</span>
+        <span>GC百分比</span>
+        </a></li><li>
+        <a class="is-flex" href="#GC跟踪">
+        <span class="has-mr-6">5</span>
+        <span>GC跟踪</span>
+        </a></li><li>
+        <a class="is-flex" href="#步伐">
+        <span class="has-mr-6">6</span>
+        <span>步伐</span>
+        </a></li><li>
+        <a class="is-flex" href="#收集器延迟成本">
+        <span class="has-mr-6">7</span>
+        <span>收集器延迟成本</span>
+        </a></li><li>
+        <a class="is-flex" href="#支持">
+        <span class="has-mr-6">8</span>
+        <span>支持</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#了解应用程序执行工作负载的性质">
+        <span class="has-mr-6">8.1</span>
+        <span>了解应用程序执行工作负载的性质</span>
+        </a></li><li>
+        <a class="is-flex" href="#了解已定义的数据及其在应用程序中的传递方式">
+        <span class="has-mr-6">8.2</span>
+        <span>了解已定义的数据及其在应用程序中的传递方式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#结论">
+        <span class="has-mr-6">9</span>
+        <span>结论</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的垃圾收集：第一部分 - 语义" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

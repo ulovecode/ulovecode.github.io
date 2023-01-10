@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) 编写可维护 Go 语言代码建议 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="正文1. 指导原则如果我要谈论任何编程语言的最佳实践,我需要一些方法来定义“什么是最佳”。如果你昨天来到我的主题演讲,你会看到 Go 团队负责人 Russ Cox 的这句话：  Software engineering is what happens to programming when you add time and other programmers. (软件工程就是你和其他程序员花费时间">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) 编写可维护 Go 语言代码建议">
+<meta property="og:url" content="https://www.ulovecode.com/2019/05/31/Go/Golang%E8%AF%91%E6%96%87/%E7%BC%96%E5%86%99%E5%8F%AF%E7%BB%B4%E6%8A%A4Go%E8%AF%AD%E8%A8%80%E4%BB%A3%E7%A0%81%E5%BB%BA%E8%AE%AE/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="正文1. 指导原则如果我要谈论任何编程语言的最佳实践,我需要一些方法来定义“什么是最佳”。如果你昨天来到我的主题演讲,你会看到 Go 团队负责人 Russ Cox 的这句话：  Software engineering is what happens to programming when you add time and other programmers. (软件工程就是你和其他程序员花费时间">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/c5/96/c5f0b81fd72ccd80d01f27e57e329496.jpg?x-oss-process=image/crop,x_187,w_1092,h_614/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-05-31T13:43:00.000Z">
+<meta property="article:modified_time" content="2019-05-31T13:43:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="编程规范">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/c5/96/c5f0b81fd72ccd80d01f27e57e329496.jpg?x-oss-process=image/crop,x_187,w_1092,h_614/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) 编写可维护 Go 语言代码建议" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/c5/96/c5f0b81fd72ccd80d01f27e57e329496.jpg?x-oss-process=image/crop,x_187,w_1092,h_614/resize,w_1280,h_847" alt="(译) 编写可维护 Go 语言代码建议">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-05-31T13:43:00.000Z">2019-05-31</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E8%AF%91%E6%96%87/">Golang译文</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    2 小时 读完 (大约 22360 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) 编写可维护 Go 语言代码建议
+            
+        </h1>
+        <div class="content">
+            <h1 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h1><h2 id="1-指导原则"><a href="#1-指导原则" class="headerlink" title="1. 指导原则"></a>1. 指导原则</h2><p>如果我要谈论任何编程语言的最佳实践,我需要一些方法来定义“什么是最佳”。如果你昨天来到我的主题演讲,你会看到 Go 团队负责人 Russ Cox 的这句话：</p>
+<blockquote>
+<p>Software engineering is what happens to programming when you add time and other programmers. (软件工程就是你和其他程序员花费时间在编程上所发生的事情。)<br>   — Russ Cox</p>
+</blockquote>
+<a id="more"></a>
+<p>Russ 作出了软件编程与软件工程的区分。 前者是你自己写的一个程序。 后者是很多人会随着时间的推移而开发的产品。 工程师们来来去去,团队会随着时间增长与缩小,需求会发生变化,功能会被添加,错误也会得到修复。 这是软件工程的本质。</p>
+<p>我可能是这个房间里 Go 最早的用户之一,~但要争辩说我的资历给我的看法更多是假的~。相反,今天我要提的建议是基于我认为的 Go 语言本身的指导原则：</p>
+<ol>
+<li>简单性</li>
+<li>可读性</li>
+<li>生产力</li>
+</ol>
+<blockquote>
+<p>注意:<br>你会注意到我没有说性能或并发。 有些语言比 Go 语言快一点,但它们肯定不像 Go 语言那么简单。 有些语言使并发成为他们的最高目标,但它们并不具有可读性及生产力。<br>性能和并发是重要的属性,但不如简单性,可读性和生产力那么重要。</p>
+</blockquote>
+<h3 id="1-1-简单性"><a href="#1-1-简单性" class="headerlink" title="1.1. 简单性"></a>1.1. 简单性</h3><p>我们为什么要追求简单？ 为什么 Go 语言程序的简单性很重要？</p>
+<p>我们都曾遇到过这样的情况: “我不懂这段代码”,不是吗？ 我们都做过这样的项目:你害怕做出改变,因为你担心它会破坏程序的另一部分; 你不理解的部分,不知道如何修复。</p>
+<p>这就是复杂性。 复杂性把可靠的软件中变成不可靠。 复杂性是杀死软件项目的罪魁祸首。</p>
+<p>简单性是 Go 语言的最高目标。 无论我们编写什么程序,我们都应该同意这一点:它们很简单。</p>
+<h3 id="1-2-可读性"><a href="#1-2-可读性" class="headerlink" title="1.2. 可读性"></a>1.2. 可读性</h3><blockquote>
+<p>Readability is essential for maintainability.<br> (可读性对于可维护性是至关重要的。)<br>    — Mark Reinhold (2018 JVM 语言高层会议)</p>
+</blockquote>
+<p>为什么 Go 语言的代码可读性是很重要的？我们为什么要争取可读性？</p>
+<blockquote>
+<p>Programs must be written for people to read, and only incidentally for machines to execute. (程序应该被写来让人们阅读,只是顺便为了机器执行。)<br> — Hal Abelson 与 Gerald Sussman (计算机程序的结构与解释)</p>
+</blockquote>
+<p>可读性很重要,因为所有软件不仅仅是 Go 语言程序,都是由人类编写的,供他人阅读。执行软件的计算机则是次要的。</p>
+<p>代码的读取次数比写入次数多。一段代码在其生命周期内会被读取数百次,甚至数千次。</p>
+<blockquote>
+<p>The most important skill for a programmer is the ability to effectively communicate ideas. (程序员最重要的技能是有效沟通想法的能力。)<br>  — Gastón Jorquera <a href="https://gaston.life/books/effective-programming/" target="_blank" rel="noopener">[1]</a></p>
+</blockquote>
+<p>可读性是能够理解程序正在做什么的关键。如果你无法理解程序正在做什么,那你希望如何维护它？如果软件无法维护,那么它将被重写;最后这可能是你的公司最后一次投资 Go 语言。</p>
+<p>~如果你正在为自己编写一个程序,也许它只需要运行一次,或者你是唯一一个曾经看过它的人,然后做任何对你有用的事。~但是,如果是一个不止一个人会贡献编写的软件,或者在很长一段时间内需求、功能或者环境会改变,那么你的目标必须是你的程序可被维护。</p>
+<p>编写可维护代码的第一步是确保代码可读。</p>
+<h3 id="1-3-生产力"><a href="#1-3-生产力" class="headerlink" title="1.3. 生产力"></a>1.3. 生产力</h3><blockquote>
+<p>Design is the art of arranging code to work today, and be changeable forever. (设计是安排代码到工作的艺术,并且永远可变。)<br>— Sandi Metz</p>
+</blockquote>
+<p>我要强调的最后一个基本原则是生产力。开发人员的工作效率是一个庞大的主题,但归结为此; 你花多少时间做有用的工作,而不是等待你的工具或迷失在一个外国的代码库里。 Go 程序员应该觉得他们可以通过 Go 语言完成很多工作。</p>
+<p>有人开玩笑说, Go 语言是在等待 C++ 语言程序编译时设计的。快速编译是 Go 语言的一个关键特性,也是吸引新开发人员的关键工具。虽然编译速度仍然是一个持久的战场,但可以说,在其他语言中需要几分钟的编译,在 Go 语言中只需几秒钟。这有助于 Go 语言开发人员感受到与使用动态语言的同行一样的高效,而且没有那些语言固有的可靠性问题。</p>
+<p>对于开发人员生产力问题更为基础的是,Go 程序员意识到编写代码是为了阅读,因此将读代码的行为置于编写代码的行为之上。Go 语言甚至通过工具和自定义强制执行所有代码以特定样式格式化。这就消除了项目中学习特定格式的摩擦,并帮助发现错误,因为它们看起来不正确。</p>
+<p>Go 程序员不会花费整天的时间来调试不可思议的编译错误。他们也不会将浪费时间在复杂的构建脚本或在生产中部署代码。最重要的是,他们不用花费时间来试图了解他们的同事所写的内容。</p>
+<p>当他们说语言必须扩展时,Go 团队会谈论生产力。</p>
+<h2 id="2-标识符"><a href="#2-标识符" class="headerlink" title="2. 标识符"></a>2. 标识符</h2><p>我们要讨论的第一个主题是标识符。 标识符是一个用来表示名称的花哨单词; 变量的名称,函数的名称,方法的名称,类型的名称,包的名称等。</p>
+<blockquote>
+<p>Poor naming is symptomatic of poor design. — Dave Cheney 拙劣的名称是拙劣的设计的表征。</p>
+</blockquote>
+<p>鉴于 Go 的语法限制,我们为程序中的事物选择的名称对我们程序的可读性产生了过大的影响。良好的可读性是评判代码质量的关键,因此选择好名称对于 Go 代码的可读性至关重要。</p>
+<h3 id="2-1-选择标识符是为了清晰-而不是简洁"><a href="#2-1-选择标识符是为了清晰-而不是简洁" class="headerlink" title="2.1. 选择标识符是为了清晰,而不是简洁"></a>2.1. 选择标识符是为了清晰,而不是简洁</h3><blockquote>
+<p>Obvious code is important. What you can do in one line you should do in three. — Ukiah Smith 代码要明确这很重要,您在一行中能做的事,应该拆到三行里做。</p>
+</blockquote>
+<p>Go 不是专注于将代码精巧优化为一行的那种语言,Go 也不是致力于将代码精炼到最小行数的语言。我们并不追求源码在磁盘上占用的空间更少,也不关心录入代码需要多长时间。</p>
+<blockquote>
+<p>Good naming is like a good joke. If you have to explain it, it’s not funny.<br> (好的命名就像一个好笑话。如果你必须解释它,那就不好笑了。)<br>— Dave Cheney</p>
+</blockquote>
+<p>清晰的关键是在 Go 语言程序中我们选择的标识名称。让我们谈一谈所谓好的名字：</p>
+<ul>
+<li><p><strong>好的名字很简洁。</strong> 好的名字不一定是最短的名字,但好的名字不会浪费在无关的东西上。好名字具有高的信噪比。</p>
+</li>
+<li><p><strong>好的名字是描述性的。</strong> 好的名字会描述变量或常量的应用,而不是它们的内容。好的名字应该描述函数的结果或方法的行为,而不是它们的操作。好的名字应该描述包的目的而非它的内容。描述东西越准确的名字就越好。</p>
+</li>
+<li><p><strong>好的名字应该是可预测的。</strong> 你能够从名字中推断出使用方式。~这是选择描述性名称的功能,但它也遵循传统。~这是 Go 程序员在谈到习惯用语时所谈论的内容。</p>
+</li>
+</ul>
+<p>让我们深入讨论以下这些属性。</p>
+<h3 id="2-2-标识符长度"><a href="#2-2-标识符长度" class="headerlink" title="2.2. 标识符长度"></a>2.2. 标识符长度</h3><p>有时候人们批评 Go 语言推荐短变量名的风格。正如 Rob Pike 所说,“ Go 程序员想要正确的长度的标识符”。 <a href="https://www.lysator.liu.se/c/pikestyle.html" target="_blank" rel="noopener">1</a></p>
+<p>Andrew Gerrand 建议通过对某些事物使用更长的标识,向读者表明它们具有更高的重要性。</p>
+<blockquote>
+<p>The greater the distance between a name’s declaration and its uses, the longer the name should be. (名字的声明与其使用之间的距离越大,名字应该越长。)<br> — Andrew Gerrand <a href="https://talks.golang.org/2014/names.slide#4" target="_blank" rel="noopener">[2]</a></p>
+</blockquote>
+<p>由此我们可以得出一些指导方针：</p>
+<ul>
+<li>短变量名称在声明和上次使用之间的距离很短时效果很好。</li>
+<li>长变量名需要证明其不同的合理性：越长的变量名,越需要更多的理由来证明其合理。冗长、繁琐的名称与他们在页面上的权重相比,携带的信息很低。</li>
+<li>请勿在变量名称中包含类型名称。</li>
+<li>常量应该描述它们持有的值,而不是该如何使用。</li>
+<li>对于循环和分支使用单字母变量,参数和返回值使用单个字,函数和包级别声明使用多个单词。</li>
+<li>单词可用于方法、接口和包。</li>
+<li>请记住,包的名称是调用者用来引用名称的一部分,因此要好好利用这一点。</li>
+</ul>
+<p>我们来举个栗子:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Person <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	Name <span class="hljs-keyword">string</span></span><br><span class="line">	Age  <span class="hljs-keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// AverageAge returns the average age of people.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">AverageAge</span><span class="hljs-params">(people []Person)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(people) == <span class="hljs-number">0</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">var</span> count, sum <span class="hljs-keyword">int</span></span><br><span class="line">	<span class="hljs-keyword">for</span> _, p := <span class="hljs-keyword">range</span> people &#123;</span><br><span class="line">		sum += p.Age</span><br><span class="line">		count += <span class="hljs-number">1</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> sum / count</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>在此示例中,变量<code>p</code>的在第<code>10</code>行被声明并且也只在接下来的一行中被引用。<code>p</code>在执行函数期间存在时间很短。如果要了解<code>p</code>的作用只需阅读两行代码。</p>
+<p>相比之下,<code>people</code>在函数第<code>7</code>行参数中被声明。<code>sum</code>和<code>count</code>也是如此,他们用了更长的名字。读者必须查看更多的行数来定位它们,因此他们名字更为独特。</p>
+<p>我可以选择<code>s</code>替代<code>sum</code>以及<code>c</code>（或可能是<code>n</code>）替代<code>count</code>,但是这样做会将程序中的所有变量份量降低到同样的级别。我可以选择<code>p</code>来代替<code>people</code>,但是用什么来调用<code>for ... range</code>迭代变量。如果用<code>person</code>的话看起来很奇怪,生存时间极短命名却比导出它的那个值更长。</p>
+<blockquote>
+<p>Austin Luo：这里说的是,若数组<code>people</code>用变量名<code>p</code>,那么从数组中获取的每一个元素取名就成了问题,比如用<code>person</code>,即使使用<code>person</code>看起来也很奇怪,一方面是单数,一方面<code>person</code>的生存周期只有两行（很短）,命名比生存周期更长的<code>p</code>（<code>people</code>）还长了。</p>
+<p>小窍门：跟使用空行在文档中分段一样,使用空行将函数执行过程分段。在函数<code>AverageAge</code>中有按顺序的三个操作。第一个是先决条件,检查当<code>people</code>为空时我们不会除零,第二个是累加总和和计数,最后一个是计算平均数。</p>
+</blockquote>
+<h3 id="2-2-1-上下文是关键"><a href="#2-2-1-上下文是关键" class="headerlink" title="2.2.1. 上下文是关键"></a>2.2.1. 上下文是关键</h3><p>重要的是要意识到关于命名的大多数建议都是需要考虑上下文的。 我想说这是一个原则,而不是一个规则。</p>
+<p>两个标识符<code>i</code>和<code>index</code>之间有什么区别。 我们不能断定一个就比另一个好,例如</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">for</span> index := <span class="hljs-number">0</span>; index &lt; <span class="hljs-built_in">len</span>(s); index++ &#123;</span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上述代码的可读性,基本上都会认为比下面这段要强：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">len</span>(s); i++ &#123;</span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>我认为它不是,因为就此事而论,<code>i</code>和<code>index</code>的范围很大可能上仅限于 for 循环的主体,后者的额外冗长性(指<code>index</code>)几乎没有增加对于程序的理解。</p>
+<p>但是,哪些功能更具可读性？</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *SNMP)</span> <span class="hljs-title">Fetch</span><span class="hljs-params">(oid []<span class="hljs-keyword">int</span>, index <span class="hljs-keyword">int</span>)</span> <span class="hljs-params">(<span class="hljs-keyword">int</span>, error)</span></span></span><br></pre></td></tr></table></figure>
+<p>或</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *SNMP)</span> <span class="hljs-title">Fetch</span><span class="hljs-params">(o []<span class="hljs-keyword">int</span>, i <span class="hljs-keyword">int</span>)</span> <span class="hljs-params">(<span class="hljs-keyword">int</span>, error)</span></span></span><br></pre></td></tr></table></figure>
+<p>在此示例中,<code>oid</code>是<code>SNMP</code>对象<code>ID</code>的缩写,因此将其缩短为<code>o</code>意味着程序员必须要将文档中常用符号转换为代码中较短的符号。 类似地将<code>index</code>替换成<code>i</code>,模糊了<code>i</code>所代表的含义,因为在<code>SNMP</code>消息中,每个<code>OID</code>的子值称为索引。</p>
+<blockquote>
+<p>小窍门：在参数声明中不要混用长、短不同的命名风格。</p>
+</blockquote>
+<h3 id="2-3-命名中不要包含所属类型的名称"><a href="#2-3-命名中不要包含所属类型的名称" class="headerlink" title="2.3. 命名中不要包含所属类型的名称"></a>2.3. 命名中不要包含所属类型的名称</h3><p>正如您给宠物取名一样,您会给狗取名“汪汪”,给猫取名为“咪咪”,但不会取名为“汪汪狗”、“咪咪猫”。出于同样的原因,您也不应在变量名称中包含其类型的名称。</p>
+<p>变量命名应该体现它的内容,而不是类型。我们来看下面这个例子：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> usersMap <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]*User</span><br></pre></td></tr></table></figure>
+<p>这个声明有什么好处？ 我们可以看到它是一个<code>map</code>,它与<code>*User</code>类型有关。 但是<code>usersMap</code>是一个<code>map</code>,而 Go 语言是一种静态类型的语言,如果没有定义变量,它并不会允许我们在需要标量变量的地方意外地使用到这个变量,因此<code>Map</code>后缀是多余的。</p>
+<p>接下来, 如果我们像这样来声明其他变量：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> (</span><br><span class="line">	companiesMap <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]*Company</span><br><span class="line">	productsMap <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]*Products</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><code>usersMap</code>,<code>companiesMap</code>和<code>productsMap</code>三个<code>map</code>类型变量,所有映射字符串都是不同的类型。 我们知道它们是<code>map</code>,我们也知道我们不能使用其中一个来代替另一个 - 如果我们在需要<code>map[string]*User</code>的地方尝试使用<code>companiesMap</code>, 编译器将抛出错误异常。 在这种情况下,很明显变量中<code>Map</code>后缀并没有提高代码的清晰度,它只是增加了要输入的额外样板代码。</p>
+<p>我的建议是避免使用任何类似变量类型的后缀。</p>
+<blockquote>
+<p>小窍门:如果<code>users</code>的描述性都不够用,那么<code>usersMap</code>也不会。</p>
+</blockquote>
+<p>此建议也适用于函数参数。 例如：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Config <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteConfig</span><span class="hljs-params">(w io.Writer, config *Config)</span></span></span><br></pre></td></tr></table></figure><br>命名<code>*Config</code>参数<code>config</code>是多余的。 我们知道它是<code>*Config</code>类型,就是这样。</p>
+<p>在这种情况下,如果变量的生命周期足够短,请考虑使用<code>conf</code>或<code>c</code>。</p>
+<p>如果有更多的<code>*Config</code>,那么将它们称为<code>original</code>和<code>updated</code>比<code>conf1</code>和<code>conf2</code>会更具描述性,因为前者不太可能被互相误解。</p>
+<blockquote>
+<p>NOTE：<br>不要让包名占用了更适合变量的名称。</p>
+</blockquote>
+<p>导入标识符的名称包括其包名称。 例如,<code>context</code>包中的<code>Context</code>类型将被称为<code>context.Context</code>。 这使得无法将<code>context</code>用作包中的变量或类型。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteLog</span><span class="hljs-params">(context context.Context, message <span class="hljs-keyword">string</span>)</span></span></span><br></pre></td></tr></table></figure></p>
+<p>上面的栗子将会编译出错。 这就是为什么<code>context.Context</code>类型的通常的本地声明是<code>ctx</code>,例如：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteLog</span><span class="hljs-params">(ctx context.Context, message <span class="hljs-keyword">string</span>)</span></span></span><br></pre></td></tr></table></figure>
+<h3 id="2-4-使用一致的命名方式"><a href="#2-4-使用一致的命名方式" class="headerlink" title="2.4. 使用一致的命名方式"></a>2.4. 使用一致的命名方式</h3><p>一个好名字的另一个属性是它应该是可预测的。 在第一次遇到该名字时读者就能够理解名字的使用。 当他们遇到常见的名字时,他们应该能够认为自从他们上次看到它以来它没有改变意义。</p>
+<p>例如,如果您的代码在处理数据库请确保每次出现参数时,它都具有相同的名称。 与其使用<code>d * sql.DB</code>,<code>dbase * sql.DB</code>,<code>DB * sql.DB</code>和<code>database * sql.DB</code>的组合,倒不如统一使用:</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">db *sql.DB</span><br></pre></td></tr></table></figure>
+<p>这样做使读者更为熟悉; 如果你看到<code>db</code>,你知道它就是<code>*sql.DB</code>并且它已经在本地声明或者由调用者为你提供。</p>
+<p>类似地,对于方法接收器: 在该类型的每个方法上使用相同的接收者名称。 在这种类型的方法内部可以使读者更容易使用。</p>
+<blockquote>
+<p>注意:<br>Go 中对接收者的短命名规则惯例与目前提供的建议不一致。这只是早期做出的选择之一,并且已经成为首选的风格,就像使用<code>CamelCase</code>而不是<code>snake_case</code>一样。</p>
+</blockquote>
+<blockquote>
+<p>小窍门：Go 的命名风格规定接收器具有单个字母名称或其派生类型的首字母缩略词。有时您可能会发现接收器的名称有时会与方法中参数的名称冲突,在这种情况下,请考虑使参数名称稍长,并且仍然不要忘记一致地使用这个新名称。</p>
+</blockquote>
+<p>最后,某些单字母变量传统上与循环和计数相关联。 例如,<code>i</code>,<code>j</code>和<code>k</code>通常是简单<code>for</code>循环的循环归纳变量。<code>n</code>通常与计数器或累加器相关联。<code>v</code>是通用编码函数中值的常用简写,<code>k</code>通常用于<code>map</code>的键,<code>s</code>通常用作字符串类型参数的简写。</p>
+<p>与上面的<code>db</code>示例一样,程序员认为<code>i</code>是一个循环归纳变量。 如果确保<code>i</code>始终是循环变量,而且不在<code>for</code>循环之外的其他地方中使用。 当读者遇到一个名为<code>i</code>或<code>j</code>的变量时,他们知道循环就在附近。</p>
+<blockquote>
+<p>小窍门:如果你发现自己有如此多的嵌套循环,<code>i</code>,<code>j</code>和<code>k</code>变量都无法满足时,这个时候可能就是需要将函数分解成更小的函数。</p>
+</blockquote>
+<h3 id="2-5-使用一致的声明样式"><a href="#2-5-使用一致的声明样式" class="headerlink" title="2.5. 使用一致的声明样式"></a>2.5. 使用一致的声明样式</h3><p>Go 至少有六种不同的方式来声明变量</p>
+<p><em><code>var x int = 1</code>
+</em><code>var x = 1</code><br><em><code>var x int; x = 1</code>
+</em><code>var x = int(1)</code><br>*<code>x := 1</code></p>
+<p>我确信还有更多我没有想到的。 这可能是 Go 语言的设计师意识到的一个错误,但现在改变它为时已晚。 通过所有这些不同的方式来声明变量,我们如何避免每个 Go 程序员选择自己的风格？</p>
+<p>我想就如何在程序中声明变量提出建议。 这是我尽可能使用的风格。</p>
+<ul>
+<li><p><strong>声明变量但没有初始化时,请使用<code>var</code>。</strong> 当声明变量稍后将在函数中初始化时,请使用<code>var</code>关键字。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> players <span class="hljs-keyword">int</span>    <span class="hljs-comment">// 0</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> things []Thing <span class="hljs-comment">// an empty slice of Things</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> thing Thing    <span class="hljs-comment">// empty Thing struct</span></span><br><span class="line">json.Unmarshall(reader, &amp;thing)</span><br></pre></td></tr></table></figure>
+<p><code>var</code>表示此变量已被声明为指定类型的零值。 这也与使用<code>var</code>而不是短声明语法在包级别声明变量的要求一致 - 尽管我稍后会说你根本不应该使用包级变量。</p>
+</li>
+<li><p><strong>在声明和初始化时,使用<code>:=</code>。</strong> 在同时声明和初始化变量时,也就是说我们不会将变量初始化为零值,我建议使用短变量声明。 这使得读者清楚地知道<code>:=</code>左侧的变量是初始化过的。</p>
+</li>
+</ul>
+<p>为了解释原因,让我们看看前面的例子,但这次是初始化每个变量：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> players <span class="hljs-keyword">int</span> = <span class="hljs-number">0</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> things []Thing = <span class="hljs-literal">nil</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> thing *Thing = <span class="hljs-built_in">new</span>(Thing)</span><br><span class="line">json.Unmarshall(reader, thing)</span><br></pre></td></tr></table></figure><br>在第一个和第三个例子中,因为在 Go 语言中没有从一种类型到另一种类型的自动转换; 赋值运算符左侧的类型必须与右侧的类型相同。 编译器可以从右侧的类型推断出声明的变量的类型,上面的例子可以更简洁地写为：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> players = <span class="hljs-number">0</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> things []Thing = <span class="hljs-literal">nil</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> thing = <span class="hljs-built_in">new</span>(Thing)</span><br><span class="line">json.Unmarshall(reader, thing)</span><br></pre></td></tr></table></figure>
+<p>我们将<code>players</code>初始化为<code>0</code>,但这是多余的,因为<code>0</code>是<code>players</code>的零值。 因此,要明确地表示使用零值, 我们将上面例子改写为:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> players <span class="hljs-keyword">int</span></span><br></pre></td></tr></table></figure><br>第二个声明如何？ 我们不能省略类型而写作:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> things = <span class="hljs-literal">nil</span></span><br></pre></td></tr></table></figure><br>因为<code>nil</code>没有类型。 <a href="https://speakerdeck.com/campoy/understanding-nil" target="_blank" rel="noopener">[2]</a>相反,我们有一个选择,如果我们要使用切片的零值则写作:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> things []Thing</span><br></pre></td></tr></table></figure><br>或者我们要创建一个有零元素的切片则写作:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> things = <span class="hljs-built_in">make</span>([]Thing, <span class="hljs-number">0</span>)</span><br></pre></td></tr></table></figure><br>如果我们想要后者那么这不是切片的零值,所以我们应该向读者说明我们通过使用简短的声明形式做出这个选择：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">things := <span class="hljs-built_in">make</span>([]Thing, <span class="hljs-number">0</span>)</span><br></pre></td></tr></table></figure><br>这告诉读者我们已选择明确初始化事物。</p>
+<p>下面是第三个声明,<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> thing = <span class="hljs-built_in">new</span>(Thing)</span><br></pre></td></tr></table></figure><br>既是初始化了变量又引入了一些 Go 程序员不喜欢的<code>new</code>关键字的罕见用法。 如果我们用推荐地简短声明语法,那么就变成了:</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">thing := <span class="hljs-built_in">new</span>(Thing)</span><br></pre></td></tr></table></figure>
+<p>这清楚地表明<code>thing</code>被初始化为<code>new(Thing)</code>的结果 - 一个指向<code>Thing</code>的指针 - 但依旧我们使用了<code>new</code>地罕见用法。 我们可以通过使用紧凑的文字结构初始化形式来解决这个问题,<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">thing := &amp;Thing&#123;&#125;</span><br></pre></td></tr></table></figure><br>与<code>new(Thing)</code>相同,这就是为什么一些 Go 程序员对重复感到不满。 然而,这意味着我们使用指向<code>Thing{}</code>的指针初始化了<code>thing</code>,也就是<code>Thing</code>的零值。</p>
+<p>相反,我们应该认识到<code>thing</code>被声明为零值,并使用地址运算符将<code>thing</code>的地址传递给<code>json.Unmarshall</code><br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> thing Thing</span><br><span class="line">json.Unmarshall(reader, &amp;thing)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>小窍门:当然,任何经验法则,都有例外。 例如,有时两个变量密切相关,这样写会很奇怪:</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> min <span class="hljs-keyword">int</span></span><br><span class="line">max := <span class="hljs-number">1000</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>如果这样声明可能更具可读性</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">min, max := <span class="hljs-number">0</span>, <span class="hljs-number">1000</span></span><br></pre></td></tr></table></figure>
+<p>综上所述：</p>
+<p>在没有初始化的情况下声明变量时,请使用<code>var</code>语法。</p>
+<p>声明并初始化变量时,请使用<code>:=</code>。</p>
+<blockquote>
+<p>小窍门:<br>使复杂的声明显而易见。<br>当事情变得复杂时,它看起来就会很复杂。例如</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> length <span class="hljs-keyword">uint32</span> = <span class="hljs-number">0x80</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>这里<code>length</code>可能要与特定数字类型的库一起使用,并且<code>length</code>明确选择为<code>uint32</code>类型而不是短声明形式：</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">length := <span class="hljs-keyword">uint32</span>(<span class="hljs-number">0x80</span>)</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>在第一个例子中,我故意违反了规则, 使用<code>var</code>声明带有初始化变量的。 这个决定与我的常用的形式不同,这给读者一个线索,告诉他们一些不寻常的事情将会发生。</p>
+</blockquote>
+<h3 id="2-6-成为团队合作者"><a href="#2-6-成为团队合作者" class="headerlink" title="2.6. 成为团队合作者"></a>2.6. 成为团队合作者</h3><p>我谈到了软件工程的目标,即编写可读及可维护的代码。 因此,您可能会将大部分职业生涯用于你不是唯一作者的项目。 我在这种情况下的建议是遵循项目自身风格。</p>
+<p>在文件中间更改样式是不和谐的。 即使不是你喜欢的方式,对于维护而言一致性比你的个人偏好更有价值。 我的经验法则是: 如果它通过了<code>gofmt</code>,那么通常不值得再做代码审查。</p>
+<blockquote>
+<p>小窍门:如果要在代码库中进行重命名,请不要将其混合到另一个更改中。 如果有人使用<code>git bisect</code>,他们不想通过数千行重命名来查找您更改的代码。</p>
+</blockquote>
+<h2 id="3-注释"><a href="#3-注释" class="headerlink" title="3. 注释"></a>3. 注释</h2><p>在我们继续讨论更大的项目之前,我想花几分钟时间谈论一下注释。</p>
+<blockquote>
+<p>Good code has lots of comments, bad code requires lots of comments.<br>(好的代码有很多注释,坏代码需要很多注释。)<br> — Dave Thomas and Andrew Hunt (The Pragmatic Programmer)</p>
+</blockquote>
+<p>代码注释对 Go 程序的可读性极为重要。一个注释应该做到如下三个方面的至少一个：</p>
+<ol>
+<li>注释应该解释“做什么”。</li>
+<li>注释应该解释“怎么做的”。</li>
+<li>注释应该解释“为什么这么做”。</li>
+</ol>
+<p>第一种形式是公共符号注释的理想选择：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Open opens the named file for reading.</span></span><br><span class="line"><span class="hljs-comment">// If successful, methods on the returned file can be used for reading.</span></span><br></pre></td></tr></table></figure><br>第二种形式非常适合在方法中注释：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// queue all dependant actions</span></span><br><span class="line"><span class="hljs-keyword">var</span> results []<span class="hljs-keyword">chan</span> error</span><br><span class="line"><span class="hljs-keyword">for</span> _, dep := <span class="hljs-keyword">range</span> a.Deps &#123;</span><br><span class="line">        results = <span class="hljs-built_in">append</span>(results, execute(seen, dep))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>第三种形式是独一无二的,因为它不会取代前两种形式,但与此同时它并不能代替前两种形式。 此形式的注解用以解释代码的外部因素。 这些因素脱离上下文后通常很难理解,此注释的为了提供这种上下文。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">return</span> &amp;v2.Cluster_CommonLbConfig&#123;</span><br><span class="line">	<span class="hljs-comment">// Disable HealthyPanicThreshold</span></span><br><span class="line">        HealthyPanicThreshold: &amp;envoy_type.Percent&#123;</span><br><span class="line">        	Value: <span class="hljs-number">0</span>,</span><br><span class="line">        &#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在此示例中,无法清楚地明白<code>HealthyPanicThreshold</code>设置为零百分比的效果。 需要注释<code>0</code>值将禁用<code>panic</code>阀值。</p>
+<h3 id="3-1-关于变量和常量的注释应描述其内容而非其目的"><a href="#3-1-关于变量和常量的注释应描述其内容而非其目的" class="headerlink" title="3.1. 关于变量和常量的注释应描述其内容而非其目的"></a>3.1. 关于变量和常量的注释应描述其内容而非其目的</h3><p>我之前谈过,变量或常量的名称应描述其目的。 向变量或常量添加注释时,该注释应描述变量内容,而不是变量目的。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> randomNumber = <span class="hljs-number">6</span> <span class="hljs-comment">// determined from an unbiased die</span></span><br></pre></td></tr></table></figure>
+<p>在此示例中,注释描述了为什么<code>randomNumber</code>被赋值为6,以及6来自哪里。 注释没有描述<code>randomNumber</code>的使用位置。 还有更多的栗子：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> (</span><br><span class="line">    StatusContinue           = <span class="hljs-number">100</span> <span class="hljs-comment">// RFC 7231, 6.2.1</span></span><br><span class="line">    StatusSwitchingProtocols = <span class="hljs-number">101</span> <span class="hljs-comment">// RFC 7231, 6.2.2</span></span><br><span class="line">    StatusProcessing         = <span class="hljs-number">102</span> <span class="hljs-comment">// RFC 2518, 10.1</span></span><br><span class="line"></span><br><span class="line">    StatusOK                 = <span class="hljs-number">200</span> <span class="hljs-comment">// RFC 7231, 6.3.1</span></span><br></pre></td></tr></table></figure><br>在HTTP的上下文中,数字<code>100</code>被称为<code>StatusContinue</code>,如 RFC 7231 第 6.2.1 节中所定义。</p>
+<blockquote>
+<p>小窍门:对于没有初始值的变量,注释应描述谁负责初始化此变量。</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// sizeCalculationDisabled indicates whether it is safe</span></span><br><span class="line"><span class="hljs-comment">// to calculate Types' widths and alignments. See dowidth.</span></span><br><span class="line"><span class="hljs-keyword">var</span> sizeCalculationDisabled <span class="hljs-keyword">bool</span></span><br></pre></td></tr></table></figure>
+<p> 这里的注释让读者知道<code>dowidth</code>函数负责维护<code>sizeCalculationDisabled</code>的状态。</p>
+<p><strong>隐藏一目了然的东西 </strong></p>
+<p>这个提示来自Kate Gregory<a href="https://www.infoq.com/articles/API-Design-Joshua-Bloch" target="_blank" rel="noopener">[3]</a>。有时你会发现一个更好的变量名称隐藏在注释中。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// registry of SQL drivers</span></span><br><span class="line"><span class="hljs-keyword">var</span> registry = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]*sql.Driver)</span><br></pre></td></tr></table></figure></p>
+<p>注释是由作者添加的,因为<code>registry</code>没有充分解释其目的 - 它是一个注册表,但注册的是什么？</p>
+<p>通过将变量重命名为<code>sqlDrivers</code>,现在可以清楚地知道此变量的目的是保存SQL驱动程序。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> sqlDrivers = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]*sql.Driver)</span><br></pre></td></tr></table></figure>
+<p>现在注释已经多余了,可以移除。</p>
+<h3 id="3-2-总是为公开符号写文档说明"><a href="#3-2-总是为公开符号写文档说明" class="headerlink" title="3.2. 总是为公开符号写文档说明"></a>3.2. 总是为公开符号写文档说明</h3><p><code>godoc</code>是包的文档,所以应该始终为包中声明的每个公共符号 —​ 变量、常量、函数以及方法添加注释。</p>
+<p>以下是<code>Google Style</code>指南中的两条规则:</p>
+<ul>
+<li>任何既不明显也不简短的公共功能必须予以注释。</li>
+<li>无论长度或复杂程度如何,对库中的任何函数都必须进行注释</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> ioutil</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ReadAll reads from r until an error or EOF and returns the data it read.</span></span><br><span class="line"><span class="hljs-comment">// A successful call returns err == nil, not err == EOF. Because ReadAll is</span></span><br><span class="line"><span class="hljs-comment">// defined to read from src until EOF, it does not treat an EOF from Read</span></span><br><span class="line"><span class="hljs-comment">// as an error to be reported.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ReadAll</span><span class="hljs-params">(r io.Reader)</span> <span class="hljs-params">([]<span class="hljs-keyword">byte</span>, error)</span></span></span><br></pre></td></tr></table></figure>
+<p>这条规则有一个例外; 您不需要注释实现接口的方法。 具体不要像下面这样做：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Read implements the io.Reader interface</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(r *FileReader)</span> <span class="hljs-title">Read</span><span class="hljs-params">(buf []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(<span class="hljs-keyword">int</span>, error)</span></span></span><br></pre></td></tr></table></figure>
+<p>这个注释什么也没说。 它没有告诉你这个方法做了什么,更糟糕是它告诉你去看其他地方的文档。 在这种情况下,我建议完全删除该注释。</p>
+<p>这是<code>io</code>包中的一个例子</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// LimitReader returns a Reader that reads from r</span></span><br><span class="line"><span class="hljs-comment">// but stops with EOF after n bytes.</span></span><br><span class="line"><span class="hljs-comment">// The underlying implementation is a *LimitedReader.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">LimitReader</span><span class="hljs-params">(r Reader, n <span class="hljs-keyword">int64</span>)</span> <span class="hljs-title">Reader</span></span> &#123; <span class="hljs-keyword">return</span> &amp;LimitedReader&#123;r, n&#125; &#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// A LimitedReader reads from R but limits the amount of</span></span><br><span class="line"><span class="hljs-comment">// data returned to just N bytes. Each call to Read</span></span><br><span class="line"><span class="hljs-comment">// updates N to reflect the new amount remaining.</span></span><br><span class="line"><span class="hljs-comment">// Read returns EOF when N &lt;= 0 or when the underlying R returns EOF.</span></span><br><span class="line"><span class="hljs-keyword">type</span> LimitedReader <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	R Reader <span class="hljs-comment">// underlying reader</span></span><br><span class="line">	N <span class="hljs-keyword">int64</span>  <span class="hljs-comment">// max bytes remaining</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(l *LimitedReader)</span> <span class="hljs-title">Read</span><span class="hljs-params">(p []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> l.N &lt;= <span class="hljs-number">0</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, EOF</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> <span class="hljs-keyword">int64</span>(<span class="hljs-built_in">len</span>(p)) &gt; l.N &#123;</span><br><span class="line">		p = p[<span class="hljs-number">0</span>:l.N]</span><br><span class="line">	&#125;</span><br><span class="line">	n, err = l.R.Read(p)</span><br><span class="line">	l.N -= <span class="hljs-keyword">int64</span>(n)</span><br><span class="line">	<span class="hljs-keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>请注意,<code>LimitedReader</code>的声明就在使用它的函数之前,而<code>LimitedReader.Read</code>的声明遵循<code>LimitedReader</code>本身的声明。 尽管<code>LimitedReader.Read</code>本身没有文档,但它清楚地表明它是<code>io.Reader</code>的一个实现。</p>
+<blockquote>
+<p>小窍门:在编写函数之前,请编写描述函数的注释。 如果你发现很难写出注释,那么这就表明你将要编写的代码很难理解。</p>
+</blockquote>
+<h3 id="3-2-1-不要为坏的代码写注释-重写它"><a href="#3-2-1-不要为坏的代码写注释-重写它" class="headerlink" title="3.2.1. 不要为坏的代码写注释,重写它"></a>3.2.1. 不要为坏的代码写注释,重写它</h3><blockquote>
+<p>Don’t comment bad code — rewrite it<br>   — Brian Kernighan</p>
+<p>不要为坏的代码写注释——重写它</p>
+</blockquote>
+<p>为粗制滥造的代码片段着重写注释是不够的,如果您遭遇到一段这样的注释,您应该发起一个问题（issue）从而记得后续重构它。技术债务只要不是过多就没有关系。</p>
+<p>标准库中的惯例是注意到它的人用<code>TODO(username)</code>的样式来注释。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// TODO(dfc) this is O(N^2), find a faster way to do this.</span></span><br></pre></td></tr></table></figure>
+<p>注释中的姓名并不意味着承诺去修复问题,但在解决问题时,他可能是最合适的人选。其他批注内容一般还有日期或者问题编号。</p>
+<h3 id="3-2-2-与其为一大段代码写注释-不如重构它"><a href="#3-2-2-与其为一大段代码写注释-不如重构它" class="headerlink" title="3.2.2. 与其为一大段代码写注释,不如重构它"></a>3.2.2. 与其为一大段代码写注释,不如重构它</h3><blockquote>
+<p>Good code is its own best documentation. As you’re about to add a comment, ask yourself, ‘How can I improve the code so that this comment isn’t needed?’ Improve the code and then document it to make it even clearer.<br>好的代码是最好的文档。 在即将添加注释时,请问下自己,“如何改进代码以便不需要此注释？’ 改进代码使其更清晰。<br> — Steve McConnell</p>
+</blockquote>
+<p>函数应该只做一件事。如果您发现一段代码因为与函数的其他部分不相关因而需要注释时,考虑将这段代码拆分为独立的函数。</p>
+<p>除了更容易理解之外,较小的函数更容易单独测试,现在您将不相关的代码隔离拆分到不同的函数中,估计只有函数名才是唯一需要的文档注释了。</p>
+<h2 id="4-包的设计"><a href="#4-包的设计" class="headerlink" title="4. 包的设计"></a>4. 包的设计</h2><blockquote>
+<p>Write shy code - modules that don’t reveal anything unnecessary to other modules and that don’t rely on other modules’ implementations.<br>编写谨慎的代码 - 不向其他模块透露任何不必要的模块,并且不依赖于其他模块的实现。<br> — Dave Thomas</p>
+</blockquote>
+<p>每个 Go 语言的包实际上都是它一个小小的 Go 语言程序。 正如函数或方法的实现对调用者而言并不重要一样,包的公共API-其函数、方法以及类型的实现对于调用者来说也并不重要。</p>
+<p>一个好的 Go 语言包应该具有低程度的源码级耦合,这样,随着项目的增长,对一个包的更改不会跨代码库级联。 这些世界末日的重构严格限制了代码库的变化率以及在该代码库中工作的成员的生产率。</p>
+<p>在本节中,我们将讨论如何设计包,包括包的名称,命名类型以及编写方法和函数的技巧。</p>
+<h3 id="4-1-一个好的包从它的名字开始"><a href="#4-1-一个好的包从它的名字开始" class="headerlink" title="4.1. 一个好的包从它的名字开始"></a>4.1. 一个好的包从它的名字开始</h3><p>编写一个好的 Go 语言包从包的名称开始。将你的包名用一个词来描述它。</p>
+<p>正如我在上一节中谈到变量的名称一样,包的名称也非常重要。我遵循的经验法则不是“我应该在这个包中放入什么类型的？”。相反,我要问是“该包提供的服务是什么？”通常这个问题的答案不是“这个包提供<code>X</code>类型”,而是“这个包提供<code>HTTP</code>”。</p>
+<blockquote>
+<p>小窍门:以包所提供的内容来命名,而不是它包含的内容。</p>
+</blockquote>
+<h3 id="4-1-1-好的包名应该是唯一的。"><a href="#4-1-1-好的包名应该是唯一的。" class="headerlink" title="4.1.1. 好的包名应该是唯一的。"></a>4.1.1. 好的包名应该是唯一的。</h3><p>在项目中,每个包名称应该是唯一的。包的名称应该描述其目的的建议很容易理解 - 如果你发现有两个包需要用相同名称,它可能是:</p>
+<ol>
+<li>包的名称太通用了。</li>
+<li>该包与另一个类似名称的包重叠了。在这种情况下,您应该检查你的设计,或考虑合并包。</li>
+</ol>
+<h3 id="4-2-避免使用类似base-common或util的包名称"><a href="#4-2-避免使用类似base-common或util的包名称" class="headerlink" title="4.2. 避免使用类似base,common或util的包名称"></a>4.2. 避免使用类似<code>base</code>,<code>common</code>或<code>util</code>的包名称</h3><p>不好的包名的常见情况是<code>utility</code>包。这些包通常是随着时间的推移一些帮助程序和工具类的包。由于这些包包含各种不相关的功能,因此很难根据包提供的内容来描述它们。这通常会导致包的名称来自包含的内容 - <code>utilities</code>。</p>
+<p>像<code>utils</code>或<code>helper</code>这样的包名称通常出现在较大的项目中,这些项目已经开发了深层次包的结构,并且希望在不遇到导入循环的情况下共享<code>helper</code>函数。通过将<code>utility</code>程序函数提取到新的包中,导入循环会被破坏,但由于该包源于项目中的设计问题,因此其包名称不反映其目的,仅反映其为了打破导入循环。</p>
+<p>我建议改进<code>utils</code>或<code>helpers</code>包的名称是分析它们的调用位置,如果可能的话,将相关的函数移动到调用者的包中。即使这涉及复制一些<code>helper</code>程序代码,这也比在两个程序包之间引入导入依赖项更好。</p>
+<blockquote>
+<p>[A little] duplication is far cheaper than the wrong abstraction.<br>([一点点]重复比错误的抽象的性价比高很多。)<br> — Sandy Metz</p>
+</blockquote>
+<p>在使用<code>utility</code>程序的情况下,最好选多个包,每个包专注于单个方面,而不是选单一的整体包。</p>
+<blockquote>
+<p>小窍门:使用复数形式命名工具包。比如strings是字符串的处理工具。</p>
+</blockquote>
+<p>当两个或多个实现共有的功能或客户端和服务器的常见类型被重构为单独的包时,通常会找到名称类似于<code>base</code>或<code>common</code>的包。我相信解决方案是减少包的数量,将客户端,服务器和公共代码组合到一个以包的功能命名的包中。</p>
+<p>例如,<code>net/http</code>包没有<code>client</code>和<code>server</code>的分包,而是有一个<code>client.go</code>和<code>server.go</code>文件,每个文件都有各自的类型,还有一个<code>transport.go</code>文件,用于公共消息传输代码。</p>
+<blockquote>
+<p>小窍门:<strong>标识符的名称包括其包名称。</strong><br>重要的是标识符的名称包括其包的名称。</p>
+<ul>
+<li>当由另一个包引用时,<code>net/http</code>包中的 Get 函数变为<code>http.Get</code>。</li>
+<li>当导入到其他包中时,<code>strings</code>包中的<code>Reader</code>类型变为<code>strings.Reader</code>。<br>*<code>net</code>包中的<code>Error</code>接口显然与网络错误有关。</li>
+</ul>
+</blockquote>
+<h3 id="4-3-尽早return而不是深度嵌套"><a href="#4-3-尽早return而不是深度嵌套" class="headerlink" title="4.3. 尽早return而不是深度嵌套"></a>4.3. 尽早<code>return</code>而不是深度嵌套</h3><p>由于 Go 语言的控制流不使用<code>exception</code>,因此不需要为<code>try</code>和<code>catch</code>块提供顶级结构而深度缩进代码。Go 语言代码不是成功的路径越来越深地嵌套到右边,而是以一种风格编写,其中随着函数的进行,成功路径继续沿着屏幕向下移动。 我的朋友 Mat Ryer 将这种做法称为“视线”编码。<a href="https://medium.com/@matryer/line-of-sight-in-code-186dd7cdea88" target="_blank" rel="noopener">[4]</a></p>
+<p>这是通过使用<code>guard clauses</code>来实现的; 在进入函数时是具有断言前提条件的条件块。 这是一个来自<code>bytes</code>包的例子:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(b *Buffer)</span> <span class="hljs-title">UnreadRune</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> b.lastRead &lt;= opInvalid &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> errors.New(<span class="hljs-string">"bytes.Buffer: UnreadRune: previous operation was not a successful ReadRune"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> b.off &gt;= <span class="hljs-keyword">int</span>(b.lastRead) &#123;</span><br><span class="line">		b.off -= <span class="hljs-keyword">int</span>(b.lastRead)</span><br><span class="line">	&#125;</span><br><span class="line">	b.lastRead = opInvalid</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>进入<code>UnreadRune</code>后,将检查<code>b.lastRead</code>的状态,如果之前的操作不是<code>ReadRune</code>,则会立即返回错误。 之后,函数的其余部分继续进行<code>b.lastRead</code>大于<code>opInvalid</code>的断言。</p>
+<p>与没有<code>guard clause</code>的相同函数进行比较,<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(b *Buffer)</span> <span class="hljs-title">UnreadRune</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> b.lastRead &gt; opInvalid &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> b.off &gt;= <span class="hljs-keyword">int</span>(b.lastRead) &#123;</span><br><span class="line">			b.off -= <span class="hljs-keyword">int</span>(b.lastRead)</span><br><span class="line">		&#125;</span><br><span class="line">		b.lastRead = opInvalid</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> errors.New(<span class="hljs-string">"bytes.Buffer: UnreadRune: previous operation was not a successful ReadRune"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>最常见的执行成功的情况是嵌套在第一个if条件内,成功的退出条件是<code>return nil</code>,而且必须通过仔细匹配大括号来发现。 函数的最后一行是返回一个错误,并且被调用者必须追溯到匹配的左括号,以了解何时执行到此点。</p>
+<p>对于读者和维护程序员来说,这更容易出错,因此 Go 语言更喜欢使用<code>guard clauses</code>并尽早返回错误。</p>
+<h3 id="4-4-让零值更有用"><a href="#4-4-让零值更有用" class="headerlink" title="4.4. 让零值更有用"></a>4.4. 让零值更有用</h3><p>假设变量没有初始化,每个变量声明都会自动初始化为与零内存的内容相匹配的值。 这就是零值。 值的类型决定了其零值; 对于数字类型,它为<code>0</code>,对于指针类型为<code>nil</code>,<code>slices</code>、<code>map</code>和<code>channel</code>同样是<code>nil</code>。</p>
+<p>始终设置变量为已知默认值的属性对于程序的安全性和正确性非常重要,并且可以使 Go 语言程序更简单、更紧凑。 这就是 Go 程序员所说的“给你的结构一个有用的零值”。</p>
+<p>对于<code>sync.Mutex</code>类型。<code>sync.Mutex</code>包含两个未公开的整数字段,它们用来表示互斥锁的内部状态。 每当声明<code>sync.Mutex</code>时,其字段会被设置为<code>0</code>初始值。<code>sync.Mutex</code>利用此属性来编写,使该类型可直接使用而无需初始化。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> MyInt <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	mu  sync.Mutex</span><br><span class="line">	val <span class="hljs-keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> i MyInt</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// i.mu is usable without explicit initialisation.</span></span><br><span class="line">	i.mu.Lock()</span><br><span class="line">	i.val++</span><br><span class="line">	i.mu.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>Austin Luo：原文为“useful”,我在此译为“有意义”而不是“有用”,意在强调其零值是符合业务的、符合逻辑的,并且也是初始的、默认的,而不是“不用管它,让它为零好了”。</p>
+<p>这与变量的命名也息息相关,比如：</p>
+<p>isCacheEnabled bool // 缓存是否被启用</p>
+<p>isCacheDisabled bool // 缓存是否被禁用</p>
+<p>对于上述两个变量,看起来都差不多,随意定义其中一个即可,唯一的差别只是一个表示启用一个表示禁用而已。但是结合考虑“业务要求默认启用缓存”和“bool 的零值为 false”,那么显然我们应该定义isCacheDisabled bool而不是前者。一方面,调用者不显式赋值时默认零值为false,另一方面值为false时表达的含义与业务要求默认启用缓存一致。</p>
+<p>这才使得零值真正地有意义,正如示例中注释的那行i.mu一样,不显示初始化其代表的是默认锁是可用的。</p>
+</blockquote>
+<p>另一个利用零值的类型是<code>bytes.Buffer</code>。您可以声明<code>bytes.Buffer</code>然后就直接写入而无需初始化。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> b bytes.Buffer</span><br><span class="line">	b.WriteString(<span class="hljs-string">"Hello, world!\n"</span>)</span><br><span class="line">	io.Copy(os.Stdout, &amp;b)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>切片的一个有用属性是它们的零值<code>nil</code>。如果我们看一下切片运行时<code>header</code>的定义就不难理解:</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> slice <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">        array *[...]T <span class="hljs-comment">// pointer to the underlying array</span></span><br><span class="line">        <span class="hljs-built_in">len</span>   <span class="hljs-keyword">int</span></span><br><span class="line">        <span class="hljs-built_in">cap</span>   <span class="hljs-keyword">int</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>此结构的零值意味着<code>len</code>和<code>cap</code>的值为<code>0</code>,而<code>array</code>（指向保存切片的内容数组的指针）将为<code>nil</code>。这意味着你不需要<code>make</code>切片,你只需声明它即可。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// s := make([]string, 0)</span></span><br><span class="line">	<span class="hljs-comment">// s := []string&#123;&#125;</span></span><br><span class="line">	<span class="hljs-keyword">var</span> s []<span class="hljs-keyword">string</span></span><br><span class="line"></span><br><span class="line">	s = <span class="hljs-built_in">append</span>(s, <span class="hljs-string">"Hello"</span>)</span><br><span class="line">	s = <span class="hljs-built_in">append</span>(s, <span class="hljs-string">"world"</span>)</span><br><span class="line">	fmt.Println(strings.Join(s, <span class="hljs-string">" "</span>))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意:<code>var s []string</code>类似于它上面的两条注释行,但并不完全相同。值为<code>nil</code>的切片与具有零长度的切片就可以来相互比较。以下代码将输出<code>false</code>。</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> s1 = []<span class="hljs-keyword">string</span>&#123;&#125;</span><br><span class="line">	<span class="hljs-keyword">var</span> s2 []<span class="hljs-keyword">string</span></span><br><span class="line">	fmt.Println(reflect.DeepEqual(s1, s2))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一个意外但是有用的惊喜是未初始化的指针——<code>nil</code>指针,您可以在<code>nil</code>值的类型上调用方法,这可以简单地用于提供默认值。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Config <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	path <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(c *Config)</span> <span class="hljs-title">Path</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> c == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-string">"/usr/home"</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> c.path</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> c1 *Config</span><br><span class="line">	<span class="hljs-keyword">var</span> c2 = &amp;Config&#123;</span><br><span class="line">		path: <span class="hljs-string">"/export"</span>,</span><br><span class="line">	&#125;</span><br><span class="line">	fmt.Println(c1.Path(), c2.Path())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="4-5-避免包级别状态"><a href="#4-5-避免包级别状态" class="headerlink" title="4.5. 避免包级别状态"></a>4.5. 避免包级别状态</h3><p>编写可维护程序的关键是它们应该是松散耦合的 - 对一个程序包的更改应该很少影响另一个不直接依赖于第一个程序包的程序包。</p>
+<p>在 Go 语言中有两种很好的方法可以实现松散耦合</p>
+<ol>
+<li>使用接口来描述函数或方法所需的行为。</li>
+<li>避免使用全局状态。</li>
+</ol>
+<p>在 Go 语言中,我们可以在函数或方法范围以及包范围内声明变量。当变量是公共的时,给定一个以大写字母开头的标识符,那么它的范围对于整个程序来说实际上是全局的 - 任何包都可以随时观察该变量的类型和内容。</p>
+<p>可变全局状态引入程序的独立部分之间的紧密耦合,因为全局变量成为程序中每个函数的不可见参数！如果该变量的类型发生更改,则可以破坏依赖于全局变量的任何函数。如果程序的另一部分更改了该变量,则可以破坏依赖于全局变量状态的任何函数。</p>
+<p>如果要减少全局变量所带来的耦合,</p>
+<ol>
+<li>将相关变量作为字段移动到需要它们的结构上。</li>
+<li>使用接口来减少行为与实现之间的耦合。</li>
+</ol>
+<h2 id="5-项目结构"><a href="#5-项目结构" class="headerlink" title="5. 项目结构"></a>5. 项目结构</h2><p>我们来谈谈如何将包组合到项目中。 通常一个项目是一个<code>git</code>仓库,但在未来 Go 语言开发人员会交替地使用<code>module</code>和<code>project</code>。</p>
+<p>就像一个包,每个项目都应该有一个明确的目的。 如果你的项目是一个库,它应该提供一件事,比如<code>XML</code>解析或记录。 您应该避免在一个包实现多个目的,这将有助于避免成为<code>common</code>库。</p>
+<blockquote>
+<p>小窍门:据我的经验,<code>common</code>库最终会与其最大的调用者紧密相连,在没有升级该库与最大调用者的情况下是很难修复的,还会带来了许多无关的更改以及API破坏。</p>
+</blockquote>
+<p>如果你的项目是应用程序,如<code>Web</code>应用程序,<code>Kubernetes</code>控制器等,那么项目中可能有一个或多个<code>main</code>程序包。 例如,我编写的<code>Kubernetes</code>控制器有一个<code>cmd/contour</code>包,既可以作为部署到<code>Kubernetes</code>集群的服务器,也可以作为调试目的的客户端。</p>
+<h3 id="5-1-考虑更少-更大的包"><a href="#5-1-考虑更少-更大的包" class="headerlink" title="5.1. 考虑更少,更大的包"></a>5.1. 考虑更少,更大的包</h3><p>对于从其他语言过渡到 Go 语言的程序员来说,我倾向于在代码审查中提到的一件事是他们会过度使用包。</p>
+<p>Go 语言没有提供有关可见性的详细方法; Java有<code>public</code>、<code>protected</code>、<code>private</code>以及隐式<code>default</code>的访问修饰符。 没有<code>C++</code>的<code>friend</code>类概念。</p>
+<p>在 Go 语言中,我们只有两个访问修饰符,<code>public</code>和<code>private</code>,由标识符的第一个字母的大小写表示。 如果标识符是公共的,则其名称以大写字母开头,该标识符可用于任何其他 Go 语言包的引用。</p>
+<blockquote>
+<p>注意:<br>你可能会听到人们说<code>exported</code>与<code>not exported</code>, 跟<code>public</code>和<code>private</code>是同义词。</p>
+</blockquote>
+<p>鉴于包的符号的访问有限控件,Go 程序员应遵循哪些实践来避免创建过于复杂的包层次结构？</p>
+<blockquote>
+<p>小窍门:除<code>cmd/</code>和<code>internal/</code>之外的每个包都应包含一些源代码。</p>
+</blockquote>
+<p>我的建议是选择更少,更大的包。 你应该做的是不创建新的程序包。 这将导致太多类型被公开,为你的包创建一个宽而浅的API。</p>
+<p>以下部分将更为详细地探讨这一建议。</p>
+<blockquote>
+<p>小窍门:来自<code>Java</code>？<br>如果您来自<code>Java</code>或<code>C#</code>,请考虑这一经验法则 –<code>Java</code>包相当于单个<code>.go</code>源文件。 - Go 语言包相当于整个<code>Maven</code>模块或<code>.NET</code>程序集。</p>
+</blockquote>
+<h3 id="5-1-1-通过import语句将代码排列到文件中"><a href="#5-1-1-通过import语句将代码排列到文件中" class="headerlink" title="5.1.1. 通过import语句将代码排列到文件中"></a>5.1.1. 通过<code>import</code>语句将代码排列到文件中</h3><p>如果你按照包提供的内容来安排你的程序包,是否需要对 Go 包中的文件也执行相同的操作？什么时候应该将<code>.go</code>文件拆分成多个文件？什么时候应该考虑整合<code>.go</code>文件？</p>
+<p>以下是我的经验法则：</p>
+<ul>
+<li>开始时使用一个<code>.go</code>文件。为该文件指定与文件夹名称相同的名称。例如:<code>package http</code>应放在名为<code>http</code>的目录中名为<code>http.go</code>的文件中。</li>
+<li>随着包的增长,您可能决定将各种职责任务拆分为不同的文件。例如：<code>messages.go</code>包含<code>Request</code>和<code>Response</code>类型,<code>client.go</code>包含<code>Client</code>类型,<code>server.go</code>包含<code>Server</code>类型。</li>
+<li>如果你的文件中<code>import</code>的声明类似,请考虑将它们组合起来。或者确定<code>import</code>集之间的差异并移动它们。</li>
+<li>不同的文件应该负责包的不同区域。<code>messages.go</code>可能负责网络的<code>HTTP</code>请求和响应,<code>http.go</code>可能包含底层网络处理逻辑,<code>client.go</code>和<code>server.go</code>实现<code>HTTP</code>业务逻辑请求的实现或路由等等。</li>
+</ul>
+<blockquote>
+<p>小窍门:首选名词为源文件命名。</p>
+</blockquote>
+<blockquote>
+<p>注意:<br>Go编译器并行编译每个包。 在一个包中,编译器并行编译每个函数（方法只是 Go 语言中函数的另一种写法）。 更改包中代码的布局不会影响编译时间。</p>
+</blockquote>
+<h3 id="5-1-2-优先内部测试再到外部测试"><a href="#5-1-2-优先内部测试再到外部测试" class="headerlink" title="5.1.2. 优先内部测试再到外部测试"></a>5.1.2. 优先内部测试再到外部测试</h3><p><code>go tool</code>支持在两个地方编写<code>testing</code>包测试。假设你的包名为<code>http2</code>,您可以编写<code>http2_test.go</code>文件并使用包<code>http2</code>声明。这样做会编译<code>http2_test.go</code>中的代码,就像它是<code>http2</code>包的一部分一样。这就是内部测试。</p>
+<p><code>go tool</code>还支持一个特殊的包声明,以<code>test</code>为结尾,即<code>package http_test</code>。这允许你的测试文件与代码一起存放在同一个包中,但是当编译时这些测试不是包的代码的一部分,它们存在于自己的包中。就像调用另一个包的代码一样来编写测试。这被称为外部测试。</p>
+<p>我建议在编写单元测试时使用内部测试。这样你就可以直接测试每个函数或方法,避免外部测试干扰。</p>
+<p>但是,你应该将<code>Example</code>测试函数放在外部测试文件中。这确保了在<code>godoc</code>中查看时,示例具有适当的包名前缀并且可以轻松地进行复制粘贴。</p>
+<blockquote>
+<p>小窍门:<code>避免复杂的包层次结构,抵制应用分类法</code><br>Go 语言包的层次结构对于<code>go tool</code>没有任何意义除了下一节要说的。 例如,<code>net/http</code>包不是一个子包或者<code>net</code>包的子包。</p>
+<p>如果在项目中创建了不包含<code>.go</code>文件的中间目录,则可能无法遵循此建议。</p>
+</blockquote>
+<h3 id="5-1-3-使用internal包来减少公共API"><a href="#5-1-3-使用internal包来减少公共API" class="headerlink" title="5.1.3. 使用internal包来减少公共API"></a>5.1.3. 使用<code>internal</code>包来减少公共API</h3><p>如果项目包含多个包,可能有一些公共的函数,这些函数旨在供项目中的其他包使用,但不打算成为项目的公共API的一部分。 如果你发现是这种情况,那么<code>go tool</code>会识别一个特殊的文件夹名称 - 而非包名称 - <code>internal/</code>可用于放置对项目公开的代码,但对其他项目是私有的。</p>
+<p>要创建此类包,请将其放在名为<code>internal/</code>的目录中,或者放在名为<code>internal/</code>的目录的子目录中。 当<code>go</code>命令在其路径中看到导入包含<code>internal</code>的包时,它会验证执行导入的包是否位于<code>internal</code>目录。</p>
+<p>例如,<code>.../a/b/c/internal/d/e/f</code>的包只能通过以<code>.../a/b/c/</code>为根目录的代码被导入。 它无法通过<code>.../a/b/g</code>或任何其他仓库中的代码导入。<a href="https://golang.org/doc/go1.4#internalpackages" target="_blank" rel="noopener">[5]</a></p>
+<h3 id="5-2-确保main包内容尽可能的少"><a href="#5-2-确保main包内容尽可能的少" class="headerlink" title="5.2. 确保main包内容尽可能的少"></a>5.2. 确保<code>main</code>包内容尽可能的少</h3><p><code>main</code>函数和<code>main</code>包的内容应尽可能少。 这是因为<code>main.main</code>充当单例; 程序中只能有一个<code>main</code>函数,包括<code>tests</code>。</p>
+<p>因为<code>main.main</code>是一个单例,假设<code>main</code>函数中需要执行很多事情,<code>main.main</code>只会在<code>main.main</code>或<code>main.init</code>中调用它们并且只调用一次。 这使得为<code>main.main</code>编写代码测试变得很困难,因此你应该将所有业务逻辑从<code>main</code>函数中移出,最好是从<code>main</code>包中移出。</p>
+<blockquote>
+<p>小窍门:Austin Luo：这里主要是讲,由于整个程序（包括单元测试在内）只允许存在一个 main.main,因此在 main.main 中编写过多的代码将导致这些代码很难被测试覆盖,因此应当将这些代码从 main.main 中——甚至从 main 包中——独立出来,以便能够写单元测试进行测试。（文中的“假定”是针对测试而言,“假定” main 中的代码可以正常运行。）<br><code>main</code>应该做解析<code>flags</code>,开启数据库连接、开启日志等,然后将执行交给更高一级的对象。</p>
+</blockquote>
+<h2 id="6-API-设计"><a href="#6-API-设计" class="headerlink" title="6. API 设计"></a>6. API 设计</h2><p>我今天要给出的最后一条建议是设计, 我认为也是最重要的。</p>
+<p>到目前为止我提出的所有建议都是建议。 这些是我尝试编写 Go 语言的方式,但我不打算在代码审查中拼命推广。</p>
+<p>但是,在审查 API 时, 我就不会那么宽容了。 这是因为到目前为止我所谈论的所有内容都是可以修复而且不会破坏向后兼容性; 它们在很大程度上是实现的细节。</p>
+<p>当涉及到软件包的公共 API 时,在初始设计中投入大量精力是值得的,因为稍后更改该设计对于已经使用 API 的人来说会是破坏性的。</p>
+<h3 id="6-1-设计难以被误用的-API"><a href="#6-1-设计难以被误用的-API" class="headerlink" title="6.1. 设计难以被误用的 API"></a>6.1. 设计难以被误用的 API</h3><blockquote>
+<p>APIs should be easy to use and hard to misuse.<br>(API 应该易于使用且难以被误用)<br> — Josh Bloch <a href="https://www.infoq.com/articles/API-Design-Joshua-Bloch" target="_blank" rel="noopener">[3]</a></p>
+</blockquote>
+<p>如果你从这个演讲中带走任何东西,那应该是 Josh Bloch 的建议。 如果一个 API 很难用于简单的事情,那么 API 的每次调用都会很复杂。 当 API 的实际调用很复杂时,它就会便得不那么明显,而且会更容易被忽视。</p>
+<h3 id="6-1-1-警惕采用几个相同类型参数的函数"><a href="#6-1-1-警惕采用几个相同类型参数的函数" class="headerlink" title="6.1.1. 警惕采用几个相同类型参数的函数"></a>6.1.1. 警惕采用几个相同类型参数的函数</h3><p>简单, 但难以正确使用的 API 是采用两个或更多相同类型参数的 API。 让我们比较两个函数签名：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Max</span><span class="hljs-params">(a, b <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">CopyFile</span><span class="hljs-params">(to, from <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">error</span></span></span><br></pre></td></tr></table></figure><br>这两个函数有什么区别？ 显然,一个返回两个数字最大的那个,另一个是复制文件,但这不重要。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Max(<span class="hljs-number">8</span>, <span class="hljs-number">10</span>) <span class="hljs-comment">// 10</span></span><br><span class="line">Max(<span class="hljs-number">10</span>, <span class="hljs-number">8</span>) <span class="hljs-comment">// 10</span></span><br></pre></td></tr></table></figure></p>
+<p><code>Max</code>是可交换的; 参数的顺序无关紧要。 无论是 8 比 10 还是 10 比 8,最大的都是 10。</p>
+<p>但是,却不适用于<code>CopyFile</code>。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CopyFile(<span class="hljs-string">"/tmp/backup"</span>, <span class="hljs-string">"presentation.md"</span>)</span><br><span class="line">CopyFile(<span class="hljs-string">"presentation.md"</span>, <span class="hljs-string">"/tmp/backup"</span>)</span><br></pre></td></tr></table></figure></p>
+<p>这些声明中哪一个备份了<code>presentation.md</code>,哪一个用上周的版本覆盖了<code>presentation.md</code>？ 没有文档,你无法分辨。 如果没有查阅文档,代码审查员也无法知道你写对了顺序。</p>
+<p>一种可能的解决方案是引入一个<code>helper</code>类型,它会负责如何正确地调用<code>CopyFile</code>。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Source <span class="hljs-keyword">string</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(src Source)</span> <span class="hljs-title">CopyTo</span><span class="hljs-params">(dest <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> CopyFile(dest, <span class="hljs-keyword">string</span>(src))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> from Source = <span class="hljs-string">"presentation.md"</span></span><br><span class="line">	from.CopyTo(<span class="hljs-string">"/tmp/backup"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>通过这种方式,<code>CopyFile</code>总是能被正确调用 - 还可以通过单元测试 - 并且可以被设置为私有,进一步降低了误用的可能性。</p>
+<blockquote>
+<p>小窍门:具有多个相同类型参数的API难以正确使用。</p>
+</blockquote>
+<h3 id="6-2-为其默认用例设计-API"><a href="#6-2-为其默认用例设计-API" class="headerlink" title="6.2. 为其默认用例设计 API"></a>6.2. 为其默认用例设计 API</h3><p>几年前,我就对<code>functional options</code><a href="https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html" target="_blank" rel="noopener">[7]</a> 进行过讨论<a href="https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis" target="_blank" rel="noopener">[6]</a>,使 API 更易用于默认用例。</p>
+<p>本演讲的主旨是你应该为常见用例设计 API。 另一方面, API 不应要求调用者提供他们不在乎参数。</p>
+<h3 id="6-2-1-不鼓励使用nil作为参数"><a href="#6-2-1-不鼓励使用nil作为参数" class="headerlink" title="6.2.1. 不鼓励使用nil作为参数"></a>6.2.1. 不鼓励使用<code>nil</code>作为参数</h3><p>本章开始时我建议是不要强迫提供给 API 的调用者他们不在乎的参数。 这就是我要说的为默认用例设计 API。</p>
+<p>这是<code>net/http</code>包中的一个例子<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> http</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ListenAndServe listens on the TCP network address addr and then calls</span></span><br><span class="line"><span class="hljs-comment">// Serve with handler to handle requests on incoming connections.</span></span><br><span class="line"><span class="hljs-comment">// Accepted connections are configured to enable TCP keep-alives.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// The handler is typically nil, in which case the DefaultServeMux is used.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// ListenAndServe always returns a non-nil error.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ListenAndServe</span><span class="hljs-params">(addr <span class="hljs-keyword">string</span>, handler Handler)</span> <span class="hljs-title">error</span></span> &#123;</span><br></pre></td></tr></table></figure><br><code>ListenAndServe</code>有两个参数,一个用于监听传入连接的<code>TCP</code>地址,另一个用于处理<code>HTTP</code>请求的<code>http.Handler</code>。<code>Serve</code>允许第二个参数为<code>nil</code>,需要注意的是调用者通常会传递<code>nil</code>,表示他们想要使用<code>http.DefaultServeMux</code>作为隐含参数。</p>
+<p>现在,<code>Serve</code>的调用者有两种方式可以做同样的事情。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, <span class="hljs-literal">nil</span>)</span><br><span class="line">http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, http.DefaultServeMux)</span><br></pre></td></tr></table></figure><br>两者完全相同。</p>
+<p>这种<code>nil</code>行为是病毒式的。<code>http</code>包也有一个<code>http.Serve</code>帮助类,你可以合理地想象一下<code>ListenAndServe</code>是这样构建的<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ListenAndServe</span><span class="hljs-params">(addr <span class="hljs-keyword">string</span>, handler Handler)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	l, err := net.Listen(<span class="hljs-string">"tcp"</span>, addr)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">defer</span> l.Close()</span><br><span class="line">	<span class="hljs-keyword">return</span> Serve(l, handler)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>因为<code>ListenAndServe</code>允许调用者为第二个参数传递<code>nil</code>,所以<code>http.Serve</code>也支持这种行为。 事实上,<code>http.Serve</code>实现了如果<code>handler</code>是<code>nil</code>,使用<code>DefaultServeMux</code>的逻辑。 参数可为<code>nil</code>可能会导致调用者认为他们可以为两个参数都使用<code>nil</code>。 像下面这样:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http.Serve(<span class="hljs-literal">nil</span>, <span class="hljs-literal">nil</span>)</span><br></pre></td></tr></table></figure><br>会导致<code>panic</code>。</p>
+<blockquote>
+<p>小窍门:不要在同一个函数签名中混合使用可为<code>nil</code>和不能为<code>nil</code>的参数。</p>
+</blockquote>
+<p><code>http.ListenAndServe</code>的作者试图在常见情况下让使用 API 的用户更轻松些,但很可能会让该程序包更难以被安全地使用。</p>
+<p>使用<code>DefaultServeMux</code>或使用<code>nil</code>没有什么区别。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> root = http.Dir(<span class="hljs-string">"/htdocs"</span>)</span><br><span class="line">http.Handle(<span class="hljs-string">"/"</span>, http.FileServer(root))</span><br><span class="line">http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, <span class="hljs-literal">nil</span>)</span><br></pre></td></tr></table></figure><br>对比<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> root = http.Dir(<span class="hljs-string">"/htdocs"</span>)</span><br><span class="line">http.Handle(<span class="hljs-string">"/"</span>, http.FileServer(root))</span><br><span class="line">http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, http.DefaultServeMux)</span><br></pre></td></tr></table></figure><br>这种混乱值得拯救吗？<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> root = http.Dir(<span class="hljs-string">"/htdocs"</span>)</span><br><span class="line">mux := http.NewServeMux()</span><br><span class="line">http.Handle(<span class="hljs-string">"/"</span>, http.FileServer(root))</span><br><span class="line">http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, mux)</span><br></pre></td></tr></table></figure></p>
+<blockquote>
+<p>小窍门:认真考虑<code>helper</code>函数会节省不少时间。 清晰要比简洁好。</p>
+</blockquote>
+<blockquote>
+<p>小窍门:<code>避免公共 API 使用测试参数</code><br>避免在公开的 API 上使用仅在测试范围上不同的值。 相反,使用<code>Public wrappers</code>隐藏这些参数,使用辅助方式来设置测试范围中的属性。</p>
+</blockquote>
+<h3 id="6-2-2-首选可变参数（var-args）而非切片参数（-T）"><a href="#6-2-2-首选可变参数（var-args）而非切片参数（-T）" class="headerlink" title="6.2.2. 首选可变参数（var args）而非切片参数（[]T）"></a>6.2.2. 首选可变参数（var args）而非切片参数（[]T）</h3><p>编写一个带有切片参数的函数或方法是很常见的。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ShutdownVMs</span><span class="hljs-params">(ids []<span class="hljs-keyword">string</span>)</span> <span class="hljs-title">error</span></span></span><br></pre></td></tr></table></figure><br>这仅仅是我举的一个例子,但在我工作中更加常见。像这样的签名的问题是,他们假设被调用时会有多个实体。但是,我发现很多时候这些类型的函数却只有一个参数,为了满足函数签名的要求,它必须在一个切片内“装箱”。（Austin Luo：如示例,函数定义时预期会有多个 id,但实际调用时往往只有一个 id,为了满足前面,必须构造一个切片,并把 id 装进去。）</p>
+<p>另外,因为<code>ids</code>参数是切片,所以你可以将一个空切片或<code>nil</code>传递给该函数,编译也没什么错误。 但是这会增加额外的测试负载,因为你应该涵盖这些情况在测试中。</p>
+<p>举一个这类 API 的例子,最近我重构了一条逻辑,要求我设置一些额外的字段,如果一组参数中至少有一个非零。 逻辑看起来像这样：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> svc.MaxConnections &gt; <span class="hljs-number">0</span> || svc.MaxPendingRequests &gt; <span class="hljs-number">0</span> || svc.MaxRequests &gt; <span class="hljs-number">0</span> || svc.MaxRetries &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">	<span class="hljs-comment">// apply the non zero parameters</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>由于<code>if</code>语句变得很长,我想将签出的逻辑拉入其自己的函数中。 这就是我提出的：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// anyPostive indicates if any value is greater than zero.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">anyPositive</span><span class="hljs-params">(values ...<span class="hljs-keyword">int</span>)</span> <span class="hljs-title">bool</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> _, v := <span class="hljs-keyword">range</span> values &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> v &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>这就能够向读者明确内部块的执行条件：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> anyPositive(svc.MaxConnections, svc.MaxPendingRequests, svc.MaxRequests, svc.MaxRetries) &#123;</span><br><span class="line">        <span class="hljs-comment">// apply the non zero parameters</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>但是<code>anyPositive</code>还存在一个问题,有人可能会这样调用它:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> anyPositive() &#123; ... &#125;</span><br></pre></td></tr></table></figure><br>在这种情况下,<code>anyPositive</code>将返回<code>false</code>,因为它不会执行迭代而是立即返回<code>false</code>。对比起如果<code>anyPositive</code>在没有传递参数时返回<code>true</code>, 这还不算世界上最糟糕的事情。</p>
+<p>然而,如果我们可以更改<code>anyPositive</code>的签名以强制调用者应该传递至少一个参数,那会更好。我们可以通过组合正常和可变参数来做到这一点,如下所示：<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// anyPostive indicates if any value is greater than zero.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">anyPositive</span><span class="hljs-params">(first <span class="hljs-keyword">int</span>, rest ...<span class="hljs-keyword">int</span>)</span> <span class="hljs-title">bool</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> first &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">for</span> _, v := <span class="hljs-keyword">range</span> rest &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> v &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>现在不能使用少于一个参数来调用<code>anyPositive</code>。</p>
+<h3 id="6-3-让函数定义它们所需的行为"><a href="#6-3-让函数定义它们所需的行为" class="headerlink" title="6.3. 让函数定义它们所需的行为"></a>6.3. 让函数定义它们所需的行为</h3><p>假设我需要编写一个将<code>Document</code>结构保存到磁盘的函数的任务。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Save writes the contents of doc to the file f.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Save</span><span class="hljs-params">(f *os.File, doc *Document)</span> <span class="hljs-title">error</span></span></span><br></pre></td></tr></table></figure><br>我可以指定这个函数<code>Save</code>,它将<code>*os.File</code>作为写入<code>Document</code>的目标。但这样做会有一些问题</p>
+<p><code>Save</code>的签名排除了将数据写入网络位置的选项。假设网络存储可能在以后成为需求,则此功能的签名必须改变,从而影响其所有调用者。</p>
+<p><code>Save</code>测试起来也很麻烦,因为它直接操作磁盘上的文件。因此,为了验证其操作,测试时必须在写入文件后再读取该文件的内容。</p>
+<p>而且我必须确保<code>f</code>被写入临时位置并且随后要将其删除。</p>
+<p><code>*os.File</code>还定义了许多与<code>Save</code>无关的方法,比如读取目录并检查路径是否是符号链接。 如果<code>Save</code>函数的签名只用<code>*os.File</code>的相关内容,那将会很有用。</p>
+<p>我们能做什么 ？<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Save writes the contents of doc to the supplied</span></span><br><span class="line"><span class="hljs-comment">// ReadWriterCloser.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Save</span><span class="hljs-params">(rwc io.ReadWriteCloser, doc *Document)</span> <span class="hljs-title">error</span></span></span><br></pre></td></tr></table></figure><br>使用<code>io.ReadWriteCloser</code>,我们可以应用<a href="https://zh.wikipedia.org/wiki/%E6%8E%A5%E5%8F%A3%E9%9A%94%E7%A6%BB%E5%8E%9F%E5%88%99" target="_blank" rel="noopener">接口隔离原则</a>来重新定义<code>Save</code>以获取更通用文件形式。</p>
+<p>通过此更改,任何实现<code>io.ReadWriteCloser</code>接口的类型都可以替换以前的<code>*os.File</code>。</p>
+<p>这使<code>Save</code>在其应用程序中更广泛,并向<code>Save</code>的调用者阐明<code>*os.File</code>类型的哪些方法与其操作有关。</p>
+<p>而且,<code>Save</code>的作者也不可以在<code>*os.File</code>上调用那些不相关的方法,因为它隐藏在<code>io.ReadWriteCloser</code>接口后面。</p>
+<p>但我们可以进一步采用<a href="https://zh.wikipedia.org/wiki/%E6%8E%A5%E5%8F%A3%E9%9A%94%E7%A6%BB%E5%8E%9F%E5%88%99" target="_blank" rel="noopener">接口隔离原则</a>。</p>
+<p>首先,如果<code>Save</code>遵循<a href="https://zh.wikipedia.org/wiki/%E5%8D%95%E4%B8%80%E5%8A%9F%E8%83%BD%E5%8E%9F%E5%88%99" target="_blank" rel="noopener">单一功能原则</a>,它不可能读取它刚刚写入的文件来验证其内容 - 这应该是另一段代码的功能。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Save writes the contents of doc to the supplied</span></span><br><span class="line"><span class="hljs-comment">// WriteCloser.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Save</span><span class="hljs-params">(wc io.WriteCloser, doc *Document)</span> <span class="hljs-title">error</span></span></span><br></pre></td></tr></table></figure><br>因此,我们可以将我们传递给<code>Save</code>的接口的规范缩小到只写和关闭。</p>
+<p>其次,通过向<code>Save</code>提供一个关闭其流的机制,使其看起来仍然像一个文件,这就提出了在什么情况下关闭<code>wc</code>的问题。</p>
+<p>可能<code>Save</code>会无条件地调用<code>Close</code>,或者在成功的情况下调用<code>Close</code>。</p>
+<p>这给<code>Save</code>的调用者带来了问题,因为它可能希望在写入文档后将其他数据写入流。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Save writes the contents of doc to the supplied</span></span><br><span class="line"><span class="hljs-comment">// Writer.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Save</span><span class="hljs-params">(w io.Writer, doc *Document)</span> <span class="hljs-title">error</span></span></span><br></pre></td></tr></table></figure><br>一个更好的解决方案是重新定义<code>Save</code>仅使用<code>io.Writer</code>,它只负责将数据写入流。</p>
+<p>将<a href="https://zh.wikipedia.org/wiki/%E6%8E%A5%E5%8F%A3%E9%9A%94%E7%A6%BB%E5%8E%9F%E5%88%99" target="_blank" rel="noopener">接口隔离原则</a>应用于我们的<code>Save</code>功能,同时, 就需求而言, 得出了最具体的一个函数 - 它只需要一个可写的东西 - 并且它的功能最通用,现在我们可以使用<code>Save</code>将我们的数据保存到实现<code>io.Writer</code>的任何事物中。</p>
+<p><a href="https://www.jianshu.com/p/0aebd9618300" target="_blank" rel="noopener">[译注: 不理解设计原则部分的同学可以阅读 Dave 大神的另一篇《Go 语言 SOLID 设计》]</a></p>
+<h2 id="7-错误处理"><a href="#7-错误处理" class="headerlink" title="7. 错误处理"></a>7. 错误处理</h2><p>我已经给出了几个关于错误处理的演示文稿<a href="https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully" target="_blank" rel="noopener">[8]</a>,并在我的博客上写了很多关于错误处理的文章。我在昨天的会议上也讲了很多关于错误处理的内容,所以在这里不再赘述。</p>
+<ul>
+<li><a href="https://dave.cheney.net/2014/12/24/inspecting-errors" target="_blank" rel="noopener">https://dave.cheney.net/2014/12/24/inspecting-errors</a></li>
+<li><a href="https://dave.cheney.net/2016/04/07/constant-errors" target="_blank" rel="noopener">https://dave.cheney.net/2016/04/07/constant-errors</a></li>
+</ul>
+<p>相反,我想介绍与错误处理相关的两个其他方面。</p>
+<h3 id="7-1-通过消除错误来消除错误处理"><a href="#7-1-通过消除错误来消除错误处理" class="headerlink" title="7.1. 通过消除错误来消除错误处理"></a>7.1. 通过消除错误来消除错误处理</h3><p>如果你昨天在我的演讲中,我谈到了改进错误处理的提案。但是你知道有什么比改进错误处理的语法更好吗？那就是根本不需要处理错误。</p>
+<blockquote>
+<p>注意:<br>我不是说“删除你的错误处理”。我的建议是,修改你的代码,这样就不用处理错误了。</p>
+</blockquote>
+<p>本节从 John Ousterhout 最近的著作“软件设计哲学”<a href="https://www.amazon.com/Philosophy-Software-Design-John-Ousterhout/dp/1732102201" target="_blank" rel="noopener">[9]</a>中汲取灵感。该书的其中一章是“定义不存在的错误”。我们将尝试将此建议应用于 Go 语言。</p>
+<h3 id="7-1-1-计算行数"><a href="#7-1-1-计算行数" class="headerlink" title="7.1.1. 计算行数"></a>7.1.1. 计算行数</h3><p>让我们编写一个函数来计算文件中的行数。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">CountLines</span><span class="hljs-params">(r io.Reader)</span> <span class="hljs-params">(<span class="hljs-keyword">int</span>, error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> (</span><br><span class="line">		br    = bufio.NewReader(r)</span><br><span class="line">		lines <span class="hljs-keyword">int</span></span><br><span class="line">		err   error</span><br><span class="line">	)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		_, err = br.ReadString(<span class="hljs-string">'\n'</span>)</span><br><span class="line">		lines++</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> err != io.EOF &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> lines, <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>由于我们遵循前面部分的建议,<code>CountLines</code>需要一个<code>io.Reader</code>,而不是一个<code>*File</code>；它的任务是调用者为我们想要计算的内容提供<code>io.Reader</code>。</p>
+<p>我们构造一个<code>bufio.Reader</code>,然后在一个循环中调用<code>ReadString</code>方法,递增计数器直到我们到达文件的末尾,然后我们返回读取的行数。</p>
+<p>至少这是我们想要编写的代码,但是这个函数由于需要错误处理而变得更加复杂。 例如,有这样一个奇怪的结构:<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">_, err = br.ReadString(<span class="hljs-string">'\n'</span>)</span><br><span class="line">lines++</span><br><span class="line"><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">    <span class="hljs-keyword">break</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>我们在检查错误之前增加了行数,这样做看起来很奇怪。</p>
+<p>我们必须以这种方式编写它的原因是,如果在遇到换行符之前就读到文件结束,则<code>ReadString</code>将返回错误。如果文件中没有换行符,同样会出现这种情况。</p>
+<p>为了解决这个问题,我们重新排列逻辑增来加行数,然后查看是否需要退出循环。</p>
+<blockquote>
+<p>注意:<br>这个逻辑仍然不完美,你能发现错误吗？</p>
+</blockquote>
+<p>但是我们还没有完成检查错误。当<code>ReadString</code>到达文件末尾时,预期它会返回<code>io.EOF</code>。<code>ReadString</code>需要某种方式在没有什么可读时来停止。因此,在我们将错误返回给<code>CountLine</code>的调用者之前,我们需要检查错误是否是<code>io.EOF</code>,如果不是将其错误返回,否则我们返回<code>nil</code>说一切正常。</p>
+<p>我认为这是 Russ Cox 观察到错误处理可能会模​​糊函数操作的一个很好的例子。我们来看一个改进的版本。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">CountLines</span><span class="hljs-params">(r io.Reader)</span> <span class="hljs-params">(<span class="hljs-keyword">int</span>, error)</span></span> &#123;</span><br><span class="line">	sc := bufio.NewScanner(r)</span><br><span class="line">	lines := <span class="hljs-number">0</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> sc.Scan() &#123;</span><br><span class="line">		lines++</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> lines, sc.Err()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>这个改进的版本从<code>bufio.Reader</code>切换到<code>bufio.Scanner</code>。</p>
+<p>在<code>bufio.Scanner</code>内部使用<code>bufio.Reader</code>,但它添加了一个很好的抽象层,它有助于通过隐藏<code>CountLines</code>的操作来消除错误处理。</p>
+<blockquote>
+<p>注意:<br><code>bufio.Scanner</code>可以扫描任何模式,但默认情况下它会查找换行符。</p>
+</blockquote>
+<p>如果扫描程序匹配了一行文本并且没有遇到错误,则<code>sc.Scan()</code>方法返回<code>true</code>。因此,只有当扫描仪的缓冲区中有一行文本时,才会调用<code>for</code>循环的主体。这意味着我们修改后的<code>CountLines</code>正确处理没有换行符的情况,并且还处理文件为空的情况。</p>
+<p>其次,当<code>sc.Scan</code>在遇到错误时返回<code>false</code>,我们的<code>for</code>循环将在到达文件结尾或遇到错误时退出。<code>bufio.Scanner</code>类型会记住遇到的第一个错误,一旦我们使用<code>sc.Err()</code>方法退出循环,我们就可以获取该错误。</p>
+<p>最后,<code>sc.Err()</code>负责处理<code>io.EOF</code>并在达到文件末尾时将其转换为<code>nil</code>,而不会遇到其他错误。</p>
+<blockquote>
+<p>小窍门:当遇到难以忍受的错误处理时,请尝试将某些操作提取到辅助程序类型中。</p>
+</blockquote>
+<h3 id="7-1-2-WriteResponse"><a href="#7-1-2-WriteResponse" class="headerlink" title="7.1.2. WriteResponse"></a>7.1.2. WriteResponse</h3><p>我的第二个例子受到了<code>Errors are values</code>博客文章<a href="https://blog.golang.org/errors-are-values" target="_blank" rel="noopener">[10]</a>的启发。</p>
+<p>在本章前面我们已经看过处理打开、写入和关闭文件的示例。错误处理是存在的,但是接收范围内的,因为操作可以封装在诸如<code>ioutil.ReadFile</code>和<code>ioutil.WriteFile</code>之类的辅助程序中。但是,在处理底层网络协议时,有必要使用<code>I/O</code>原始的错误处理来直接构建响应,这样就可能会变得重复。看一下构建<code>HTTP</code>响应的<code>HTTP</code>服务器的这个片段。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Header <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	Key, Value <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Status <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	Code   <span class="hljs-keyword">int</span></span><br><span class="line">	Reason <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteResponse</span><span class="hljs-params">(w io.Writer, st Status, headers []Header, body io.Reader)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	_, err := fmt.Fprintf(w, <span class="hljs-string">"HTTP/1.1 %d %s\r\n"</span>, st.Code, st.Reason)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> _, h := <span class="hljs-keyword">range</span> headers &#123;</span><br><span class="line">		_, err := fmt.Fprintf(w, <span class="hljs-string">"%s: %s\r\n"</span>, h.Key, h.Value)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> err</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> _, err := fmt.Fprint(w, <span class="hljs-string">"\r\n"</span>); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	_, err = io.Copy(w, body)</span><br><span class="line">	<span class="hljs-keyword">return</span> err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>首先,我们使用<code>fmt.Fprintf</code>构造状态码并检查错误。 然后对于每个标题,我们写入键值对,每次都检查错误。 最后,我们使用额外的<code>\r\n</code>终止标题部分,检查错误之后将响应主体复制到客户端。 最后,虽然我们不需要检查<code>io.Copy</code>中的错误,但我们需要将<code>io.Copy</code>返回的两个返回值形式转换为<code>WriteResponse</code>的单个返回值。</p>
+<p>这里很多重复性的工作。 我们可以通过引入一个包装器类型<code>errWriter</code>来使其更容易。</p>
+<p><code>errWriter</code>实现<code>io.Writer</code>接口,因此可用于包装现有的<code>io.Writer</code>。<code>errWriter</code>写入传递给其底层<code>writer</code>,直到检测到错误。 从此时起,它会丢弃任何写入并返回先前的错误。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> errWriter <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	io.Writer</span><br><span class="line">	err error</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(e *errWriter)</span> <span class="hljs-title">Write</span><span class="hljs-params">(buf []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(<span class="hljs-keyword">int</span>, error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> e.err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, e.err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">var</span> n <span class="hljs-keyword">int</span></span><br><span class="line">	n, e.err = e.Writer.Write(buf)</span><br><span class="line">	<span class="hljs-keyword">return</span> n, <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteResponse</span><span class="hljs-params">(w io.Writer, st Status, headers []Header, body io.Reader)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	ew := &amp;errWriter&#123;Writer: w&#125;</span><br><span class="line">	fmt.Fprintf(ew, <span class="hljs-string">"HTTP/1.1 %d %s\r\n"</span>, st.Code, st.Reason)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> _, h := <span class="hljs-keyword">range</span> headers &#123;</span><br><span class="line">		fmt.Fprintf(ew, <span class="hljs-string">"%s: %s\r\n"</span>, h.Key, h.Value)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	fmt.Fprint(ew, <span class="hljs-string">"\r\n"</span>)</span><br><span class="line">	io.Copy(ew, body)</span><br><span class="line">	<span class="hljs-keyword">return</span> ew.err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>将<code>errWriter</code>应用于<code>WriteResponse</code>可以显着提高代码的清晰度。 每个操作不再需要自己做错误检查。 通过检查<code>ew.err</code>字段,将错误报告移动到函数末尾,从而避免转换从<code>io.Copy</code>的两个返回值。</p>
+<h3 id="7-2-错误只处理一次"><a href="#7-2-错误只处理一次" class="headerlink" title="7.2. 错误只处理一次"></a>7.2. 错误只处理一次</h3><p>最后,我想提一下你应该只处理错误一次。 处理错误意味着检查错误值并做出单一决定。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// WriteAll writes the contents of buf to the supplied writer.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteAll</span><span class="hljs-params">(w io.Writer, buf []<span class="hljs-keyword">byte</span>)</span></span> &#123;</span><br><span class="line">        w.Write(buf)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>如果你做出的决定少于一个,则忽略该错误。 正如我们在这里看到的那样,<code>w.WriteAll</code>的错误被丢弃。</p>
+<p>但是,针对单个错误做出多个决策也是有问题的。 以下是我经常遇到的代码。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteAll</span><span class="hljs-params">(w io.Writer, buf []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	_, err := w.Write(buf)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"unable to write:"</span>, err) <span class="hljs-comment">// annotated error goes to log file</span></span><br><span class="line">		<span class="hljs-keyword">return</span> err                           <span class="hljs-comment">// unannotated error returned to caller</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>在此示例中,如果在<code>w.Write</code>期间发生错误,则会写入日志文件,注明错误发生的文件与行数,并且错误也会返回给调用者,调用者可能会记录该错误并将其返回到上一级,一直回到程序的顶部。</p>
+<p>调用者可能正在做同样的事情<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteConfig</span><span class="hljs-params">(w io.Writer, conf *Config)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	buf, err := json.Marshal(conf)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="hljs-string">"could not marshal config: %v"</span>, err)</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> err := WriteAll(w, buf); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"could not write config: %v"</span>, err)</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>因此你在日志文件中得到一堆重复的内容,<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">unable to write: io.EOF</span><br><span class="line">could not write config: io.EOF</span><br></pre></td></tr></table></figure><br>但在程序的顶部,虽然得到了原始错误,但没有相关内容。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">err := WriteConfig(f, &amp;conf)</span><br><span class="line">fmt.Println(err) <span class="hljs-comment">// io.EOF</span></span><br></pre></td></tr></table></figure><br>我想深入研究这一点,因为作为个人偏好, 我并没有看到<code>logging</code>和返回的问题。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteConfig</span><span class="hljs-params">(w io.Writer, conf *Config)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	buf, err := json.Marshal(conf)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Printf(<span class="hljs-string">"could not marshal config: %v"</span>, err)</span><br><span class="line">		<span class="hljs-comment">// oops, forgot to return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> err := WriteAll(w, buf); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"could not write config: %v"</span>, err)</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>很多问题是程序员忘记从错误中返回。正如我们之前谈到的那样,Go 语言风格是使用<code>guard clauses</code>  以及检查前提条件作为函数进展并提前返回。</p>
+<p>在这个例子中,作者检查了错误,记录了它,但忘了返回。这就引起了一个微妙的错误。</p>
+<p>Go 语言中的错误处理规定,如果出现错误,你不能对其他返回值的内容做出任何假设。由于<code>JSON</code>解析失败,<code>buf</code>的内容未知,可能它什么都没有,但更糟的是它可能包含解析的<code>JSON</code>片段部分。</p>
+<p>由于程序员在检查并记录错误后忘记返回,因此损坏的缓冲区将传递给<code>WriteAll</code>,这可能会成功,因此配置文件将被错误地写入。但是,该函数会正常返回,并且发生问题的唯一日志行是有关<code>JSON</code>解析错误,而与写入配置失败有关。</p>
+<h3 id="7-2-1-为错误添加相关内容"><a href="#7-2-1-为错误添加相关内容" class="headerlink" title="7.2.1. 为错误添加相关内容"></a>7.2.1. 为错误添加相关内容</h3><p>发生错误的原因是作者试图在错误消息中添加<code>context</code>。 他们试图给自己留下一些线索,指出错误的根源。</p>
+<p>让我们看看使用<code>fmt.Errorf</code>的另一种方式。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteConfig</span><span class="hljs-params">(w io.Writer, conf *Config)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	buf, err := json.Marshal(conf)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">"could not marshal config: %v"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> err := WriteAll(w, buf); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">"could not write config: %v"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteAll</span><span class="hljs-params">(w io.Writer, buf []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	_, err := w.Write(buf)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">"write failed: %v"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>通过将注释与返回的错误组合起来,就更难以忘记错误的返回来避免意外继续。</p>
+<p>如果写入文件时发生<code>I/O</code>错误,则<code>error</code>的<code>Error()</code>方法会报告以下类似的内容;<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">could not write config: write failed: input/output error</span><br></pre></td></tr></table></figure></p>
+<h3 id="7-2-2-使用github-com-pkg-errors包装errors"><a href="#7-2-2-使用github-com-pkg-errors包装errors" class="headerlink" title="7.2.2. 使用github.com/pkg/errors包装errors"></a>7.2.2. 使用<code>github.com/pkg/errors</code>包装<code>errors</code></h3><p><code>fmt.Errorf</code>模式适用于注释错误<code>message</code>,但这样做的代价是模糊了原始错误的类型。 我认为将错误视为不透明值对于松散耦合的软件非常重要,因此如果你使用错误值做的唯一事情是原始错误的类型应该无关紧要的面孔</p>
+<ol>
+<li>检查它是否为<code>nil</code>。</li>
+<li>输出或记录它。</li>
+</ol>
+<p>但是在某些情况下,我认为它们并不常见,您需要恢复原始错误。 在这种情况下,使用类似我的<code>errors</code>包来注释这样的错误, 如下<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ReadFile</span><span class="hljs-params">(path <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">([]<span class="hljs-keyword">byte</span>, error)</span></span> &#123;</span><br><span class="line">	f, err := os.Open(path)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, errors.Wrap(err, <span class="hljs-string">"open failed"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">defer</span> f.Close()</span><br><span class="line"></span><br><span class="line">	buf, err := ioutil.ReadAll(f)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, errors.Wrap(err, <span class="hljs-string">"read failed"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> buf, <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ReadConfig</span><span class="hljs-params">()</span> <span class="hljs-params">([]<span class="hljs-keyword">byte</span>, error)</span></span> &#123;</span><br><span class="line">	home := os.Getenv(<span class="hljs-string">"HOME"</span>)</span><br><span class="line">	config, err := ReadFile(filepath.Join(home, <span class="hljs-string">".settings.xml"</span>))</span><br><span class="line">	<span class="hljs-keyword">return</span> config, errors.WithMessage(err, <span class="hljs-string">"could not read config"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	_, err := ReadConfig()</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		fmt.Println(err)</span><br><span class="line">		os.Exit(<span class="hljs-number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>现在报告的错误就是<code>K＆D</code><a href="http://www.gopl.io/" target="_blank" rel="noopener">[11]</a>样式错误,<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">could not read config: open failed: open /Users/dfc/.settings.xml: no such file or directory</span><br></pre></td></tr></table></figure><br>并且错误值保留对原始原因的引用。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	_, err := ReadConfig()</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		fmt.Printf(<span class="hljs-string">"original error: %T %v\n"</span>, errors.Cause(err), errors.Cause(err))</span><br><span class="line">		fmt.Printf(<span class="hljs-string">"stack trace:\n%+v\n"</span>, err)</span><br><span class="line">		os.Exit(<span class="hljs-number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>因此,你可以恢复原始错误并打印堆栈跟踪;<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">original error: *os.PathError open /Users/dfc/.settings.xml: no such file or directory</span><br><span class="line">stack trace:</span><br><span class="line">open /Users/dfc/.settings.xml: no such file or directory</span><br><span class="line">open failed</span><br><span class="line">main.ReadFile</span><br><span class="line">        /Users/dfc/devel/practical-<span class="hljs-keyword">go</span>/src/errors/readfile2.<span class="hljs-keyword">go</span>:<span class="hljs-number">16</span></span><br><span class="line">main.ReadConfig</span><br><span class="line">        /Users/dfc/devel/practical-<span class="hljs-keyword">go</span>/src/errors/readfile2.<span class="hljs-keyword">go</span>:<span class="hljs-number">29</span></span><br><span class="line">main.main</span><br><span class="line">        /Users/dfc/devel/practical-<span class="hljs-keyword">go</span>/src/errors/readfile2.<span class="hljs-keyword">go</span>:<span class="hljs-number">35</span></span><br><span class="line">runtime.main</span><br><span class="line">        /Users/dfc/<span class="hljs-keyword">go</span>/src/runtime/proc.<span class="hljs-keyword">go</span>:<span class="hljs-number">201</span></span><br><span class="line">runtime.goexit</span><br><span class="line">        /Users/dfc/<span class="hljs-keyword">go</span>/src/runtime/asm_amd64.s:<span class="hljs-number">1333</span></span><br><span class="line">could not read config</span><br></pre></td></tr></table></figure><br>使用<code>errors</code>包,你可以以人和机器都可检查的方式向错误值添加上下文。 如果昨天你来听我的演讲,你会知道这个库在被移植到即将发布的 Go 语言版本的标准库中。</p>
+<h2 id="8-并发"><a href="#8-并发" class="headerlink" title="8. 并发"></a>8. 并发</h2><p>由于 Go 语言的并发功能,经常被选作项目编程语言。 Go 语言团队已经竭尽全力以廉价（在硬件资源方面）和高性能来实现并发,但是 Go 语言的并发功能也可以被用来编写性能不高同时也不太可靠的代码。在结尾,我想留下一些建议,以避免 Go 语言的并发功能带来的一些陷阱。</p>
+<p>Go 语言以<code>channels</code>以及<code>select</code>和<code>go</code>语句来支持并发。如果你已经从书籍或培训课程中正式学习了 Go 语言,你可能已经注意到并发部分始终是这些课程的最后一部分。这个研讨会也没有什么不同,我选择最后覆盖并发,好像它是 Go 程序员应该掌握的常规技能的额外补充。</p>
+<p>这里有一个二分法; Go 语言的最大特点是简单、轻量级的并发模型。作为一种产品,我们的语言几乎只推广这个功能。另一方面,有一种说法认为并发使用起来实际上并不容易,否则作者不会把它作为他们书中的最后一章,我们也不会遗憾地来回顾其形成过程。</p>
+<p>本节讨论了 Go 语言的并发功能的“坑”。</p>
+<h3 id="8-1-保持自己忙碌或做自己的工作"><a href="#8-1-保持自己忙碌或做自己的工作" class="headerlink" title="8.1. 保持自己忙碌或做自己的工作"></a>8.1. 保持自己忙碌或做自己的工作</h3><p>这个程序有什么问题？<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"log"</span></span><br><span class="line">	<span class="hljs-string">"net/http"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	http.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(w, <span class="hljs-string">"Hello, GopherCon SG"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> err := http.ListenAndServe(<span class="hljs-string">":8080"</span>, <span class="hljs-literal">nil</span>); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>该程序实现了我们的预期,它提供简单的 Web 服务。 然而,它同时也做了其他事情,它在无限循环中浪费 CPU 资源。 这是因为<code>main</code>的最后一行上的<code>for {}</code>将阻塞<code>main goroutine</code>,因为它不执行任何 IO、等待锁定、发送或接收通道数据或以其他方式与调度器通信。</p>
+<p>由于 Go 语言运行时主要是协同调度,该程序将在单个 CPU 上做无效地旋转,并可能最终实时锁定。</p>
+<p>我们如何解决这个问题？ 这是一个建议。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"log"</span></span><br><span class="line">	<span class="hljs-string">"net/http"</span></span><br><span class="line">	<span class="hljs-string">"runtime"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	http.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(w, <span class="hljs-string">"Hello, GopherCon SG"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> err := http.ListenAndServe(<span class="hljs-string">":8080"</span>, <span class="hljs-literal">nil</span>); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		runtime.Gosched()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>这看起来很愚蠢,但这是我看过的一种常见解决方案。 这是不了解潜在问题的症状。</p>
+<p>现在,如果你有更多的经验,你可能会写这样的东西。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"log"</span></span><br><span class="line">	<span class="hljs-string">"net/http"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	http.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(w, <span class="hljs-string">"Hello, GopherCon SG"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> err := http.ListenAndServe(<span class="hljs-string">":8080"</span>, <span class="hljs-literal">nil</span>); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>空的<code>select</code>语句将永远阻塞。 这是一个有用的属性,因为现在我们不再调用<code>runtime.GoSched()</code>而耗费整个 CPU。 但是这也只是治疗了症状,而不是病根。</p>
+<p>我想向你提出另一种你可能在用的解决方案。 与其在<code>goroutine</code>中运行<code>http.ListenAndServe</code>,会给我们留下处理<code>main goroutine</code>的问题,不如在<code>main goroutine</code>本身上运行<code>http.ListenAndServe</code>。</p>
+<blockquote>
+<p>小窍门:如果 Go 语言程序的<code>main.main</code>函数返回,无论程序在一段时间内启动的其他<code>goroutine</code>在做什么, Go 语言程序会无条件地退出。</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"log"</span></span><br><span class="line">	<span class="hljs-string">"net/http"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	http.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(w, <span class="hljs-string">"Hello, GopherCon SG"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">if</span> err := http.ListenAndServe(<span class="hljs-string">":8080"</span>, <span class="hljs-literal">nil</span>); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以这是我的第一条建议：如果你的<code>goroutine</code>在得到另一个结果之前无法取得进展,那么让自己完成此工作而不是委托给其他<code>goroutine</code>会更简单。</p>
+<p>这通常会消除将结果从<code>goroutine</code>返回到其启动程序所需的大量状态跟踪和通道操作。</p>
+<blockquote>
+<p>小窍门:许多 Go 程序员过度使用<code>goroutine</code>,特别是刚开始时。与生活中的所有事情一样,适度是成功的关键。</p>
+</blockquote>
+<h3 id="8-2-将并发性留给调用者"><a href="#8-2-将并发性留给调用者" class="headerlink" title="8.2. 将并发性留给调用者"></a>8.2. 将并发性留给调用者</h3><p>以下两个 API 有什么区别？<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// ListDirectory returns the contents of dir.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ListDirectory</span><span class="hljs-params">(dir <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">([]<span class="hljs-keyword">string</span>, error)</span></span></span><br></pre></td></tr></table></figure><br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// ListDirectory returns a channel over which</span></span><br><span class="line"><span class="hljs-comment">// directory entries will be published. When the list</span></span><br><span class="line"><span class="hljs-comment">// of entries is exhausted, the channel will be closed.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ListDirectory</span><span class="hljs-params">(dir <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">chan</span> <span class="hljs-title">string</span></span></span><br></pre></td></tr></table></figure><br>首先,最明显的不同: 第一个示例将目录读入切片然后返回整个切片,如果出错则返回错误。这是同步发生的,<code>ListDirectory</code>的调用者会阻塞,直到读取了所有目录条目。根据目录的大小,这可能需要很长时间,并且可能会分配大量内存来构建目录条目。</p>
+<p>让我们看看第二个例子。 这个示例更像是 Go 语言风格,<code>ListDirectory</code>返回一个通道,通过该通道传递目录条目。当通道关闭时,表明没有更多目录条目。由于在<code>ListDirectory</code>返回后发生了通道的填充,<code>ListDirectory</code>可能会启动一个<code>goroutine</code>来填充通道。</p>
+<blockquote>
+<p>注意:<br>第二个版本实际上不必使用 Go 协程; 它可以分配一个足以保存所有目录条目而不阻塞的通道,填充通道,关闭它,然后将通道返回给调用者。但这样做不太现实,因为会消耗大量内存来缓冲通道中的所有结果。</p>
+</blockquote>
+<p>通道版本的<code>ListDirectory</code>还有两个问题：</p>
+<ul>
+<li>通过使用关闭通道作为没有其他项目要处理的信号,在中途遇到了错误时,<code>ListDirectory</code>无法告诉调用者通过通道返回的项目集是否完整。调用者无法区分空目录和读取目录的错误。两者都导致从<code>ListDirectory</code>返回的通道立即关闭。</li>
+<li>调用者必须持续从通道中读取,直到它被关闭,因为这是调用者知道此通道的是否停止的唯一方式。这是对<code>ListDirectory</code>使用的严重限制,即使可能已经收到了它想要的答案,调用者也必须花时间从通道中读取。就中型到大型目录的内存使用而言,它可能更有效,但这种方法并不比原始的基于切片的方法快。</li>
+</ul>
+<p>以上两种实现所带来的问题的解决方案是使用回调,该回调是在执行时在每个目录条目的上下文中调用函数。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ListDirectory</span><span class="hljs-params">(dir <span class="hljs-keyword">string</span>, fn <span class="hljs-keyword">func</span>(<span class="hljs-keyword">string</span>)</span>)</span></span><br></pre></td></tr></table></figure><br>毫不奇怪,这就是<code>filepath.WalkDir</code>函数的工作方式。</p>
+<blockquote>
+<p>小窍门:如果你的函数启动了<code>goroutine</code>,你必须为调用者提供一种明确停止<code>goroutine</code>的方法。 把异步执行函数的决定留给该函数的调用者通常会更容易些。</p>
+</blockquote>
+<h3 id="8-3-永远不要启动一个停止不了的-goroutine。"><a href="#8-3-永远不要启动一个停止不了的-goroutine。" class="headerlink" title="8.3. 永远不要启动一个停止不了的 goroutine。"></a>8.3. 永远不要启动一个停止不了的 goroutine。</h3><p>前面的例子显示当一个任务时没有必要时使用<code>goroutine</code>。但使用 Go 语言的原因之一是该语言提供的并发功能。实际上,很多情况下你希望利用硬件中可用的并行性。为此,你必须使用<code>goroutines</code>。</p>
+<p>这个简单的应用程序在两个不同的端口上提供<code>http</code>服务,端口<code>8080</code>用于应用程序服务,端口<code>8001</code>用于访问<code>/debug/pprof</code>终端。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"net/http"</span></span><br><span class="line">	_ <span class="hljs-string">"net/http/pprof"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	mux := http.NewServeMux()</span><br><span class="line">	mux.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(resp http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(resp, <span class="hljs-string">"Hello, QCon!"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">go</span> http.ListenAndServe(<span class="hljs-string">"127.0.0.1:8001"</span>, http.DefaultServeMux) <span class="hljs-comment">// debug</span></span><br><span class="line">	http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, mux)                       <span class="hljs-comment">// app traffic</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>虽然这个程序不是很复杂,但它代表了真实应用程序的基础。</p>
+<p>该应用程序存在一些问题,因为它随着应用程序的增长而显露出来,所以我们现在来解决其中的一些问题。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveApp</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	mux := http.NewServeMux()</span><br><span class="line">	mux.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(resp http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(resp, <span class="hljs-string">"Hello, QCon!"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, mux)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveDebug</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	http.ListenAndServe(<span class="hljs-string">"127.0.0.1:8001"</span>, http.DefaultServeMux)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">go</span> serveDebug()</span><br><span class="line">	serveApp()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>通过将<code>serveApp</code>和<code>serveDebug</code>处理程序分解成为它们自己的函数,我们将它们与<code>main.main</code>分离。 也遵循了上面的建议,并确保<code>serveApp</code>和<code>serveDebug</code>将它们的并发性留给调用者。</p>
+<p>但是这个程序存在一些可操作性问题。 如果<code>serveApp</code>返回,那么<code>main.main</code>将返回,导致程序关闭并由你使用的进程管理器来重新启动。</p>
+<blockquote>
+<p>小窍门:正如 Go 语言中的函数将并发性留给调用者一样,应用程序应该将监视其状态和检测是否重启的工作留给另外的程序来做。 不要让你的应用程序负责重新启动自己,最好从应用程序外部处理该过程。</p>
+</blockquote>
+<p>然而,<code>serveDebug</code>是在一个单独的<code>goroutine</code>中运行的,返回后该<code>goroutine</code>将退出,而程序的其余部分继续。 由于<code>/debug</code>处理程序已停止工作很久,因此操作人员不会很高兴发现他们无法在你的应用程序中获取统计信息。</p>
+<p>我们想要确保的是,如果任何负责提供此应用程序的<code>goroutine</code>停止,我们将关闭该应用程序。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveApp</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	mux := http.NewServeMux()</span><br><span class="line">	mux.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(resp http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(resp, <span class="hljs-string">"Hello, QCon!"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">if</span> err := http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, mux); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveDebug</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> err := http.ListenAndServe(<span class="hljs-string">"127.0.0.1:8001"</span>, http.DefaultServeMux); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">go</span> serveDebug()</span><br><span class="line">	<span class="hljs-keyword">go</span> serveApp()</span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>现在<code>serverApp</code>和<code>serveDebug</code>检查从<code>ListenAndServe</code>返回的错误,并在需要时调用<code>log.Fatal</code>。因为两个处理程序都在<code>goroutine</code>中运行,所以我们将<code>main goroutine</code>停在<code>select{}</code>中。</p>
+<p>这种方法存在许多问题：</p>
+<ol>
+<li>如果<code>ListenAndServer</code>返回<code>nil</code>错误,则不会调用<code>log.Fatal</code>,并且该端口上的 HTTP 服务将在不停止应用程序的情况下关闭。</li>
+<li><code>log.Fatal</code>调用<code>os.Exit</code>,它将无条件地退出程序;<code>defer</code>不会被调用,其他<code>goroutines</code>也不会被通知关闭,程序就停止了。 这使得编写这些函数的测试变得困难。</li>
+</ol>
+<blockquote>
+<p>小窍门:只在<code>main.main</code>或<code>init</code>函数中的使用<code>log.Fatal</code>。</p>
+</blockquote>
+<p>我们真正想要的是任何错误发送回<code>goroutine</code>的调用者,以便它可以知道<code>goroutine</code>停止的原因,可以干净地关闭程序进程。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveApp</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	mux := http.NewServeMux()</span><br><span class="line">	mux.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(resp http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(resp, <span class="hljs-string">"Hello, QCon!"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">return</span> http.ListenAndServe(<span class="hljs-string">"0.0.0.0:8080"</span>, mux)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveDebug</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> http.ListenAndServe(<span class="hljs-string">"127.0.0.1:8001"</span>, http.DefaultServeMux)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	done := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> error, <span class="hljs-number">2</span>)</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		done &lt;- serveDebug()</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		done &lt;- serveApp()</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">cap</span>(done); i++ &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> err := &lt;-done; err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			fmt.Println(<span class="hljs-string">"error: %v"</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>我们可以使用通道来收集<code>goroutine</code>的返回状态。通道的大小等于我们想要管理的<code>goroutine</code>的数量,这样发送到<code>done</code>通道就不会阻塞,因为这会阻止<code>goroutine</code>的关闭,导致它泄漏。</p>
+<p>由于没有办法安全地关闭<code>done</code>通道,我们不能使用<code>for range</code>来循环通道直到获取所有<code>goroutine</code>发来的报告,而是循环我们开启的多个<code>goroutine</code>,即通道的容量。</p>
+<p>现在我们有办法等待每个<code>goroutine</code>干净地退出并记录他们遇到的错误。所需要的只是一种从第一个<code>goroutine</code>转发关闭信号到其他<code>goroutine</code>的方法。</p>
+<p>事实证明,要求<code>http.Server</code>关闭是有点牵扯的,所以我将这个逻辑转给辅助函数。<code>serve</code>助手使用一个地址和<code>http.Handler</code>,类似于<code>http.ListenAndServe</code>,还有一个<code>stop</code>通道,我们用它来触发<code>Shutdown</code>方法。<br><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serve</span><span class="hljs-params">(addr <span class="hljs-keyword">string</span>, handler http.Handler, stop &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	s := http.Server&#123;</span><br><span class="line">		Addr:    addr,</span><br><span class="line">		Handler: handler,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		&lt;-stop <span class="hljs-comment">// wait for stop signal</span></span><br><span class="line">		s.Shutdown(context.Background())</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> s.ListenAndServe()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveApp</span><span class="hljs-params">(stop &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	mux := http.NewServeMux()</span><br><span class="line">	mux.HandleFunc(<span class="hljs-string">"/"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(resp http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Fprintln(resp, <span class="hljs-string">"Hello, QCon!"</span>)</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">return</span> serve(<span class="hljs-string">"0.0.0.0:8080"</span>, mux, stop)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveDebug</span><span class="hljs-params">(stop &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> serve(<span class="hljs-string">"127.0.0.1:8001"</span>, http.DefaultServeMux, stop)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	done := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> error, <span class="hljs-number">2</span>)</span><br><span class="line">	stop := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;)</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		done &lt;- serveDebug(stop)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		done &lt;- serveApp(stop)</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">var</span> stopped <span class="hljs-keyword">bool</span></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">cap</span>(done); i++ &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> err := &lt;-done; err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			fmt.Println(<span class="hljs-string">"error: %v"</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> !stopped &#123;</span><br><span class="line">			stopped = <span class="hljs-literal">true</span></span><br><span class="line">			<span class="hljs-built_in">close</span>(stop)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br>现在,每次我们在<code>done</code>通道上收到一个值时,我们关闭<code>stop</code>通道,这会导致在该通道上等待的所有<code>goroutine</code>关闭其<code>http.Server</code>。 这反过来将导致其余所有的<code>ListenAndServe`</code>goroutines<code>返回。 一旦我们开启的所有</code>goroutine<code>都停止了,</code>main.main`就会返回并且进程会干净地停止。</p>
+<blockquote>
+<p>小窍门:自己编写这种逻辑是重复而微妙的。 参考下这个包: <a href="https://github.com/heptio/workgroup" target="_blank" rel="noopener">https://github.com/heptio/workgroup</a>,它会为你完成大部分工作。</p>
+</blockquote>
+<hr>
+<blockquote>
+<p><strong>引用: </strong></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_1" target="_blank" rel="noopener">1</a>. <a href="https://gaston.life/books/effective-programming/" target="_blank" rel="noopener">https://gaston.life/books/effective-programming/</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_2" target="_blank" rel="noopener">2</a>. <a href="https://talks.golang.org/2014/names.slide#4" target="_blank" rel="noopener">https://talks.golang.org/2014/names.slide#4</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_3" target="_blank" rel="noopener">3</a>. <a href="https://www.infoq.com/articles/API-Design-Joshua-Bloch" target="_blank" rel="noopener">https://www.infoq.com/articles/API-Design-Joshua-Bloch</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_1" target="_blank" rel="noopener">1</a>. <a href="https://www.lysator.liu.se/c/pikestyle.html" target="_blank" rel="noopener">https://www.lysator.liu.se/c/pikestyle.html</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_2" target="_blank" rel="noopener">2</a>. <a href="https://speakerdeck.com/campoy/understanding-nil" target="_blank" rel="noopener">https://speakerdeck.com/campoy/understanding-nil</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_3" target="_blank" rel="noopener">3</a>. <a href="https://www.youtube.com/watch?v=Ic2y6w8lMPA" target="_blank" rel="noopener">https://www.youtube.com/watch?v=Ic2y6w8lMPA</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_4" target="_blank" rel="noopener">4</a>. <a href="https://medium.com/@matryer/line-of-sight-in-code-186dd7cdea88" target="_blank" rel="noopener">https://medium.com/@matryer/line-of-sight-in-code-186dd7cdea88</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_5" target="_blank" rel="noopener">5</a>. <a href="https://golang.org/doc/go1.4#internalpackages" target="_blank" rel="noopener">https://golang.org/doc/go1.4#internalpackages</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_6" target="_blank" rel="noopener">6</a>. <a href="https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis" target="_blank" rel="noopener">https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_7" target="_blank" rel="noopener">7</a>. <a href="https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html" target="_blank" rel="noopener">https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_8" target="_blank" rel="noopener">8</a>. <a href="https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully" target="_blank" rel="noopener">https://dave.cheney.net/2016/04/27/dont-just-check-errors-handle-them-gracefully</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_9" target="_blank" rel="noopener">9</a>. <a href="https://www.amazon.com/Philosophy-Software-Design-John-Ousterhout/dp/1732102201" target="_blank" rel="noopener">https://www.amazon.com/Philosophy-Software-Design-John-Ousterhout/dp/1732102201</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_10" target="_blank" rel="noopener">10</a>. <a href="https://blog.golang.org/errors-are-values" target="_blank" rel="noopener">https://blog.golang.org/errors-are-values</a></p>
+<p><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html#_footnoteref_11" target="_blank" rel="noopener">11</a>. <a href="http://www.gopl.io/" target="_blank" rel="noopener">http://www.gopl.io/</a></p>
+</blockquote>
+<hr>
+<p><strong>原文链接：</strong><a href="https://dave.cheney.net/practical-go/presentations/qcon-china.html" target="_blank" rel="noopener">Practical Go: Real world advice for writing maintainable Go programs</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E7%BC%96%E7%A8%8B%E8%A7%84%E8%8C%83/" rel="tag">编程规范</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/06/02/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E8%B7%B3%E8%B7%83%E8%A1%A8%E5%AE%9E%E7%8E%B0/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">跳跃表实现</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/05/23/%E5%AE%B9%E5%99%A8%E6%8A%80%E6%9C%AF/Kubernetes/%E4%BD%BF%E7%94%A8Kubespray%E5%9C%A8%E9%98%BF%E9%87%8C%E4%BA%91%E4%B8%8A%E8%87%AA%E5%8A%A8%E5%8C%96%E9%83%A8%E7%BD%B2Kubernetes%E9%9B%86%E7%BE%A4%EF%BC%881.14.1%EF%BC%89/">
+                <span class="level-item">使用Kubespray在国内自动化部署Kubernetes集群（1.14.1）</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'bbaf0a3335694066a6b0428746116b72',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#正文">
+        <span class="has-mr-6">1</span>
+        <span>正文</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-指导原则">
+        <span class="has-mr-6">1.1</span>
+        <span>1. 指导原则</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-1-简单性">
+        <span class="has-mr-6">1.1.1</span>
+        <span>1.1. 简单性</span>
+        </a></li><li>
+        <a class="is-flex" href="#1-2-可读性">
+        <span class="has-mr-6">1.1.2</span>
+        <span>1.2. 可读性</span>
+        </a></li><li>
+        <a class="is-flex" href="#1-3-生产力">
+        <span class="has-mr-6">1.1.3</span>
+        <span>1.3. 生产力</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#2-标识符">
+        <span class="has-mr-6">1.2</span>
+        <span>2. 标识符</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#2-1-选择标识符是为了清晰-而不是简洁">
+        <span class="has-mr-6">1.2.1</span>
+        <span>2.1. 选择标识符是为了清晰,而不是简洁</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-2-标识符长度">
+        <span class="has-mr-6">1.2.2</span>
+        <span>2.2. 标识符长度</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-2-1-上下文是关键">
+        <span class="has-mr-6">1.2.3</span>
+        <span>2.2.1. 上下文是关键</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-3-命名中不要包含所属类型的名称">
+        <span class="has-mr-6">1.2.4</span>
+        <span>2.3. 命名中不要包含所属类型的名称</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-4-使用一致的命名方式">
+        <span class="has-mr-6">1.2.5</span>
+        <span>2.4. 使用一致的命名方式</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-5-使用一致的声明样式">
+        <span class="has-mr-6">1.2.6</span>
+        <span>2.5. 使用一致的声明样式</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-6-成为团队合作者">
+        <span class="has-mr-6">1.2.7</span>
+        <span>2.6. 成为团队合作者</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#3-注释">
+        <span class="has-mr-6">1.3</span>
+        <span>3. 注释</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#3-1-关于变量和常量的注释应描述其内容而非其目的">
+        <span class="has-mr-6">1.3.1</span>
+        <span>3.1. 关于变量和常量的注释应描述其内容而非其目的</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-2-总是为公开符号写文档说明">
+        <span class="has-mr-6">1.3.2</span>
+        <span>3.2. 总是为公开符号写文档说明</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-2-1-不要为坏的代码写注释-重写它">
+        <span class="has-mr-6">1.3.3</span>
+        <span>3.2.1. 不要为坏的代码写注释,重写它</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-2-2-与其为一大段代码写注释-不如重构它">
+        <span class="has-mr-6">1.3.4</span>
+        <span>3.2.2. 与其为一大段代码写注释,不如重构它</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#4-包的设计">
+        <span class="has-mr-6">1.4</span>
+        <span>4. 包的设计</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#4-1-一个好的包从它的名字开始">
+        <span class="has-mr-6">1.4.1</span>
+        <span>4.1. 一个好的包从它的名字开始</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-1-1-好的包名应该是唯一的。">
+        <span class="has-mr-6">1.4.2</span>
+        <span>4.1.1. 好的包名应该是唯一的。</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-2-避免使用类似base-common或util的包名称">
+        <span class="has-mr-6">1.4.3</span>
+        <span>4.2. 避免使用类似base,common或util的包名称</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-3-尽早return而不是深度嵌套">
+        <span class="has-mr-6">1.4.4</span>
+        <span>4.3. 尽早return而不是深度嵌套</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-4-让零值更有用">
+        <span class="has-mr-6">1.4.5</span>
+        <span>4.4. 让零值更有用</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-5-避免包级别状态">
+        <span class="has-mr-6">1.4.6</span>
+        <span>4.5. 避免包级别状态</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#5-项目结构">
+        <span class="has-mr-6">1.5</span>
+        <span>5. 项目结构</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#5-1-考虑更少-更大的包">
+        <span class="has-mr-6">1.5.1</span>
+        <span>5.1. 考虑更少,更大的包</span>
+        </a></li><li>
+        <a class="is-flex" href="#5-1-1-通过import语句将代码排列到文件中">
+        <span class="has-mr-6">1.5.2</span>
+        <span>5.1.1. 通过import语句将代码排列到文件中</span>
+        </a></li><li>
+        <a class="is-flex" href="#5-1-2-优先内部测试再到外部测试">
+        <span class="has-mr-6">1.5.3</span>
+        <span>5.1.2. 优先内部测试再到外部测试</span>
+        </a></li><li>
+        <a class="is-flex" href="#5-1-3-使用internal包来减少公共API">
+        <span class="has-mr-6">1.5.4</span>
+        <span>5.1.3. 使用internal包来减少公共API</span>
+        </a></li><li>
+        <a class="is-flex" href="#5-2-确保main包内容尽可能的少">
+        <span class="has-mr-6">1.5.5</span>
+        <span>5.2. 确保main包内容尽可能的少</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#6-API-设计">
+        <span class="has-mr-6">1.6</span>
+        <span>6. API 设计</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#6-1-设计难以被误用的-API">
+        <span class="has-mr-6">1.6.1</span>
+        <span>6.1. 设计难以被误用的 API</span>
+        </a></li><li>
+        <a class="is-flex" href="#6-1-1-警惕采用几个相同类型参数的函数">
+        <span class="has-mr-6">1.6.2</span>
+        <span>6.1.1. 警惕采用几个相同类型参数的函数</span>
+        </a></li><li>
+        <a class="is-flex" href="#6-2-为其默认用例设计-API">
+        <span class="has-mr-6">1.6.3</span>
+        <span>6.2. 为其默认用例设计 API</span>
+        </a></li><li>
+        <a class="is-flex" href="#6-2-1-不鼓励使用nil作为参数">
+        <span class="has-mr-6">1.6.4</span>
+        <span>6.2.1. 不鼓励使用nil作为参数</span>
+        </a></li><li>
+        <a class="is-flex" href="#6-2-2-首选可变参数（var-args）而非切片参数（-T）">
+        <span class="has-mr-6">1.6.5</span>
+        <span>6.2.2. 首选可变参数（var args）而非切片参数（[]T）</span>
+        </a></li><li>
+        <a class="is-flex" href="#6-3-让函数定义它们所需的行为">
+        <span class="has-mr-6">1.6.6</span>
+        <span>6.3. 让函数定义它们所需的行为</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#7-错误处理">
+        <span class="has-mr-6">1.7</span>
+        <span>7. 错误处理</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#7-1-通过消除错误来消除错误处理">
+        <span class="has-mr-6">1.7.1</span>
+        <span>7.1. 通过消除错误来消除错误处理</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-1-1-计算行数">
+        <span class="has-mr-6">1.7.2</span>
+        <span>7.1.1. 计算行数</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-1-2-WriteResponse">
+        <span class="has-mr-6">1.7.3</span>
+        <span>7.1.2. WriteResponse</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-2-错误只处理一次">
+        <span class="has-mr-6">1.7.4</span>
+        <span>7.2. 错误只处理一次</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-2-1-为错误添加相关内容">
+        <span class="has-mr-6">1.7.5</span>
+        <span>7.2.1. 为错误添加相关内容</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-2-2-使用github-com-pkg-errors包装errors">
+        <span class="has-mr-6">1.7.6</span>
+        <span>7.2.2. 使用github.com/pkg/errors包装errors</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#8-并发">
+        <span class="has-mr-6">1.8</span>
+        <span>8. 并发</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#8-1-保持自己忙碌或做自己的工作">
+        <span class="has-mr-6">1.8.1</span>
+        <span>8.1. 保持自己忙碌或做自己的工作</span>
+        </a></li><li>
+        <a class="is-flex" href="#8-2-将并发性留给调用者">
+        <span class="has-mr-6">1.8.2</span>
+        <span>8.2. 将并发性留给调用者</span>
+        </a></li><li>
+        <a class="is-flex" href="#8-3-永远不要启动一个停止不了的-goroutine。">
+        <span class="has-mr-6">1.8.3</span>
+        <span>8.3. 永远不要启动一个停止不了的 goroutine。</span>
+        </a></li></ul></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) 编写可维护 Go 语言代码建议" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

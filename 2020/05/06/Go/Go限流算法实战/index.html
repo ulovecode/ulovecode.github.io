@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Go 限流算法实战 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="由于 API 接口无法控制调用方的行为,因此当遇到瞬时请求量激增时,会导致接口占用过多服务器资源,使得其他请求响应速度降低或是超时,更有甚者可能导致服务器宕机。 限流指对应用服务的请求进行限制,例如某一接口的请求限制为 100 个每秒, 对超过限制的请求则进行快速失败或丢弃。 限流可以应对：  热点业务带来的突发请求； 调用方 bug 导致的突发请求； 恶意攻击请求。  因此,对于公开的接口最好采">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go 限流算法实战">
+<meta property="og:url" content="https://www.ulovecode.com/2020/05/06/Go/Go%E9%99%90%E6%B5%81%E7%AE%97%E6%B3%95%E5%AE%9E%E6%88%98/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="由于 API 接口无法控制调用方的行为,因此当遇到瞬时请求量激增时,会导致接口占用过多服务器资源,使得其他请求响应速度降低或是超时,更有甚者可能导致服务器宕机。 限流指对应用服务的请求进行限制,例如某一接口的请求限制为 100 个每秒, 对超过限制的请求则进行快速失败或丢弃。 限流可以应对：  热点业务带来的突发请求； 调用方 bug 导致的突发请求； 恶意攻击请求。  因此,对于公开的接口最好采">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/65/95/651ceef7f505b8c9d52d62a8a4452495.jpg?x-oss-process=image/crop,y_21,w_1154,h_658/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-05-05T19:06:00.000Z">
+<meta property="article:modified_time" content="2020-05-05T19:06:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go">
+<meta property="article:tag" content="Algorithm">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/65/95/651ceef7f505b8c9d52d62a8a4452495.jpg?x-oss-process=image/crop,y_21,w_1154,h_658/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go 限流算法实战" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/65/95/651ceef7f505b8c9d52d62a8a4452495.jpg?x-oss-process=image/crop,y_21,w_1154,h_658/resize,w_1280,h_847" alt="Go 限流算法实战">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-05-05T19:06:00.000Z">2020-05-06</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    11 分钟 读完 (大约 1608 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Go 限流算法实战
+            
+        </h1>
+        <div class="content">
+            <p>由于 API 接口无法控制调用方的行为,因此当遇到瞬时请求量激增时,会导致接口占用过多服务器资源,使得其他请求响应速度降低或是超时,更有甚者可能导致服务器宕机。</p>
+<p>限流指对应用服务的请求进行限制,例如某一接口的请求限制为 100 个每秒, 对超过限制的请求则进行快速失败或丢弃。</p>
+<p>限流可以应对：</p>
+<ul>
+<li>热点业务带来的突发请求；</li>
+<li>调用方 bug 导致的突发请求；</li>
+<li>恶意攻击请求。</li>
+</ul>
+<p>因此,对于公开的接口最好采取限流措施。</p>
+<a id="more"></a>
+<h2 id="一、限流的算法"><a href="#一、限流的算法" class="headerlink" title="一、限流的算法"></a>一、限流的算法</h2><p>实现限流有很多办法,在程序中时通常是根据每秒处理的事务数 (Transactionpersecond) 来衡量接口的流量。</p>
+<p>本文介绍几种最常用的限流算法：</p>
+<ul>
+<li>固定窗口计数器；</li>
+<li>滑动窗口计数器；</li>
+<li>漏桶；</li>
+<li>令牌桶。</li>
+</ul>
+<h3 id="1、固定窗口计数器算法"><a href="#1、固定窗口计数器算法" class="headerlink" title="1、固定窗口计数器算法"></a>1、固定窗口计数器算法</h3><p><img src="https://static001.infoq.cn/resource/image/8d/15/8ded7a2b90e1482093f92fff555b3615.png" alt=""></p>
+<p>固定窗口计数器算法概念如下：</p>
+<ul>
+<li>将时间划分为多个窗口；</li>
+<li>在每个窗口内每有一次请求就将计数器加一；</li>
+<li>如果计数器超过了限制数量,则本窗口内所有的请求都被丢弃当时间到达下一个窗口时,计数器重置。</li>
+</ul>
+<p>固定窗口计数器是最为简单的算法,但这个算法有时会让通过请求量允许为限制的两倍。考虑如下情况：限制 1 秒内最多通过 5 个请求,在第一个窗口的最后半秒内通过了 5 个请求,第二个窗口的前半秒内又通过了 5 个请求。这样看来就是在 1 秒内通过了 10 个请求。</p>
+<p><img src="https://static001.infoq.cn/resource/image/4d/f4/4d03e8e43a8edc3f32376d90e52b85f4.png" alt=""></p>
+<h4 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> fixed_window_counter</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"sync"</span></span><br><span class="line">	<span class="hljs-string">"sync/atomic"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line"></span><br><span class="line">	ratelimit_kit <span class="hljs-string">"github.com/ulovecode/ratelimit-kit"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> (</span><br><span class="line">	once sync.Once</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> _ ratelimit_kit.RateLimiter = &amp;fixedWindowCounter&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> fixedWindowCounter <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	snippet         time.Duration</span><br><span class="line">	currentRequests <span class="hljs-keyword">int32</span></span><br><span class="line">	allowRequests   <span class="hljs-keyword">int32</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(snippet time.Duration, allowRequests <span class="hljs-keyword">int32</span>)</span> *<span class="hljs-title">fixedWindowCounter</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;fixedWindowCounter&#123;snippet: snippet, allowRequests: allowRequests&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(l *fixedWindowCounter)</span> <span class="hljs-title">Take</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	once.Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">			<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">case</span> &lt;-time.After(l.snippet):</span><br><span class="line">					atomic.StoreInt32(&amp;l.currentRequests, <span class="hljs-number">0</span>)</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;()</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	curRequest := atomic.LoadInt32(&amp;l.currentRequests)</span><br><span class="line">	<span class="hljs-keyword">if</span> curRequest &gt;= l.allowRequests &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> ratelimit_kit.ErrExceededLimit</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> !atomic.CompareAndSwapInt32(&amp;l.currentRequests, curRequest, curRequest+<span class="hljs-number">1</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> ratelimit_kit.ErrExceededLimit</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="2、滑动窗口计数器算法"><a href="#2、滑动窗口计数器算法" class="headerlink" title="2、滑动窗口计数器算法"></a>2、滑动窗口计数器算法</h3><p><img src="https://static001.infoq.cn/resource/image/ae/15/ae4d3cd14efb8dc7046d691c90264715.png" alt=""></p>
+<p>滑动窗口计数器算法概念如下：</p>
+<ul>
+<li>将时间划分为多个区间；</li>
+<li>在每个区间内每有一次请求就将计数器加一维持一个时间窗口,占据多个区间；</li>
+<li>每经过一个区间的时间,则抛弃最老的一个区间,并纳入最新的一个区间；</li>
+<li>如果当前窗口内区间的请求计数总和超过了限制数量,则本窗口内所有的请求都被丢弃。</li>
+</ul>
+<p>滑动窗口计数器是通过将窗口再细分,并且按照时间 “ 滑动 “,这种算法避免了固定窗口计数器带来的双倍突发请求,但时间区间的精度越高,算法所需的空间容量就越大。</p>
+<h4 id="代码实现-1"><a href="#代码实现-1" class="headerlink" title="代码实现"></a>代码实现</h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> sliding_window_counter</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"sync"</span></span><br><span class="line">	<span class="hljs-string">"sync/atomic"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line"></span><br><span class="line">	ratelimit_kit <span class="hljs-string">"github.com/ulovecode/ratelimit-kit"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> (</span><br><span class="line">	once sync.Once</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> _ ratelimit_kit.RateLimiter = &amp;slidingWindowCounter&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> slidingWindowCounter <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	incurRequests    <span class="hljs-keyword">int32</span></span><br><span class="line">	durationRequests <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int32</span></span><br><span class="line">	accuracy         time.Duration</span><br><span class="line">	snippet          time.Duration</span><br><span class="line">	currentRequests  <span class="hljs-keyword">int32</span></span><br><span class="line">	allowRequests    <span class="hljs-keyword">int32</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(accuracy time.Duration, snippet time.Duration, allowRequests <span class="hljs-keyword">int32</span>)</span> *<span class="hljs-title">slidingWindowCounter</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;slidingWindowCounter&#123;durationRequests: <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int32</span>, snippet/accuracy/<span class="hljs-number">1000</span>), accuracy: accuracy, snippet: snippet, allowRequests: allowRequests&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(l *slidingWindowCounter)</span> <span class="hljs-title">Take</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	once.Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">go</span> sliding(l)</span><br><span class="line">		<span class="hljs-keyword">go</span> calculate(l)</span><br><span class="line">	&#125;)</span><br><span class="line">	curRequest := atomic.LoadInt32(&amp;l.currentRequests)</span><br><span class="line">	<span class="hljs-keyword">if</span> curRequest &gt;= l.allowRequests &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> ratelimit_kit.ErrExceededLimit</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> !atomic.CompareAndSwapInt32(&amp;l.currentRequests, curRequest, curRequest+<span class="hljs-number">1</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> ratelimit_kit.ErrExceededLimit</span><br><span class="line">	&#125;</span><br><span class="line">	atomic.AddInt32(&amp;l.incurRequests, <span class="hljs-number">1</span>)</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">sliding</span><span class="hljs-params">(l *slidingWindowCounter)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;-time.After(l.accuracy):</span><br><span class="line">			t := atomic.SwapInt32(&amp;l.incurRequests, <span class="hljs-number">0</span>)</span><br><span class="line">			l.durationRequests &lt;- t</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">calculate</span><span class="hljs-params">(l *slidingWindowCounter)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		&lt;-time.After(l.accuracy)</span><br><span class="line">		<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(l.durationRequests) == <span class="hljs-built_in">cap</span>(l.durationRequests) &#123;</span><br><span class="line">			<span class="hljs-keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		&lt;-time.After(l.accuracy)</span><br><span class="line">		t := &lt;-l.durationRequests</span><br><span class="line">		<span class="hljs-keyword">if</span> t != <span class="hljs-number">0</span> &#123;</span><br><span class="line">			atomic.AddInt32(&amp;l.currentRequests, -t)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="3、漏桶算法"><a href="#3、漏桶算法" class="headerlink" title="3、漏桶算法"></a>3、漏桶算法</h3><p><img src="https://static001.infoq.cn/resource/image/75/03/75938d1010138ce66e38c6ed0392f103.png" alt=""></p>
+<p>漏桶算法概念如下：</p>
+<ul>
+<li>将每个请求视作 “ 水滴 “ 放入 “ 漏桶 “ 进行存储；</li>
+<li>“漏桶 “ 以固定速率向外 “ 漏 “ 出请求来执行如果 “ 漏桶 “ 空了则停止 “ 漏水”；</li>
+<li>如果 “ 漏桶 “ 满了则多余的 “ 水滴 “ 会被直接丢弃。</li>
+</ul>
+<p>漏桶算法多使用队列实现,服务的请求会存到队列中,服务的提供方则按照固定的速率从队列中取出请求并执行,过多的请求则放在队列中排队或直接拒绝。</p>
+<p>漏桶算法的缺陷也很明显,当短时间内有大量的突发请求时,即便此时服务器没有任何负载,每个请求也都得在队列中等待一段时间才能被响应。</p>
+<h4 id="代码实现-2"><a href="#代码实现-2" class="headerlink" title="代码实现"></a>代码实现</h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> leaky_barrel</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"sync"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line"></span><br><span class="line">	ratelimit_kit <span class="hljs-string">"github.com/ulovecode/ratelimit-kit"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> (</span><br><span class="line">	once sync.Once</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> _ ratelimit_kit.RateLimiter = &amp;leakyBarrel&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> leakyBarrel <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	snippet       time.Duration</span><br><span class="line">	allowRequests <span class="hljs-keyword">int32</span></span><br><span class="line">	barrelSize    <span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(snippet time.Duration, barrelSize <span class="hljs-keyword">int</span>, allowRequests <span class="hljs-keyword">int32</span>)</span> *<span class="hljs-title">leakyBarrel</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;leakyBarrel&#123;snippet: snippet, barrelSize: <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;, <span class="hljs-keyword">int</span>(allowRequests)/barrelSize), allowRequests: allowRequests&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *leakyBarrel)</span> <span class="hljs-title">Take</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	once.Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">			<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">case</span> &lt;-time.After(time.Duration(t.snippet.Nanoseconds() / <span class="hljs-keyword">int64</span>(t.allowRequests))):</span><br><span class="line">					t.barrelSize &lt;- <span class="hljs-keyword">struct</span>&#123;&#125;&#123;&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;()</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> &lt;-t.barrelSize:</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	<span class="hljs-keyword">default</span>:</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> ratelimit_kit.ErrExceededLimit</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="4、令牌桶算法"><a href="#4、令牌桶算法" class="headerlink" title="4、令牌桶算法"></a>4、令牌桶算法</h3><p><img src="https://static001.infoq.cn/resource/image/ec/93/eca0e5eaa35dac938c673fecf2ec9a93.png" alt=""></p>
+<p>令牌桶算法概念如下：</p>
+<ul>
+<li>令牌以固定速率生成；</li>
+<li>生成的令牌放入令牌桶中存放,如果令牌桶满了则多余的令牌会直接丢弃,当请求到达时,会尝试从令牌桶中取令牌,取到了令牌的请求可以执行；</li>
+<li>如果桶空了,那么尝试取令牌的请求会被直接丢弃。</li>
+</ul>
+<p>令牌桶算法既能够将所有的请求平均分布到时间区间内,又能接受服务器能够承受范围内的突发请求,因此是目前使用较为广泛的一种限流算法。</p>
+<h4 id="代码实现-3"><a href="#代码实现-3" class="headerlink" title="代码实现"></a>代码实现</h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> token_bucket</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"sync"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line"></span><br><span class="line">	ratelimit_kit <span class="hljs-string">"github.com/ulovecode/ratelimit-kit"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> (</span><br><span class="line">	once sync.Once</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> _ ratelimit_kit.RateLimiter = &amp;tokenBucket&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> tokenBucket <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	snippet       time.Duration</span><br><span class="line">	token         <span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line">	allowRequests <span class="hljs-keyword">int32</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(snippet time.Duration, allowRequests <span class="hljs-keyword">int32</span>)</span> *<span class="hljs-title">tokenBucket</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;tokenBucket&#123;snippet: snippet, token: <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;, allowRequests), allowRequests: allowRequests&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *tokenBucket)</span> <span class="hljs-title">Take</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	once.Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">			<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">case</span> &lt;-time.After(time.Duration(t.snippet.Nanoseconds() / <span class="hljs-keyword">int64</span>(t.allowRequests))):</span><br><span class="line">					t.token &lt;- <span class="hljs-keyword">struct</span>&#123;&#125;&#123;&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;()</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> &lt;-t.token:</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	<span class="hljs-keyword">default</span>:</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> ratelimit_kit.ErrExceededLimit</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>全部代码在github地址如下<code>https://github.com/ulovecode/ratelimit-kit</code></p>
+</blockquote>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Algorithm/" rel="tag">Algorithm</a>, <a class="has-link-grey -link" href="/tags/Go/" rel="tag">Go</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/05/18/%E9%9D%A2%E8%AF%95/%E4%BA%94%E6%9C%88%E9%9D%A2%E8%AF%95%E6%8C%87%E5%8D%97/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">五月面试指南</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/05/05/%E8%BD%AF%E6%8A%80%E8%83%BD/%E4%BA%BA%E9%99%85%E5%85%B3%E7%B3%BB/%E4%BA%BA%E6%80%A7%E7%9A%84%E5%BC%B1%E7%82%B9/">
+                <span class="level-item">人性的弱点</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '5a4be61a33fafcd852bdf6d5479dcbc9',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、限流的算法">
+        <span class="has-mr-6">1</span>
+        <span>一、限流的算法</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1、固定窗口计数器算法">
+        <span class="has-mr-6">1.1</span>
+        <span>1、固定窗口计数器算法</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#代码实现">
+        <span class="has-mr-6">1.1.1</span>
+        <span>代码实现</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#2、滑动窗口计数器算法">
+        <span class="has-mr-6">1.2</span>
+        <span>2、滑动窗口计数器算法</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#代码实现-1">
+        <span class="has-mr-6">1.2.1</span>
+        <span>代码实现</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#3、漏桶算法">
+        <span class="has-mr-6">1.3</span>
+        <span>3、漏桶算法</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#代码实现-2">
+        <span class="has-mr-6">1.3.1</span>
+        <span>代码实现</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#4、令牌桶算法">
+        <span class="has-mr-6">1.4</span>
+        <span>4、令牌桶算法</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#代码实现-3">
+        <span class="has-mr-6">1.4.1</span>
+        <span>代码实现</span>
+        </a></li></ul></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go 限流算法实战" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

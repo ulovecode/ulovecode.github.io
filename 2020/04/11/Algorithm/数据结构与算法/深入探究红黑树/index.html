@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>手撕红黑树 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="红黑树,作为一种复杂的数据结构,曾经也是令我抓狂。但是该结构也是相当重要的结构,在 Java 的 TreeMap 中的实现就是红黑树这个高级数据结构。本文会对红黑树算法可行性进行证明,并且给出最终实现,以下理解若有出入,希望能够指出。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="手撕红黑树">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/11/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%B7%B1%E5%85%A5%E6%8E%A2%E7%A9%B6%E7%BA%A2%E9%BB%91%E6%A0%91/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="红黑树,作为一种复杂的数据结构,曾经也是令我抓狂。但是该结构也是相当重要的结构,在 Java 的 TreeMap 中的实现就是红黑树这个高级数据结构。本文会对红黑树算法可行性进行证明,并且给出最终实现,以下理解若有出入,希望能够指出。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/89/50/89defc51e506712e63d8b38b2e6aa650.jpg?x-oss-process=image/crop,y_59,w_1279,h_730/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-04-11T00:24:00.000Z">
+<meta property="article:modified_time" content="2020-04-14T17:14:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="数据结构与算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/89/50/89defc51e506712e63d8b38b2e6aa650.jpg?x-oss-process=image/crop,y_59,w_1279,h_730/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="手撕红黑树" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/89/50/89defc51e506712e63d8b38b2e6aa650.jpg?x-oss-process=image/crop,y_59,w_1279,h_730/resize,w_1280,h_847" alt="手撕红黑树">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-11T00:24:00.000Z">2020-04-11</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Algorithm/">Algorithm</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/">数据结构与算法</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    24 分钟 读完 (大约 3569 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                手撕红黑树
+            
+        </h1>
+        <div class="content">
+            <p>红黑树,作为一种复杂的数据结构,曾经也是令我抓狂。但是该结构也是相当重要的结构,在 Java 的 TreeMap 中的实现就是红黑树这个高级数据结构。本文会对红黑树算法可行性进行证明,并且给出最终实现,以下理解若有出入,希望能够指出。</p>
+<a id="more"></a>
+<h1 id="一、如何保持平衡"><a href="#一、如何保持平衡" class="headerlink" title="一、如何保持平衡"></a>一、如何保持平衡</h1><p>左旋右旋过程如下:</p>
+<p><img src="https://md.ulovecode.com/static/images/posts/roate.png?imageView2/2/h/900" alt="过程"></p>
+<h5 id="左旋转"><a href="#左旋转" class="headerlink" title="左旋转"></a><strong>左旋转</strong></h5><ol>
+<li>替代 Y 结点为 X 结点的位置,先将 Y 结点的父母结点设置为 X 结点的父结点,并设置 X 的父结点的子结点（根据 X 是 X 父结点的子结点位置来设置为左或者右结点）,如果 X 的父结点为空,则设置 Y 的父结点也为空。</li>
+<li>原先的结点布局为 X 的子结点为 a 和 Y ,Y 的子结点为 b 和 c。旋转后结点布局应该为 X 的子结点为 a 和 b ,y 的子结点为 X 和 c。 其结点设置过程为设置 X 的 左结点为 a,右结点为 b,并将 a 和 b 的父结点设置 X 。 同理如下可以设置 Y 的结点也这样。</li>
+</ol>
+<h5 id="右旋转"><a href="#右旋转" class="headerlink" title="右旋转"></a><strong>右旋转</strong></h5><p>原理同左旋转过程。</p>
+<h5 id="旋转过程可行性分析"><a href="#旋转过程可行性分析" class="headerlink" title="旋转过程可行性分析"></a><strong>旋转过程可行性分析</strong></h5><p>假如树本身就是一棵平衡二叉树,只是进行旋转操作,在左旋转过程中,变换的操作为将 Y 的左结点设置为 X 的右结点,将 X 设置为 Y 的左结点。 根据二叉平衡树的定义,其根结点大于所有的左结点,小于所有的右结点。那么 b 结点肯定比 X 大,但是比 Y 小。所以 b 可以作为 X 的右结点。因为 Y 结点比 X 大所以,X 肯定可以作为 Y 的左结点。 并且 b 结点也是比 Y小的。所以 Y 的左子树上所有结点的值。肯定比 Y 小,证明完毕。其右旋转过程同理。</p>
+<h5 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a><strong>代码实现</strong></h5><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// y 替换 x</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">leftRotate</span><span class="hljs-params">(x *Node)</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Default node inserted will be a red node</span></span><br><span class="line">	y := x.right</span><br><span class="line">	<span class="hljs-comment">// 设置 y 的左结点到 x 下</span></span><br><span class="line">	x.right = y.left</span><br><span class="line">	<span class="hljs-keyword">if</span> y.left != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		y.left.parent = x</span><br><span class="line">	&#125;</span><br><span class="line">    <span class="hljs-comment">// 设置 y 的父结点为 x 父结点</span></span><br><span class="line">	y.parent = x.parent</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// x 是根结点</span></span><br><span class="line">	<span class="hljs-comment">// this is root</span></span><br><span class="line">	<span class="hljs-keyword">if</span> x.parent == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		t.root = y</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// 将 x 的父结点指向 y</span></span><br><span class="line">		<span class="hljs-keyword">if</span> x == x.parent.left &#123;</span><br><span class="line">			x.parent.left = y</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			x.parent.right = y</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// 设置 y 的 左结点为 x</span></span><br><span class="line">	y.left = x</span><br><span class="line">	<span class="hljs-comment">// 设置 x 的 父结点为 y</span></span><br><span class="line">	x.parent = y</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">rightRotate</span><span class="hljs-params">(x *Node)</span></span> &#123;</span><br><span class="line">	y := x.left</span><br><span class="line">	x.left = y.right</span><br><span class="line">	<span class="hljs-keyword">if</span> y.right != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		y.right.parent = x</span><br><span class="line">	&#125;</span><br><span class="line">	y.parent = x.parent</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// this is root</span></span><br><span class="line">	<span class="hljs-keyword">if</span> x.parent == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		t.root = y</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> x == x.parent.right &#123;</span><br><span class="line">			x.parent.right = y</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			x.parent.left = y</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	y.right = x</span><br><span class="line">	x.parent = y</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="二、红黑树定义"><a href="#二、红黑树定义" class="headerlink" title="二、红黑树定义"></a>二、红黑树定义</h1><ul>
+<li>性质1：每个结点要么是黑色,要么是红色。</li>
+<li>性质2：根结点是黑色。</li>
+<li>性质3：每个叶子结点（NIL）是黑色。</li>
+<li>性质4：每个红色结点的两个子结点一定都是黑色。</li>
+<li>性质5：任意一结点到每个叶子结点的路径都包含数量相同的黑结点。</li>
+</ul>
+<h5 id="如何保证其平衡性？"><a href="#如何保证其平衡性？" class="headerlink" title="如何保证其平衡性？"></a><strong>如何保证其平衡性？</strong></h5><p>根据性质4和性质5可以推导出,不存在两个连续的红色结点,最短路径的结点一定都是黑色结点,之外所有的路径都包含红色结点,每个结点的路径都保证数量相同的黑色结点,这就保证了最长路径最多为最短路径的两倍。</p>
+<h1 id="三、插入"><a href="#三、插入" class="headerlink" title="三、插入"></a>三、插入</h1><p>因为在插入之后,会改变红黑树的结构,红黑树可能变的不平衡,所以需要在插入过程之后修复二叉树的平衡性。</p>
+<p>其中共有四种情况会违反红黑树的第四条性质:</p>
+<p><img src="https://md.ulovecode.com/static/images/posts/red_black.png?imageView2/2/h/900" alt="四种情况"></p>
+<p>我画出违反红黑树的四种情况如上图所示。其中图一需要右旋转过程,图二需要左旋转过程修复。图三需要先进行左旋转然后进行右旋转过程。图四需要先进行右旋转然后进行左旋转过程修复。修复后的情况为 Y 为红色结点,X 和 Z 都是黑色结点,满足红黑树的来满足第四条性质。</p>
+<p><img src="https://md.ulovecode.com/static/images/posts/comand_roate.png?imageView2/2/h/900" alt="修复情况"></p>
+<p>其中在违反红黑树的四种情况下。其中 X 插入的颜色为红色,在这种情况下如果 X 的 父结点是红色,那么违反了性质 4 ： 每个红色结点到两个结点一定都是黑色。在其前提下,又要分为两种情况判断其 X 的 Uncle 结点的颜色。</p>
+<ul>
+<li>假如 Uncle 结点是红色,那么性质 5 并没有被违反,因此只需要重新设置结点的颜色即可,将 P 结点设置为黑色,将 G 结点设置为红色,将 U 结点设置为黑色。在这样的情况下满足性质 4 和性质 5。并且不需要关心 X 结点是 P 结点的左结点还是右结点,P 是 G 结点的左结点还是右结点。图中所列出的只是其中一种情况。因为将 G 结点设置为红色了,所以需要递推检查 G 的结点是否满足性质 4 和 性质 5。</li>
+<li>假如 Uncle 结点是黑色结点,X 是红色结点,因此性质 5 也被破坏了。其修复过程为,假如 X 是 P 的右结点,需要进行左旋转操作为第二步操作。在这种情况下将 G 结点设置为红色,将 P 结点设置为黑色,然后进行右旋转过程。此时 P 结点被设置为根结点, P 结点为黑色,因此 P 结点满足性质 4 ,不用在继续往上递推修复。同时整个树满足性质 4 和 性质 5 （因为每个叶子（NIL）为黑色）。同时上面情况的对称情况同理。</li>
+</ul>
+<h5 id="实现"><a href="#实现" class="headerlink" title="实现"></a><strong>实现</strong></h5><p>假如不考虑红黑树的修复,代码如下:</p>
+<ol>
+<li>根据 value 找到合适的插入位置</li>
+<li>将插入结点的父结点设置为 y</li>
+<li>根据 y 结点为空将该结点设置为根结点。</li>
+<li>如果 y 结点不为空,就判断 y 结点 value 值 和 x 的 value 值的大小,来找到插入的位置。</li>
+<li>将 x 结点设置为红色。</li>
+<li>修复</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">insert</span><span class="hljs-params">(item *Node)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> y *Node</span><br><span class="line">	x := t.root</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> x != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		y = x</span><br><span class="line">		<span class="hljs-keyword">if</span> item.key &lt; x.key &#123;</span><br><span class="line">			<span class="hljs-comment">// insert value into the left node</span></span><br><span class="line">			x = x.left</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> item.key &gt; x.key &#123;</span><br><span class="line">			<span class="hljs-comment">// insert value into the left node</span></span><br><span class="line">			x = x.right</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			<span class="hljs-comment">// value exists</span></span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	t.size++</span><br><span class="line">	item.parent = y</span><br><span class="line">	item.color = RED</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> y == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		item.color = BLACK</span><br><span class="line">		t.root = item</span><br><span class="line">		<span class="hljs-keyword">return</span></span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> item.key &lt; y.key &#123;</span><br><span class="line">		y.left = item</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		y.right = item</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Checking RBT conditions and repairing the node</span></span><br><span class="line">	t.insertRepairNode(item)</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>插入修复过程如下:</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">insertRepairNode</span><span class="hljs-params">(x *Node)</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// N's parent (P) is not black</span></span><br><span class="line">	<span class="hljs-keyword">var</span> y *Node</span><br><span class="line">	<span class="hljs-keyword">for</span> x != t.root &amp;&amp; x.parent.color == RED &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> x.parent == x.grandparent().left &#123;</span><br><span class="line">			y = x.grandparent().right</span><br><span class="line">			<span class="hljs-keyword">if</span> y != <span class="hljs-literal">nil</span> &amp;&amp; y.color == RED &#123;</span><br><span class="line">				x.parent.color = BLACK</span><br><span class="line">				y.color = BLACK</span><br><span class="line">				x.grandparent().color = RED</span><br><span class="line">				x = x.grandparent()</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">if</span> x == x.parent.right &#123;</span><br><span class="line">					x = x.parent</span><br><span class="line">					t.leftRotate(x)</span><br><span class="line">				&#125;</span><br><span class="line">				x.parent.color = BLACK</span><br><span class="line">				x.grandparent().color = RED</span><br><span class="line">				t.rightRotate(x.grandparent())</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			y = x.grandparent().left</span><br><span class="line">			<span class="hljs-keyword">if</span> y != <span class="hljs-literal">nil</span> &amp;&amp; y.color == RED &#123;</span><br><span class="line">				x.parent.color = BLACK</span><br><span class="line">				y.color = BLACK</span><br><span class="line">				x.grandparent().color = RED</span><br><span class="line">				x = x.grandparent()</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">if</span> x == x.parent.left &#123;</span><br><span class="line">					x = x.parent</span><br><span class="line">					t.rightRotate(x)</span><br><span class="line">				&#125;</span><br><span class="line">				x.parent.color = BLACK</span><br><span class="line">				x.grandparent().color = RED</span><br><span class="line">				t.leftRotate(x.grandparent())</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// N is the root node, i.e., first node of red–black tree</span></span><br><span class="line">	t.root.color = BLACK</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为在上面的分析过程中,已经分析,此处就不再分析。</p>
+<h1 id="四、删除"><a href="#四、删除" class="headerlink" title="四、删除"></a>四、删除</h1><p>删除过程分为删除节点和修复删除造成的结点不平衡。</p>
+<h4 id="删除思路"><a href="#删除思路" class="headerlink" title="删除思路"></a><strong>删除思路</strong></h4><p><img src="https://md.ulovecode.com/static/images/posts/red_black_tree_delete_min_node.png?imageView2/2/h/900" alt="删除过程"></p>
+<p>其删除思路可以简单概括为找到距离删除结点最近的值。</p>
+<ul>
+<li>如果左结点为空,直接用右结点替代</li>
+<li>如果右结点为空,直接用左结点替代</li>
+<li>如果左右结点都不为空<ol>
+<li>找到离被删除结点最近的值（后继或者前驱）<ol>
+<li>被删除右结点不为空,则找到被删除结点的右结点的最左结点,该结点是比该被删结点刚刚大的值。</li>
+<li>否则往上不断查找子结点是父结点的左结点,那么被找到父结点一定是比被删除结点刚刚大的值。</li>
+</ol>
+</li>
+<li>将前驱或者后继的值复制给被删除结点,然后删除前驱或者后继结点（如果存在子结点,就将子结点的<code>parent</code>设置为被删除前驱或者后继结点的<code>parent</code>,并将其<code>parent</code>指回子结点。如果没有子结点（这种情况只会存在于后驱结点）,就不用设置 ）。</li>
+<li>如果被删除的结点是黑色结点要进行修复。因为违反了性质 5,必定造成被删除结点路径的黑色结点少一个。</li>
+</ol>
+</li>
+</ul>
+<h5 id="代码实现-1"><a href="#代码实现-1" class="headerlink" title="代码实现"></a><strong>代码实现</strong></h5><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">Delete</span><span class="hljs-params">(key <span class="hljs-keyword">int64</span>)</span></span> &#123;</span><br><span class="line">	z := t.Search(key)</span><br><span class="line">	<span class="hljs-keyword">if</span> z == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	t.<span class="hljs-built_in">delete</span>(z)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">Search</span><span class="hljs-params">(key <span class="hljs-keyword">int64</span>)</span> *<span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	x := t.root</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> x == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> x != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">switch</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">case</span> key == x.key:</span><br><span class="line">			<span class="hljs-keyword">return</span> x</span><br><span class="line">		<span class="hljs-keyword">case</span> key &lt; x.key:</span><br><span class="line">			x = x.left</span><br><span class="line">		<span class="hljs-keyword">case</span> key &gt; x.key:</span><br><span class="line">			x = x.right</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">delete</span><span class="hljs-params">(z *Node)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> x, y *Node</span><br><span class="line">	y = z</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> z.left == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		x = z.right</span><br><span class="line">		t.replace(z, z.right)</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> z.right == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		x = z.left</span><br><span class="line">		t.replace(z, z.left)</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		y = z.successor()</span><br><span class="line">		z.key = y.key</span><br><span class="line">		z.value = y.value</span><br><span class="line">		<span class="hljs-keyword">if</span> y.left != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			x = y.left</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> y.right != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			x = y.right</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> x != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			x.parent = y.parent</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> y.parent == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			t.root = x</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> y == y.parent.left &#123;</span><br><span class="line">				y.parent.left = x</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				y.parent.right = x</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> y.color == BLACK &#123;</span><br><span class="line">		t.deleteRepairNode(x)</span><br><span class="line">	&#125;</span><br><span class="line">	t.size--</span><br><span class="line"></span><br><span class="line">	y.parent = <span class="hljs-literal">nil</span></span><br><span class="line">	y.left = <span class="hljs-literal">nil</span></span><br><span class="line">	y.right = <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">replace</span><span class="hljs-params">(a, b *Node)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> a.parent == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		t.root = b</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> a == a.parent.left &#123;</span><br><span class="line">		a.parent.left = b</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		a.parent.right = b</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> b != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		b.parent = a.parent</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(n *Node)</span> <span class="hljs-title">successor</span><span class="hljs-params">()</span> *<span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> n.right != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> n.right.minimum()</span><br><span class="line">	&#125;</span><br><span class="line">	y := n.parent</span><br><span class="line">	<span class="hljs-keyword">for</span> y != <span class="hljs-literal">nil</span> &amp;&amp; n == y.right &#123;</span><br><span class="line">		n = y</span><br><span class="line">		y = y.parent</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> y</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="删除修复思路"><a href="#删除修复思路" class="headerlink" title="删除修复思路"></a><strong>删除修复思路</strong></h4><p><img src="https://md.ulovecode.com/static/images/posts/red_black_tree_case5.png?imageView2/2/h/900" alt="删除修复过程"></p>
+<p>其删除修复过程,主要因为破坏了性质 5,我认为维基百科讲的较为复杂,但是图确实非常好。所以我会用里面的几张图。</p>
+<p>令替代了被删除结点位置的结点为 x</p>
+<ul>
+<li><p>情况1: x 成为新的根结点,那么不用修复只需要将 x 设置成黑色结点 ,来保证性质 2。</p>
+</li>
+<li><p>情况2: x 的兄弟结点为红色,那么将兄弟结点设置为黑色,将 p 结点设置为红色,对 p 结点进行左旋转,并重新设置 x 的兄弟结点的符号。该情况可能会满足 4,5,6 情况。</p>
+</li>
+</ul>
+<p><img src="https://md.ulovecode.com/static/images/posts/Red-black_tree_delete_case_2.png" alt="case2"></p>
+<ul>
+<li>情况3: p 是黑色结点,兄弟结点的两个子结点都为黑色结点,将兄弟结点设置为红色。那么 p 的左子树和右子树到达叶子结点的黑色结点数是相同的,但是经过 p 的结点比不经过 p 的结点少了一个黑色结点,所以令<code>x = x.parent</code>要向上处理 p 结点。</li>
+</ul>
+<p><img src="https://md.ulovecode.com/static/images/posts/Red-black_tree_delete_case_3.png" alt="case3"></p>
+<ul>
+<li>情况4: p 是红色结点,兄弟结点的两个子结点都为黑色结点,兄弟结点设置为红色,那么将 p 设置为红色结点,满足性质 4,相当于将 p 的左子树和右子树同时都将黑色结点数都减少一个,但是 p 本身变成了一个黑色结点,这样经过 p 和 不经过 p 都是同样的黑色结点。</li>
+</ul>
+<p><img src="https://md.ulovecode.com/static/images/posts/Red-black_tree_delete_case_4.png" alt="case4"></p>
+<ul>
+<li>情况5: 兄弟结点的左结点为红色,对兄弟结点进行右旋转。此时兄弟结点变成了原来兄弟结点的左结点的右结点,满足情况6。</li>
+</ul>
+<p><img src="https://md.ulovecode.com/static/images/posts/Red-black_tree_delete_case_5.png" alt="case5"></p>
+<p>情况6: 兄弟结点的右结点为红色,将兄弟结点的颜色设置为和 p 结点一致,将兄弟结点的右结点设置为黑色,然后进行左旋转。其过程就是给左子树增加一个黑色结点。满足性质 5。</p>
+<p><img src="https://md.ulovecode.com/static/images/posts/Red-black_tree_delete_case_6.png" alt="case6"></p>
+<h5 id="代码实现-2"><a href="#代码实现-2" class="headerlink" title="代码实现"></a><strong>代码实现</strong></h5><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Tree)</span> <span class="hljs-title">deleteRepairNode</span><span class="hljs-params">(x *Node)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> x == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">var</span> w *Node</span><br><span class="line">	<span class="hljs-keyword">for</span> x != t.root &amp;&amp; x.color == BLACK &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> x == x.parent.left &#123;</span><br><span class="line">			w = x.sibling()</span><br><span class="line">			<span class="hljs-comment">// case2</span></span><br><span class="line">			<span class="hljs-keyword">if</span> w.color == RED &#123;</span><br><span class="line">				w.color = BLACK</span><br><span class="line">				x.parent.color = RED</span><br><span class="line">				t.leftRotate(x.parent)</span><br><span class="line">				w = x.parent.right</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// case3 4  这里是因为违反了性质五</span></span><br><span class="line">			<span class="hljs-keyword">if</span> w.left.color == BLACK &amp;&amp; w.right.color == BLACK &#123;</span><br><span class="line">				w.color = RED</span><br><span class="line">				x = x.parent</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-comment">// case5</span></span><br><span class="line">				<span class="hljs-keyword">if</span> w.right.color == BLACK &#123;</span><br><span class="line">					w.left.color = BLACK</span><br><span class="line">					w.color = RED</span><br><span class="line">					t.rightRotate(w)</span><br><span class="line">					w = x.parent.right</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="hljs-comment">// case6</span></span><br><span class="line">				w.color = x.parent.color</span><br><span class="line">				x.parent.color = BLACK</span><br><span class="line">				w.right.color = BLACK</span><br><span class="line">				t.leftRotate(x.parent)</span><br><span class="line">				<span class="hljs-comment">// 退出循环</span></span><br><span class="line">				x = t.root</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// 对称情况</span></span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			w = x.sibling()</span><br><span class="line">			<span class="hljs-keyword">if</span> w.color == RED &#123;</span><br><span class="line">				w.color = BLACK</span><br><span class="line">				x.parent.color = RED</span><br><span class="line">				t.rightRotate(x.parent)</span><br><span class="line">				w = x.parent.left</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> w.left.color == BLACK &amp;&amp; w.right.color == BLACK &#123;</span><br><span class="line">				w.color = RED</span><br><span class="line">				x = x.parent</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">if</span> w.left.color == BLACK &#123;</span><br><span class="line">					w.right.color = BLACK</span><br><span class="line">					w.color = RED</span><br><span class="line">					t.leftRotate(w)</span><br><span class="line">					w = x.parent.left</span><br><span class="line">				&#125;</span><br><span class="line">				w.color = x.parent.color</span><br><span class="line">				x.parent.color = BLACK</span><br><span class="line">				w.left.color = BLACK</span><br><span class="line">				t.rightRotate(x.parent)</span><br><span class="line">				x = t.root</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// case1</span></span><br><span class="line">	x.color = BLACK</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(n *Node)</span> <span class="hljs-title">sibling</span><span class="hljs-params">()</span> *<span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	p := n.father()</span><br><span class="line">	<span class="hljs-comment">// No parent means no sibling</span></span><br><span class="line">	<span class="hljs-keyword">if</span> p == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> n == p.left &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> p.right</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> p.left</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码中我已经标明了<code>case1 ~ case6</code>,还有其对称情况。上面已经说过了,这里就不再说了。</p>
+<h1 id="五、总结"><a href="#五、总结" class="headerlink" title="五、总结"></a>五、总结</h1><p>红黑树插入过程较为复杂,但是只要清楚破坏性质 4 的四种情况,应该就很容理解。对于删除过程后面会继续补充完整。其删除过程看起来很复杂,其实只不过是穷举了五种情况<code>n.parent()</code>,<code>n.sibling()</code>,<code>n.sibling().left</code>,<code>n.sibling().right</code>为红色结点和全部都为黑色结点,顺序为<code>S A P SL SR</code>在这五种情况下的修复过程而已,仔细一想其实还好,没有很复杂。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/" rel="tag">数据结构与算法</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/23/Go/Golang%E8%AF%91%E6%96%87/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%9C%A8%E5%A4%A7%E5%9E%8B%E4%BB%A3%E7%A0%81%E5%BA%93%E4%B8%8A%E4%BD%BF%E7%94%A8pprof%E8%B0%83%E6%9F%A5Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) 我是如何在大型代码库上使用 pprof 调查 Go 中的内存泄漏</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/04/09/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%A5%9E%E7%BA%A7%E9%81%8D%E5%8E%86%E6%96%B9%E6%B3%95/">
+                <span class="level-item">二叉树神级遍历方法</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '260661d691e33b0e791cca37cf756f30',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、如何保持平衡">
+        <span class="has-mr-6">1</span>
+        <span>一、如何保持平衡</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#左旋转">
+        <span class="has-mr-6">1.1.1</span>
+        <span>左旋转</span>
+        </a></li><li>
+        <a class="is-flex" href="#右旋转">
+        <span class="has-mr-6">1.1.2</span>
+        <span>右旋转</span>
+        </a></li><li>
+        <a class="is-flex" href="#旋转过程可行性分析">
+        <span class="has-mr-6">1.1.3</span>
+        <span>旋转过程可行性分析</span>
+        </a></li><li>
+        <a class="is-flex" href="#代码实现">
+        <span class="has-mr-6">1.1.4</span>
+        <span>代码实现</span>
+        </a></li></ul></ul></li><li>
+        <a class="is-flex" href="#二、红黑树定义">
+        <span class="has-mr-6">2</span>
+        <span>二、红黑树定义</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#如何保证其平衡性？">
+        <span class="has-mr-6">2.1.1</span>
+        <span>如何保证其平衡性？</span>
+        </a></li></ul></ul></li><li>
+        <a class="is-flex" href="#三、插入">
+        <span class="has-mr-6">3</span>
+        <span>三、插入</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#实现">
+        <span class="has-mr-6">3.1.1</span>
+        <span>实现</span>
+        </a></li></ul></ul></li><li>
+        <a class="is-flex" href="#四、删除">
+        <span class="has-mr-6">4</span>
+        <span>四、删除</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#删除思路">
+        <span class="has-mr-6">4.1</span>
+        <span>删除思路</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#代码实现-1">
+        <span class="has-mr-6">4.1.1</span>
+        <span>代码实现</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#删除修复思路">
+        <span class="has-mr-6">4.2</span>
+        <span>删除修复思路</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#代码实现-2">
+        <span class="has-mr-6">4.2.1</span>
+        <span>代码实现</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#五、总结">
+        <span class="has-mr-6">5</span>
+        <span>五、总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="手撕红黑树" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

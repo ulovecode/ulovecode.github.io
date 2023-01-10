@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Manjaro 常用软件及设置 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="Manjaro Linux是基于Arch Linux 的 Linux 发行版,使用 Xfce 和 KDE Plasma 作为默认桌面环境,和 Arch 一样,采用滚动更新。其目标是为PC 提供易于使用的自由的操作系统">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Manjaro 常用软件及设置">
+<meta property="og:url" content="https://www.ulovecode.com/2018/11/08/Linux/Manjaro-%E5%B8%B8%E7%94%A8%E8%BD%AF%E4%BB%B6%E5%8F%8A%E8%AE%BE%E7%BD%AE/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="Manjaro Linux是基于Arch Linux 的 Linux 发行版,使用 Xfce 和 KDE Plasma 作为默认桌面环境,和 Arch 一样,采用滚动更新。其目标是为PC 提供易于使用的自由的操作系统">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://md.ulovecode.com/static/images/posts/8a52230da2cd26bb3b2f5a5c59fe65c7.jpeg">
+<meta property="article:published_time" content="2018-11-08T03:03:00.000Z">
+<meta property="article:modified_time" content="2018-11-08T03:03:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://md.ulovecode.com/static/images/posts/8a52230da2cd26bb3b2f5a5c59fe65c7.jpeg">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Manjaro 常用软件及设置" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//md.ulovecode.com/static/images/posts/8a52230da2cd26bb3b2f5a5c59fe65c7.jpeg" alt="Manjaro 常用软件及设置">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-11-08T03:03:00.000Z">2018-11-08</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Linux/">Linux</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    4 分钟 读完 (大约 614 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Manjaro 常用软件及设置
+            
+        </h1>
+        <div class="content">
+            <p>Manjaro Linux是基于Arch Linux 的 Linux 发行版,使用 Xfce 和 KDE Plasma 作为默认桌面环境,和 Arch 一样,采用滚动更新。其目标是为PC 提供易于使用的自由的操作系统</p>
+<a id="more"></a>
+<h1 id="一、设置更新源"><a href="#一、设置更新源" class="headerlink" title="一、设置更新源"></a>一、设置更新源</h1><h2 id="在-终端-执行下面的命令从官方的源列表中对中国源进行测速和设置"><a href="#在-终端-执行下面的命令从官方的源列表中对中国源进行测速和设置" class="headerlink" title="在 终端 执行下面的命令从官方的源列表中对中国源进行测速和设置"></a>在 终端 执行下面的命令从官方的源列表中对中国源进行测速和设置</h2><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman-mirrors -gb testing -c China</span><br></pre></td></tr></table></figure>
+<h2 id="加Arch-Linux-CN源"><a href="#加Arch-Linux-CN源" class="headerlink" title="加Arch Linux CN源"></a>加Arch Linux CN源</h2><p>在 /etc/pacman.conf 文件末尾添加两行：<br><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[archlinuxcn]</span><br><span class="line">Server = https://mirrors.ustc.edu.cn/archlinuxcn/<span class="hljs-variable">$arch</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="安装aria2并加速源下载"><a href="#安装aria2并加速源下载" class="headerlink" title="安装aria2并加速源下载"></a>安装aria2并加速源下载</h2><h3 id="1-首先在终端中执行下面的命令安装aria2"><a href="#1-首先在终端中执行下面的命令安装aria2" class="headerlink" title="1.首先在终端中执行下面的命令安装aria2"></a>1.首先在终端中执行下面的命令安装aria2</h3><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S aria2</span><br></pre></td></tr></table></figure>
+<h3 id="2-修改-etc-pacman-conf-在-option-增加或修改为下面的内容："><a href="#2-修改-etc-pacman-conf-在-option-增加或修改为下面的内容：" class="headerlink" title="2.修改/etc/pacman.conf,在 [option] 增加或修改为下面的内容："></a>2.修改/etc/pacman.conf,在 [option] 增加或修改为下面的内容：</h3><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">XferCommand = /usr/bin/aria2c --allow-overwrite=<span class="hljs-literal">true</span> -c --file-allocation=falloc --<span class="hljs-built_in">log</span>-level=error -m2 --max-connection-per-server=5 --max-file-not-found=5 --min-split-size=5M --no-conf --remote-time=<span class="hljs-literal">true</span> --summary-interval=60 -t10 -d / -o %o %u</span><br></pre></td></tr></table></figure>
+<h2 id="二、系统设置"><a href="#二、系统设置" class="headerlink" title="二、系统设置"></a>二、系统设置</h2><h3 id="更新系统"><a href="#更新系统" class="headerlink" title="更新系统"></a>更新系统</h3><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -Syyu</span><br></pre></td></tr></table></figure>
+<h3 id="安装中文输入法"><a href="#安装中文输入法" class="headerlink" title="安装中文输入法"></a>安装中文输入法</h3><h4 id="安装fcitx框架"><a href="#安装fcitx框架" class="headerlink" title="安装fcitx框架"></a>安装fcitx框架</h4><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S --noconfirm fcitx-im kcm-fcitx fcitx-sogoupinyin</span><br></pre></td></tr></table></figure>
+<h4 id="配置-xprofile-文件使输入法可以在kde的窗口中输入"><a href="#配置-xprofile-文件使输入法可以在kde的窗口中输入" class="headerlink" title="配置 ~/.xprofile 文件使输入法可以在kde的窗口中输入"></a>配置 ~/.xprofile 文件使输入法可以在kde的窗口中输入</h4><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo <span class="hljs-built_in">echo</span> -e <span class="hljs-string">"export GTK_IM_MODULE=fcitx\nexport QT_IM_MODULE=fcitx\nexport XMODIFIERS=@im=fcitx"</span>&gt;&gt;~/.xprofile</span><br></pre></td></tr></table></figure>
+<h2 id="三、常用设置"><a href="#三、常用设置" class="headerlink" title="三、常用设置"></a>三、常用设置</h2><h3 id="登录后开启数字锁"><a href="#登录后开启数字锁" class="headerlink" title="登录后开启数字锁"></a>登录后开启数字锁</h3><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yaourt -S --noconfirm systemd-numlockontty&amp;&amp;sudo systemctl <span class="hljs-built_in">enable</span> numLockOnTty.service</span><br></pre></td></tr></table></figure>
+<h2 id="四、常用软件"><a href="#四、常用软件" class="headerlink" title="四、常用软件"></a>四、常用软件</h2><h3 id="Yaourt"><a href="#Yaourt" class="headerlink" title="Yaourt"></a>Yaourt</h3><p>Yaourt可用于查找软件包(包括[core] [extra] [community] AUR的软件包,pacman只能查找非AUR的软件包)。<br><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S --noconfirm yaourt</span><br></pre></td></tr></table></figure></p>
+<h3 id="日常软件"><a href="#日常软件" class="headerlink" title="日常软件"></a>日常软件</h3><pre><code>netease-cloud-music 网易云音乐；
+smplayer 视频播放器；
+google-chrome 谷歌浏览器；
+notepadqq 像notepad++文本编辑；
+sublime-text-dev-zh-cn 强大的开发必备文本编辑器；(有能力采用付费许可证)
+masterpdfeditor 对linux用户免费的PDF浏览及编辑器,支持实时预览；
+remarkable 卓越且功能齐全的 Markdown 编辑器；
+uget 媲美迅雷的下载工具；
+filezilla 强大的FTP工具；
+shadowsocks-qt5 翻墙工具,配合浏览器插件SwitchyOmega使用；
+deepin-screenshot 深度截图工具；
+shutter 强大的截图工具,gnome-web-photo配合使用；
+variety 随即更换壁纸的应用；
+ccal 终端农历日历,终端启动ccal；
+</code></pre><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yaourt -Sy --noconfirm netease-cloud-music smplayer smplayer-skins smplayer-themes google-chrome sublime-text-dev-zh-cn masterpdfeditor remarkable uget filezilla shadowsocks-qt5 deepin-screenshot shutter</span><br></pre></td></tr></table></figure>
+<h3 id="Xmind"><a href="#Xmind" class="headerlink" title="Xmind"></a>Xmind</h3><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yaourt -Sy --noconfirm xmind  <span class="hljs-comment">#需要网络</span></span><br></pre></td></tr></table></figure>
+<h3 id="Fish"><a href="#Fish" class="headerlink" title="Fish"></a>Fish</h3><h4 id="安装Fish"><a href="#安装Fish" class="headerlink" title="安装Fish"></a>安装Fish</h4><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S fish</span><br></pre></td></tr></table></figure>
+<h4 id="更换默认的shell"><a href="#更换默认的shell" class="headerlink" title="更换默认的shell"></a>更换默认的shell</h4><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chsh -s /usr/bin/fish</span><br></pre></td></tr></table></figure>
+<h3 id="Git"><a href="#Git" class="headerlink" title="Git"></a>Git</h3> <figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo pacman -S git</span><br></pre></td></tr></table></figure>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Linux/" rel="tag">Linux</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/12/29/Jvm/Java/PECS%E5%8E%9F%E7%90%86/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) PECS 原理</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/08/23/Jvm/Java/Happen-before%E5%8E%9F%E5%88%99/">
+                <span class="level-item">Happen-before原则</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'd745d5c9b4662b2c26666c3c759c1ba8',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、设置更新源">
+        <span class="has-mr-6">1</span>
+        <span>一、设置更新源</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#在-终端-执行下面的命令从官方的源列表中对中国源进行测速和设置">
+        <span class="has-mr-6">1.1</span>
+        <span>在 终端 执行下面的命令从官方的源列表中对中国源进行测速和设置</span>
+        </a></li><li>
+        <a class="is-flex" href="#加Arch-Linux-CN源">
+        <span class="has-mr-6">1.2</span>
+        <span>加Arch Linux CN源</span>
+        </a></li><li>
+        <a class="is-flex" href="#安装aria2并加速源下载">
+        <span class="has-mr-6">1.3</span>
+        <span>安装aria2并加速源下载</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-首先在终端中执行下面的命令安装aria2">
+        <span class="has-mr-6">1.3.1</span>
+        <span>1.首先在终端中执行下面的命令安装aria2</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-修改-etc-pacman-conf-在-option-增加或修改为下面的内容：">
+        <span class="has-mr-6">1.3.2</span>
+        <span>2.修改/etc/pacman.conf,在 [option] 增加或修改为下面的内容：</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#二、系统设置">
+        <span class="has-mr-6">1.4</span>
+        <span>二、系统设置</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#更新系统">
+        <span class="has-mr-6">1.4.1</span>
+        <span>更新系统</span>
+        </a></li><li>
+        <a class="is-flex" href="#安装中文输入法">
+        <span class="has-mr-6">1.4.2</span>
+        <span>安装中文输入法</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#三、常用设置">
+        <span class="has-mr-6">1.5</span>
+        <span>三、常用设置</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#登录后开启数字锁">
+        <span class="has-mr-6">1.5.1</span>
+        <span>登录后开启数字锁</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#四、常用软件">
+        <span class="has-mr-6">1.6</span>
+        <span>四、常用软件</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Yaourt">
+        <span class="has-mr-6">1.6.1</span>
+        <span>Yaourt</span>
+        </a></li><li>
+        <a class="is-flex" href="#日常软件">
+        <span class="has-mr-6">1.6.2</span>
+        <span>日常软件</span>
+        </a></li><li>
+        <a class="is-flex" href="#Xmind">
+        <span class="has-mr-6">1.6.3</span>
+        <span>Xmind</span>
+        </a></li><li>
+        <a class="is-flex" href="#Fish">
+        <span class="has-mr-6">1.6.4</span>
+        <span>Fish</span>
+        </a></li><li>
+        <a class="is-flex" href="#Git">
+        <span class="has-mr-6">1.6.5</span>
+        <span>Git</span>
+        </a></li></ul></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Manjaro 常用软件及设置" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

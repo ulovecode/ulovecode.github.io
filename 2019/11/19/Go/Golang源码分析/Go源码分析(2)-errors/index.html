@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Go源码分析(2) - errors - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="错误类型处理在go中是非常重要的,但是代码不多,本文将分析源码内容。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go源码分析(2) - errors">
+<meta property="og:url" content="https://www.ulovecode.com/2019/11/19/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(2)-errors/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="错误类型处理在go中是非常重要的,但是代码不多,本文将分析源码内容。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/27/48/274ceeb7d8cc7fa9e85925dbe4d87748.jpg?x-oss-process=image/crop,y_73,w_1279,h_718/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-11-19T06:41:00.000Z">
+<meta property="article:modified_time" content="2019-11-19T06:41:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Golang源码分析">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/27/48/274ceeb7d8cc7fa9e85925dbe4d87748.jpg?x-oss-process=image/crop,y_73,w_1279,h_718/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go源码分析(2) - errors" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/27/48/274ceeb7d8cc7fa9e85925dbe4d87748.jpg?x-oss-process=image/crop,y_73,w_1279,h_718/resize,w_1280,h_847" alt="Go源码分析(2) - errors">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-19T06:41:00.000Z">2019-11-19</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">Golang源码分析</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    6 分钟 读完 (大约 933 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Go源码分析(2) - errors
+            
+        </h1>
+        <div class="content">
+            <p>错误类型处理在go中是非常重要的,但是代码不多,本文将分析源码内容。</p>
+<a id="more"></a>
+<h2 id="errors-go"><a href="#errors-go" class="headerlink" title="errors.go"></a>errors.go</h2><p>error是一个内建的类型,实现了error接口</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> error <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Error() <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>errors包下通过New创建一个error对象,事实上返回的就是一个实现了error接口类型的结构体,其中Error（）返回了该错误信息的内容。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// New returns an error that formats as the given text.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(text <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;errorString&#123;text&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// errorString is a trivial implementation of error.</span></span><br><span class="line"><span class="hljs-keyword">type</span> errorString <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	s <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(e *errorString)</span> <span class="hljs-title">Error</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> e.s</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="warp-go"><a href="#warp-go" class="headerlink" title="warp.go"></a>warp.go</h2><p>在warp文件下,有三个方法,分别为<code>Unwrap(err error) error</code>,<code>Is(err, target error) bool</code>,<code>As(err error, target interface{}) bool</code><br>,都是在1.13新加入的方法。</p>
+<p><code>Unwrap(err error) error</code>使用该方法,需要传入的<code>error</code>类型实现<code>Unwrap() error</code></p>
+<ul>
+<li>通过判断是否实现了<code>Unwrap() error</code><ul>
+<li>是,调用Unwrap()方法,返回err</li>
+<li>否,返回nil</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Unwrap returns the result of calling the Unwrap method on err, if err's</span></span><br><span class="line"><span class="hljs-comment">// type contains an Unwrap method returning error.</span></span><br><span class="line"><span class="hljs-comment">// Otherwise, Unwrap returns nil.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Unwrap</span><span class="hljs-params">(err error)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	u, ok := err.(<span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">		Unwrap() error</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="hljs-keyword">if</span> !ok &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> u.Unwrap()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Is(err, target error) bool</code>判断该错误类型是否和目标类型是一致类型</p>
+<ol>
+<li>如果目标类型为nil,则判断被比较类型是否也是nil</li>
+<li>通过一个for循环不断判断<ol>
+<li>如果目标类型能被比较并且被比较类型和目标类型值相等就返回true</li>
+<li>如果被比较类型实现了<code>Is(error) bool</code>接口,则调用接口方法,判断是否是相等的</li>
+<li>解包被比较类型,继续下一轮循环,或者解包到最里层都没有寻找到被比较类型与目标类型可匹配</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Is reports whether any error in err's chain matches target.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// An error is considered to match a target if it is equal to that target or if</span></span><br><span class="line"><span class="hljs-comment">// it implements a method Is(error) bool such that Is(target) returns true.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Is</span><span class="hljs-params">(err, target error)</span> <span class="hljs-title">bool</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> target == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err == target</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	isComparable := reflectlite.TypeOf(target).Comparable()</span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> isComparable &amp;&amp; err == target &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> x, ok := err.(<span class="hljs-keyword">interface</span>&#123; Is(error) <span class="hljs-keyword">bool</span> &#125;); ok &amp;&amp; x.Is(target) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> consider supporing target.Is(err). This would allow</span></span><br><span class="line">		<span class="hljs-comment">// user-definable predicates, but also may allow for coping with sloppy</span></span><br><span class="line">		<span class="hljs-comment">// APIs, thereby making it easier to get away with them.</span></span><br><span class="line">		<span class="hljs-keyword">if</span> err = Unwrap(err); err == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>As(err error, target interface{}) bool</code>As方法应将目标设置为其值,如果err匹配目标指向的类型,则返回true。</p>
+<ol>
+<li>如果目标类型为nil,或者不是指针类型,或者该类型没有实现error接口,则panic</li>
+<li>通过一个for循环不断判断<ol>
+<li>如果被比较类型能被目标类型赋值,就进行赋值,返回true</li>
+<li>如果被比较类型实现了<code>As(interface{}) bool</code>接口,则调用接口方法,进行赋值,并返回true</li>
+<li>解包被比较类型,继续下一轮循环,或者解包到最里层都没有寻找到实现的As方法都没有赋值成功</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// As finds the first error in err's chain that matches the type to which target</span></span><br><span class="line"><span class="hljs-comment">// points, and if so, sets the target to its value and returns true. An error</span></span><br><span class="line"><span class="hljs-comment">// matches a type if it is assignable to the target type, or if it has a method</span></span><br><span class="line"><span class="hljs-comment">// As(interface&#123;&#125;) bool such that As(target) returns true. As will panic if</span></span><br><span class="line"><span class="hljs-comment">// target is not a non-nil pointer to a type which implements error or is of</span></span><br><span class="line"><span class="hljs-comment">// interface type. As returns false if error is nil.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// The As method should set the target to its value and return true if err</span></span><br><span class="line"><span class="hljs-comment">// matches the type to which target points.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">As</span><span class="hljs-params">(err error, target <span class="hljs-keyword">interface</span>&#123;&#125;)</span> <span class="hljs-title">bool</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> target == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-built_in">panic</span>(<span class="hljs-string">"errors: target cannot be nil"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	val := reflectlite.ValueOf(target)</span><br><span class="line">	typ := val.Type()</span><br><span class="line">	<span class="hljs-keyword">if</span> typ.Kind() != reflectlite.Ptr || val.IsNil() &#123;</span><br><span class="line">		<span class="hljs-built_in">panic</span>(<span class="hljs-string">"errors: target must be a non-nil pointer"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> e := typ.Elem(); e.Kind() != reflectlite.Interface &amp;&amp; !e.Implements(errorType) &#123;</span><br><span class="line">		<span class="hljs-built_in">panic</span>(<span class="hljs-string">"errors: *target must be interface or implement error"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	targetType := typ.Elem()</span><br><span class="line">	<span class="hljs-keyword">for</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> reflectlite.TypeOf(err).AssignableTo(targetType) &#123;</span><br><span class="line">			val.Elem().Set(reflectlite.ValueOf(err))</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> x, ok := err.(<span class="hljs-keyword">interface</span>&#123; As(<span class="hljs-keyword">interface</span>&#123;&#125;) <span class="hljs-keyword">bool</span> &#125;); ok &amp;&amp; x.As(target) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">		err = Unwrap(err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> errorType = reflectlite.TypeOf((*error)(<span class="hljs-literal">nil</span>)).Elem()</span><br></pre></td></tr></table></figure>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="tag">Golang源码分析</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/11/23/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(3)-io/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Go源码分析(3) - io</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/11/18/Go/Golang%E8%AF%91%E6%96%87/Go1.13%E4%B8%AD%E7%9A%84%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/">
+                <span class="level-item">(译) Go 1.13中的错误处理</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'b8af72c80cc3b68af753737132f97565',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#errors-go">
+        <span class="has-mr-6">1</span>
+        <span>errors.go</span>
+        </a></li><li>
+        <a class="is-flex" href="#warp-go">
+        <span class="has-mr-6">2</span>
+        <span>warp.go</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go源码分析(2) - errors" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

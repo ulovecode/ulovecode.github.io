@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) Go中的垃圾收集：第二部分 - GC痕迹 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="这是三部分系列中的第二篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。本文重点介绍如何生成GC跟踪并解释它们。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) Go中的垃圾收集：第二部分 - GC痕迹">
+<meta property="og:url" content="https://www.ulovecode.com/2019/08/08/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86-GC%E7%97%95%E8%BF%B9/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="这是三部分系列中的第二篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。本文重点介绍如何生成GC跟踪并解释它们。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/b2/8d/b2db68f49787fa79db2214362bf0b28d.jpg?x-oss-process=image/crop,x_160,w_1759,h_1306/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-08-08T05:12:00.000Z">
+<meta property="article:modified_time" content="2019-08-08T05:12:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go中的垃圾收集">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/b2/8d/b2db68f49787fa79db2214362bf0b28d.jpg?x-oss-process=image/crop,x_160,w_1759,h_1306/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的垃圾收集：第二部分 - GC痕迹" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//static001.infoq.cn/resource/image/b2/8d/b2db68f49787fa79db2214362bf0b28d.jpg?x-oss-process=image/crop,x_160,w_1759,h_1306/resize,w_1280,h_847" alt="(译) Go中的垃圾收集：第二部分 - GC痕迹">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-08T05:12:00.000Z">2019-08-08</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E8%AF%91%E6%96%87/">Golang译文</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    21 分钟 读完 (大约 3114 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) Go中的垃圾收集：第二部分 - GC痕迹
+            
+        </h1>
+        <div class="content">
+            <p>这是三部分系列中的第二篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。本文重点介绍如何生成GC跟踪并解释它们。</p>
+<a id="more"></a>
+<p>三部分系列的索引：<br>1）Go中的垃圾收集：第一部分 - 语义<br>2）Go中的垃圾收集：第二部分 - GC跟踪<br>3）Go中的垃圾收集：第三部分 - GC步伐</p>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>在第一篇文章中,我花时间描述了垃圾收集器的行为,并显示了收集器对正在运行的应用程序造成的延迟。我分享了如何生成和解释GC跟踪,显示堆上的内存如何变化,并解释了GC的不同阶段以及它们如何影响延迟成本。</p>
+<p>该帖子的最终结论是,如果减少堆上的压力,你将减少延迟成本,从而提高应用程序的性能。我还指出,通过寻找增加任何两个系列之间的时间来减少收集开始的步伐并不是一个好的策略。一致的速度,即使它很快,也会更好地保持应用程序以最佳性能运行。</p>
+<p>在这篇文章中,我将引导你完成运行真实Web应用程序并向你展示如何生成GC跟踪和应用程序配置文件。然后,我将向你展示如何解释这些工具的输出,以便你可以找到提高应用程序性能的方法。</p>
+<h1 id="运行应用程序"><a href="#运行应用程序" class="headerlink" title="运行应用程序"></a>运行应用程序</h1><p>看看我在Go学习中使用的这个Web应用程序。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/101_figure1.png" alt=""><br>图1<br><a href="https://github.com/ardanlabs/gotraining/tree/master/topics/go/profiling/project" target="_blank" rel="noopener">https://github.com/ardanlabs/gotraining/tree/master/topics/go/profiling/project</a></p>
+<p>图1显示了应用程序的外观。此应用程序从不同的新闻提供商下载三组RSS订阅源,并允许用户执行搜索。构建Web应用程序后,将启动该应用程序。</p>
+<p>清单1</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ go build</span><br><span class="line">$ GOGC=off ./project &gt; /dev/null</span><br></pre></td></tr></table></figure>
+<p>清单1显示了如何使用GOGC变量设置启动应用程序为off,从而关闭垃圾回收。日志将重定向到/dev/null设备。在应用程序运行时,可以将请求发布到服务器中。</p>
+<p>清单2</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hey -m POST -c 100 -n 10000 <span class="hljs-string">"http://localhost:5000/search?term=topic&amp;cnn=on&amp;bbc=on&amp;nyt=on"</span></span><br></pre></td></tr></table></figure>
+<p>清单2显示了如何使用该hey工具在服务器上运行使用100个连接的10k请求。一旦通过服务器发送了所有请求,就会产生以下结果。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/101_figure2.png" alt=""><br>图2</p>
+<p>图2显示了关闭垃圾收集器处理10k请求的直观表示。处理10k请求需要4,188ms,这导致服务器每秒处理~2,387个请求。</p>
+<h1 id="打开垃圾收集"><a href="#打开垃圾收集" class="headerlink" title="打开垃圾收集"></a>打开垃圾收集</h1><p>为此应用程序启用垃圾收集时会发生什么？</p>
+<p>清单3</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ GODEBUG=gctrace=1 ./project &gt; /dev/null</span><br></pre></td></tr></table></figure>
+<p>清单3显示了如何启动应用程序以查看GC跟踪GOGC变量被删除并替换为GODEBUG变量。将GODEBUG被设定在运行时会生成一个GC跟踪每一个集合发生时。现在可以再次通过服务器运行相同的10k请求。通过服务器发送所有请求后hey,可以分析工具提供的GC跟踪和信息。</p>
+<p>清单4</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ GODEBUG=gctrace=1 ./project &gt; /dev/null</span><br><span class="line">gc 3 @3.182s 0%: 0.015+0.59+0.096 ms clock, 0.19+0.10/1.3/3.0+1.1 ms cpu, 4-&gt;4-&gt;2 MB, 5 MB goal, 12 P</span><br><span class="line">.</span><br><span class="line">.</span><br><span class="line">.</span><br><span class="line">gc 2553 @8.452s 14%: 0.004+0.33+0.051 ms clock, 0.056+0.12/0.56/0.94+0.61 ms cpu, 4-&gt;4-&gt;2 MB, 5 MB goal, 12 P</span><br></pre></td></tr></table></figure>
+<p>清单4显示了运行中第三个和最后一个集合的GC跟踪。自从在收集发生之后通过服务器发送加载以来,我没有显示前两个集合。最后一个集合显示它处理了10k个请求,需要2551个集合（减去前两个集合,因为它们不计算）。</p>
+<p>以下是跟踪中每个部分的细分。</p>
+<p>清单5</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">gc 2553 @8.452s 14%: 0.004+0.33+0.051 ms clock, 0.056+0.12/0.56/0.94+0.61 ms cpu, 4-&gt;4-&gt;2 MB, 5 MB goal, 12 P</span><br><span class="line"></span><br><span class="line">gc 2553     : The 2553 GC runs since the program started</span><br><span class="line">@8.452s     : Eight seconds since the program started</span><br><span class="line">14%         : Fourteen percent of the available CPU so far has been spent <span class="hljs-keyword">in</span> GC</span><br><span class="line"></span><br><span class="line">// wall-clock</span><br><span class="line">0.004ms     : STW        : Write-Barrier - Wait <span class="hljs-keyword">for</span> all Ps to reach a GC safe-point.</span><br><span class="line">0.33ms      : Concurrent : Marking</span><br><span class="line">0.051ms     : STW        : Mark Term     - Write Barrier off and clean up.</span><br><span class="line"></span><br><span class="line">// CPU time</span><br><span class="line">0.056ms     : STW        : Write-Barrier</span><br><span class="line">0.12ms      : Concurrent : Mark - Assist Time (GC performed <span class="hljs-keyword">in</span> line with allocation)</span><br><span class="line">0.56ms      : Concurrent : Mark - Background GC time</span><br><span class="line">0.94ms      : Concurrent : Mark - Idle GC time</span><br><span class="line">0.61ms      : STW        : Mark Term</span><br><span class="line"></span><br><span class="line">4MB         : Heap memory <span class="hljs-keyword">in</span>-use before the Marking started</span><br><span class="line">4MB         : Heap memory <span class="hljs-keyword">in</span>-use after the Marking finished</span><br><span class="line">2MB         : Heap memory marked as live after the Marking finished</span><br><span class="line">5MB         : Collection goal <span class="hljs-keyword">for</span> heap memory <span class="hljs-keyword">in</span>-use after Marking finished</span><br><span class="line"></span><br><span class="line">// Threads</span><br><span class="line">12P         : Number of logical processors or threads used to run Goroutines.</span><br></pre></td></tr></table></figure>
+<p>清单5显示了最后一个集合的实际数字。多亏了hey,这些是运行的性能结果。</p>
+<p>清单6</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Requests            : 10,000</span><br><span class="line">------------------------------------------------------</span><br><span class="line">Requests/sec        : 1,882 r/s   - Hey</span><br><span class="line">Total Duration      : 5,311ms     - Hey</span><br><span class="line">Percent Time <span class="hljs-keyword">in</span> GC  : 14%         - GC Trace</span><br><span class="line">Total Collections   : 2,551       - GC Trace</span><br><span class="line">------------------------------------------------------</span><br><span class="line">Total GC Duration   : 744.54ms    - (5,311ms * .14)</span><br><span class="line">Average Pace of GC  : ~2.08ms     - (5,311ms / 2,551)</span><br><span class="line">Requests/Collection : ~3.98 r/gc  - (10,000 / 2,511)</span><br></pre></td></tr></table></figure>
+<p>清单6显示了结果。以下内容提供了更多关于所发生事件的视觉效果。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/101_figure3.png" alt=""><br>图3</p>
+<p>图3显示了视觉上发生的事情。当收集器打开时,它必须运行〜2.5k次以处理相同的10k请求。每个集合平均以~2.0ms的速度开始,并且运行所有这些集合增加了额外的~1.1秒的延迟。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/101_figure4.png" alt=""><br>图4</p>
+<p>图4显示了到目前为止应用程序的两次运行的比较。</p>
+<h1 id="减少分配"><a href="#减少分配" class="headerlink" title="减少分配"></a>减少分配</h1><p>获取堆的配置文件并查看是否有任何可以删除的不必要的产生对象将会很棒。</p>
+<p>清单7</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go tool pprof http://localhost:5000/debug/pprof/allocs</span><br></pre></td></tr></table></figure>
+<p>清单7显示了使用该pprof工具调用/debug/pprof/allocs端点从正在运行的应用程序中提取内存配置文件。由于以下代码,该端点存在。</p>
+<p>清单8</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">import</span> _ <span class="hljs-string">"net/http/pprof"</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">    http.ListenAndServe(<span class="hljs-string">"localhost:5000"</span>, http.DefaultServeMux)</span><br><span class="line">&#125;()</span><br></pre></td></tr></table></figure>
+<p>清单8显示了如何将/debug/pprof/allocs端点绑定到任何应用程序。添加导入以net/http/pprof将端点绑定到默认服务器mux。然后,使用http.ListenAndServer与http.DefaultServerMux恒使端点可用。</p>
+<p>一旦分析器启动,该top命令可用于查看分配最多的前6个功能。</p>
+<p>清单9</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">(pprof) top 6 -cum</span><br><span class="line">Showing nodes accounting <span class="hljs-keyword">for</span> 0.56GB, 5.84% of 9.56GB total</span><br><span class="line">Dropped 80 nodes (cum &lt;= 0.05GB)</span><br><span class="line">Showing top 6 nodes out of 51</span><br><span class="line">      flat  flat%   sum%        cum   cum%</span><br><span class="line">         0     0%     0%     4.96GB 51.90%  net/http.(*conn).serve</span><br><span class="line">    0.49GB  5.11%  5.11%     4.93GB 51.55%  project/service.handler</span><br><span class="line">         0     0%  5.11%     4.93GB 51.55%  net/http.(*ServeMux).ServeHTTP</span><br><span class="line">         0     0%  5.11%     4.93GB 51.55%  net/http.HandlerFunc.ServeHTTP</span><br><span class="line">         0     0%  5.11%     4.93GB 51.55%  net/http.serverHandler.ServeHTTP</span><br><span class="line">    0.07GB  0.73%  5.84%     4.55GB 47.63%  project/search.rssSearch</span><br></pre></td></tr></table></figure>
+<p>清单9显示了如何在列表底部rssSearch显示该函数。此功能迄今为止分配了4.56GB的5.96GB。接下来,是时候rssSearch使用该list命令检查功能的细节。</p>
+<p>清单10</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">(pprof) list rssSearch</span><br><span class="line">Total: 9.56GB</span><br><span class="line">ROUTINE ======================== project/search.rssSearch <span class="hljs-keyword">in</span> project/search/rss.go</span><br><span class="line">   71.53MB     4.55GB (flat, cum) 47.63% of Total</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">         .          .    117:	// Capture the data we need <span class="hljs-keyword">for</span> our results <span class="hljs-keyword">if</span> we find ...</span><br><span class="line">         .          .    118:	<span class="hljs-keyword">for</span> _, item := range d.Channel.Items &#123;</span><br><span class="line">         .     4.48GB    119:		<span class="hljs-keyword">if</span> strings.Contains(strings.ToLower(item.Description), strings.ToLower(term)) &#123;</span><br><span class="line">   48.53MB    48.53MB    120:			results = append(results, Result&#123;</span><br><span class="line">         .          .    121:				Engine:  engine,</span><br><span class="line">         .          .    122:				Title:   item.Title,</span><br><span class="line">         .          .    123:				Link:    item.Link,</span><br><span class="line">         .          .    124:				Content: item.Description,</span><br><span class="line">         .          .    125:			&#125;)</span><br></pre></td></tr></table></figure>
+<p>清单11显示了有问题的代码行。仅该行占据了迄今为止已分配的4.55GB内存的4.48GB。接下来,是时候查看这行代码,看看有什么可以做的。</p>
+<p>清单12</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">117</span> <span class="hljs-comment">// Capture the data we need for our results if we find the search term.</span></span><br><span class="line"><span class="hljs-number">118</span> <span class="hljs-keyword">for</span> _, item := <span class="hljs-keyword">range</span> d.Channel.Items &#123;</span><br><span class="line"><span class="hljs-number">119</span>     <span class="hljs-keyword">if</span> strings.Contains(strings.ToLower(item.Description), strings.ToLower(term)) &#123;</span><br><span class="line"><span class="hljs-number">120</span>         results = <span class="hljs-built_in">append</span>(results, Result&#123;</span><br><span class="line"><span class="hljs-number">121</span>             Engine:  engine,</span><br><span class="line"><span class="hljs-number">122</span>             Title:   item.Title,</span><br><span class="line"><span class="hljs-number">123</span>             Link:    item.Link,</span><br><span class="line"><span class="hljs-number">124</span>             Content: item.Description,</span><br><span class="line"><span class="hljs-number">125</span>        &#125;)</span><br><span class="line"><span class="hljs-number">126</span>    &#125;</span><br><span class="line"><span class="hljs-number">127</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>清单12显示了该代码行如何处于紧密循环中。调用strings.ToLower是创建分配,因为它们创建了需要在堆上分配的新字符串。这些调用strings.ToLower是不必要的,因为这些调用可以在循环外完成。</p>
+<p>可以更改第119行以删除所有这些分配。</p>
+<p>清单13</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Before the code change.</span></span><br><span class="line"><span class="hljs-keyword">if</span> strings.Contains(strings.ToLower(item.Description), strings.ToLower(term)) &#123;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// After the code change.</span></span><br><span class="line"><span class="hljs-keyword">if</span> strings.Contains(item.Description, term) &#123;</span><br></pre></td></tr></table></figure>
+<p>注意：你没有看到的其他代码更改是在将Feed放入缓存之前调用较低的描述。新闻源每15分钟缓存一次。term降低调用是在循环外部完成的。</p>
+<p>清单13显示了如何<code>strings.ToLower</code>删除被调用者。通过这些新的代码更改再次构建项目,并再次通过服务器运行10k请求。</p>
+<p>清单14</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ go build</span><br><span class="line">$ GODEBUG=gctrace=1 ./project &gt; /dev/null</span><br><span class="line">gc 3 @6.156s 0%: 0.011+0.72+0.068 ms clock, 0.13+0.21/1.5/3.2+0.82 ms cpu, 4-&gt;4-&gt;2 MB, 5 MB goal, 12 P</span><br><span class="line">.</span><br><span class="line">.</span><br><span class="line">.</span><br><span class="line">gc 1404 @8.808s 7%: 0.005+0.54+0.059 ms clock, 0.060+0.47/0.79/0.25+0.71 ms cpu, 4-&gt;5-&gt;2 MB, 5 MB goal, 12 P</span><br></pre></td></tr></table></figure>
+<p>清单14显示了在代码更改后,现在如何处理1402个集合来处理相同的10k请求。这些是两次运行的完整结果。</p>
+<p>清单15</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">With Extra Allocations              Without Extra Allocations</span><br><span class="line">======================================================================</span><br><span class="line">Requests            : 10,000        Requests            : 10,000</span><br><span class="line">----------------------------------------------------------------------</span><br><span class="line">Requests/sec        : 1,882 r/s     Requests/sec        : 3,631 r/s</span><br><span class="line">Total Duration      : 5,311ms       Total Duration      : 2,753 ms</span><br><span class="line">Percent Time <span class="hljs-keyword">in</span> GC  : 14%           Percent Time <span class="hljs-keyword">in</span> GC  : 7%</span><br><span class="line">Total Collections   : 2,551         Total Collections   : 1,402</span><br><span class="line">----------------------------------------------------------------------</span><br><span class="line">Total GC Duration   : 744.54ms      Total GC Duration   : 192.71 ms</span><br><span class="line">Average Pace of GC  : ~2.08ms       Average Pace of GC  : ~1.96ms</span><br><span class="line">Requests/Collection : ~3.98 r/gc    Requests/Collection : 7.13 r/gc</span><br></pre></td></tr></table></figure>
+<p>清单15显示了与上一结果相比的结果。以下内容提供了更多关于所发生事件的视觉效果。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/101_figure5.png" alt=""><br>图5</p>
+<p>图5显示了视觉上发生的事情。这次收集器运行1149次（1,402对2,551）来处理相同的10k请求。这导致GC总时间的百分比从14％降低到7％。这使得应用程序运行速度提高了48％,收集时间减少了74％。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/101_figure6.png" alt=""><br>图6</p>
+<p>图6显示了应用程序的所有不同运行的比较。我包含了一系列运行优化的代码而没有完成垃圾收集器。</p>
+<h1 id="我们学到了什么"><a href="#我们学到了什么" class="headerlink" title="我们学到了什么"></a>我们学到了什么</h1><p>正如我在上一篇文章中所说,支持收集器是为了减少堆上的压力。请记住,压力可以定义为应用程序在给定时间内分配堆上所有可用内存的速度。当压力减小时,收集器造成的延迟将会减少。这种延迟会降低你的应用程序速度。</p>
+<p>这不是要放慢收集的速度。这真的是在每个集合之间或集合期间完成更多的工作。你可以通过减少任何工作添加到堆中的分配数量或数量来影响它。</p>
+<p>清单16</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">With Extra Allocations              Without Extra Allocations</span><br><span class="line">======================================================================</span><br><span class="line">Requests            : 10,000        Requests            : 10,000</span><br><span class="line">----------------------------------------------------------------------</span><br><span class="line">Requests/sec        : 1,882 r/s     Requests/sec        : 3,631 r/s</span><br><span class="line">Total Duration      : 5,311ms       Total Duration      : 2,753 ms</span><br><span class="line">Percent Time <span class="hljs-keyword">in</span> GC  : 14%           Percent Time <span class="hljs-keyword">in</span> GC  : 7%</span><br><span class="line">Total Collections   : 2,551         Total Collections   : 1,402</span><br><span class="line">----------------------------------------------------------------------</span><br><span class="line">Total GC Duration   : 744.54ms      Total GC Duration   : 192.71 ms</span><br><span class="line">Average Pace of GC  : ~2.08ms       Average Pace of GC  : ~1.96ms</span><br><span class="line">Requests/Collection : ~3.98 r/gc    Requests/Collection : 7.13 r/gc</span><br></pre></td></tr></table></figure>
+<p>清单16显示了带有垃圾收集的两个版本应用程序的结果。很明显,删除4.48GB的分配使应用程序运行得更快。有趣的是,每个系列（两个版本）的平均速度几乎相同,约为2.0毫秒。这两个版本之间的根本变化是每个集合之间的工作量。应用范围从3.98 r / gc到7.13 r / gc。这是完成工作量增加79.1％。</p>
+<p>在任何两个集合的开始之间完成更多的工作有助于将所需的集合数量从2,551减少到1,402,减少了45％。该应用程序的总GC时间从745毫秒减少到193毫秒,从收集的每个相应版本的总时间的14％变为7％。当你在没有垃圾收集的情况下运行应用程序的优化版本时,性能差异仅为13％,应用程序将2,753ms降至2,398ms。</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>如果你花时间专注于减少分配,那么你就像Go开发人员一样,对垃圾收集器表示支持。你不打算编写零分配应用程序,因此重要的是要认识到有效的分配（帮助应用程序的分配）和那些没有生产力的分配（那些损害应用程序）之间的差异。然后将你的信任和信任放在垃圾收集器中,以保持堆健康并使你的应用程序始终如一地运行。</p>
+<p>拥有垃圾收集器是一个很好的权衡。我将花费垃圾收集的成本,所以我没有内存管理的负担。Go是关于允许你作为开发人员提高工作效率,同时仍然编写足够快的应用程序。垃圾收集器是实现这一目标的重要组成部分。在下一篇文章中,我将分享另一个程序,该程序显示收集器如何分析你的Go应用程序并找到最佳的收集方法。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" rel="tag">Go中的垃圾收集</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/08/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86-GC%E6%AD%A5%E4%BC%90/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Go中的垃圾收集：第三部分 - GC步伐</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86-%E8%AF%AD%E4%B9%89/">
+                <span class="level-item">(译) Go中的垃圾收集：第一部分 - 语义</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '892d24c3b46375e9dfaa50560b5a160f',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#介绍">
+        <span class="has-mr-6">1</span>
+        <span>介绍</span>
+        </a></li><li>
+        <a class="is-flex" href="#运行应用程序">
+        <span class="has-mr-6">2</span>
+        <span>运行应用程序</span>
+        </a></li><li>
+        <a class="is-flex" href="#打开垃圾收集">
+        <span class="has-mr-6">3</span>
+        <span>打开垃圾收集</span>
+        </a></li><li>
+        <a class="is-flex" href="#减少分配">
+        <span class="has-mr-6">4</span>
+        <span>减少分配</span>
+        </a></li><li>
+        <a class="is-flex" href="#我们学到了什么">
+        <span class="has-mr-6">5</span>
+        <span>我们学到了什么</span>
+        </a></li><li>
+        <a class="is-flex" href="#结论">
+        <span class="has-mr-6">6</span>
+        <span>结论</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的垃圾收集：第二部分 - GC痕迹" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

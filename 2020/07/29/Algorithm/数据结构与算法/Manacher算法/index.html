@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Manacher算法 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="在计算机科学中，最长回文子串或最长对称因子问题是在一个字符串中查找一个最长的连续的回文的子串，例如“banana”最长回文子串是“anana”。最长回文子串并不一定是唯一的，比如“abracadabra”，没有超过3的回文子串，但是有两个回文字串长度都是3：“ada”和“aca”。在一些应用中，我们求出全部的极大回文子串（不被其他回文串包含的回文子串）。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Manacher算法">
+<meta property="og:url" content="https://www.ulovecode.com/2020/07/29/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/Manacher%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="在计算机科学中，最长回文子串或最长对称因子问题是在一个字符串中查找一个最长的连续的回文的子串，例如“banana”最长回文子串是“anana”。最长回文子串并不一定是唯一的，比如“abracadabra”，没有超过3的回文子串，但是有两个回文字串长度都是3：“ada”和“aca”。在一些应用中，我们求出全部的极大回文子串（不被其他回文串包含的回文子串）。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/c8/22/c838f30d05d4d48d52aeebd3c81b5a22.jpg?x-oss-process=image/crop,y_85,w_1920,h_1080/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-07-28T17:10:00.000Z">
+<meta property="article:modified_time" content="2020-07-28T17:10:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/c8/22/c838f30d05d4d48d52aeebd3c81b5a22.jpg?x-oss-process=image/crop,y_85,w_1920,h_1080/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Manacher算法" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/c8/22/c838f30d05d4d48d52aeebd3c81b5a22.jpg?x-oss-process=image/crop,y_85,w_1920,h_1080/resize,w_1280,h_847" alt="Manacher算法">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-07-28T17:10:00.000Z">2020-07-29</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Algorithm/">Algorithm</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/">数据结构与算法</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    15 分钟 读完 (大约 2288 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Manacher算法
+            
+        </h1>
+        <div class="content">
+            <p>在计算机科学中，最长回文子串或最长对称因子问题是在一个<a href="https://zh.wikipedia.org/wiki/字符串" target="_blank" rel="noopener">字符串</a>中查找一个最长的连续的<a href="https://zh.wikipedia.org/wiki/回文" target="_blank" rel="noopener">回文</a>的子串，例如“banana”最长回文子串是“anana”。最长回文子串并不一定是唯一的，比如“abracadabra”，没有超过3的回文子串，但是有两个回文字串长度都是3：“ada”和“aca”。在一些应用中，我们求出全部的极大回文子串（不被其他回文串包含的回文子串）。</p>
+<a id="more"></a>
+<h1 id="一、算法由来"><a href="#一、算法由来" class="headerlink" title="一、算法由来"></a>一、算法由来</h1><p>Manacher于<a href="https://zh.wikipedia.org/wiki/最长回文子串#cite_note-1" target="_blank" rel="noopener">[1]</a>发现了一种线性时间算法，可以在列出给定字符串中从任意位置开始的所有回文子串。并且，Apostolico, Breslauer &amp; Galil <a href="https://zh.wikipedia.org/wiki/最长回文子串#cite_note-2" target="_blank" rel="noopener">[2]</a>发现，同样的算法也可以在任意位置查找全部极大回文子串，并且时间复杂度是线性的。因此，他们提供了一种时间复杂度为线性的最长回文子串解法。另外，Jeuring (1994)<a href="https://zh.wikipedia.org/wiki/最长回文子串#cite_note-3" target="_blank" rel="noopener">[3]</a>, Gusfield (1997)<a href="https://zh.wikipedia.org/wiki/最长回文子串#cite_note-4" target="_blank" rel="noopener">[4]</a>发现了基于后缀树的算法。也存在已知的高效并行算法。</p>
+<p>在不使用Manacher算法的情况下，使用暴力方法对每一个字符进行向外扩的操作（中心扩展法），直到遇到不匹配的字符就停下来，继续查看下一个字符串，Mancher算法则是基于中心扩展法的基础之上，对扩出来的信息进行处理，这里是 Manacher 算法的精髓。</p>
+<h1 id="二、算法思想"><a href="#二、算法思想" class="headerlink" title="二、算法思想"></a>二、算法思想</h1><p>Manacher核心步骤有三步:</p>
+<ol>
+<li>处理字符串奇偶数之间的差异，统一都变为奇数字符串。</li>
+<li>是否有通过中心扩展法记录的最大边界直接能够得到当前字符串的最大回文字符串（加速扩过程）。</li>
+<li>进行中心扩展法。</li>
+</ol>
+<h2 id="处理字符串奇偶数之间的差异"><a href="#处理字符串奇偶数之间的差异" class="headerlink" title="处理字符串奇偶数之间的差异"></a>处理字符串奇偶数之间的差异</h2><p><strong>如果不处理字符串的奇偶之间的差异会怎么样？</strong></p>
+<p>我们举个例子<code>ababa</code>这是一个奇数，我们通过中心扩展法，向外不断扩展，直到找到不匹配的位置。在 0 位置的时候我们无法向外扩展因此直接得到 s[0] 的位置最远能扩 0 个位置。在 1 位置的时候， 由字符串 <code>b</code>向外扩展 ，s[0]  <code>a</code> 和 s[2] <code>a</code> 相等，得到 s[1] 位置最远能扩 1 个位置。在 2 位置的时候， 由字符串 <code>b</code>向外扩展 ，s[1]  <code>b</code> 和 s[3] <code>b</code> 相等，s[0]  <code>a</code> 和 s[4] <code>a</code> 相等，得到 s[2] 位置最远能扩 2 个位置。s[3]的情况和s[1]相同，s[4]的情况和s[0]相同，因此<code>ababa</code>最大回文字符串为<code>ababa</code>。</p>
+<p>我们再来举一个偶数的例子 <code>abba</code>。在 0 位置的时候我们无法向外扩展因此直接得到 s[0] 的位置最远能扩 0 个位置。在 1 位置的时候我们无法向外扩展因此直接得到 s[1] 的位置最远能扩 0 个位置。在 2 位置的时候我们无法向外扩展因此直接得到 s[2] 的位置最远能扩 0 个位置。在 3 位置的时候我们无法向外扩展因此直接得到 s[3] 的位置最远能扩 0 个位置。实际上我们这个字符串的最大回文字符串是<code>abba</code>!因此我们需要做奇偶处理。</p>
+<p><strong>怎么进行做奇偶处理？</strong></p>
+<p>在字符串的开头，中间，结尾插入特殊标记符<code>#</code>，用任何不常用的字符都可以，并不会影响结果。例如字符串<code>abba</code>进行处理之后，为<code>#a#b#b#a#</code>。 </p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">manacherSring</span><span class="hljs-params">(s <span class="hljs-keyword">string</span>)</span> []<span class="hljs-title">rune</span></span> &#123;</span><br><span class="line">	runes := []<span class="hljs-keyword">rune</span>(s)</span><br><span class="line">	res := <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">rune</span>, <span class="hljs-built_in">len</span>(s)*<span class="hljs-number">2</span>+<span class="hljs-number">1</span>)</span><br><span class="line">	<span class="hljs-keyword">for</span> index, i := <span class="hljs-number">0</span>, <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">len</span>(res); i++ &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> (i &amp; <span class="hljs-number">1</span>) == <span class="hljs-number">0</span> &#123;</span><br><span class="line">			res[i] = <span class="hljs-string">'#'</span></span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			res[i] = runes[index]</span><br><span class="line">			index++</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> res</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="加速扩过程"><a href="#加速扩过程" class="headerlink" title="加速扩过程"></a>加速扩过程</h2><p><strong>加速扩过程，我们需要记录三个变量。</strong></p>
+<ul>
+<li><p>维护一个数组 pArr,该数组维护了一个当前字符串所能扩的最大位置。例如<code>#a#b#a#b#a#</code>对应的 pArr 数组为 <code>{1,2,1,4,1,6,1,4,1,2,1}</code></p>
+</li>
+<li><p>维护一个 pR 变量，这个变量记录当前扩展能扩展到最远地方，例如<code>#a#b#a#b#a#</code>， 在没有遍历之前初始值为 -1，当 s[0] 时，<code>#</code>的最长回文半径为1,最多向外扩展0个位置，因此 pR 为1。当 s[1] 时，<code>a</code>的最长回文半径为2,最多向外扩展2个位置，因此 pR 为3。当 s[2] 时，<code>#</code>的最长回文半径为1,最多向外扩展0个位置，因此 pR 为3,pR不必之前的大,保持不变。当 s[3] 时，<code>b</code>的最长回文半径为4,最多向外扩展3个位置，因此 pR 为7。当 s[4] 时，<code>#</code>的最长回文半径为1,最多向外扩展0个位置，因此 pR 为5,pR比之前的小,保持不变。当 s[5] 时，<code>a</code>的最长回文半径为6,最多向外扩展5个位置，因此 pR 为11,此时已经到达整个字符数组的结尾，所以之后的过程中pR将不再变化。当 s[7] 时，<code>#</code>的最长回文半径为1,最多向外扩展0个位置，因此 pR 为8,pR比之前的小,保持不变。当 s[8] 时，<code>b</code>的最长回文半径为4,最多向外扩展3个位置，因此 pR 为8,pR比之前的小,保持不变。当 s[9] 时，<code>#</code>的最长回文半径为1,最多向外扩展0个位置，因此 pR 为10,pR比之前的小,保持不变。当 s[10] 时，<code>a</code>的最长回文半径为2,最多向外扩展1个位置，因此 pR 为11,pR不必之前的大,保持不变。</p>
+</li>
+<li>整数index。这个变量表示最近一次更新pR时（pR只会在有更大的pR时才会更新），可以说index就是当前能扩到最有边界的回文中心。</li>
+</ul>
+<p><strong>如何用这三个变量进行扩过程呢？</strong></p>
+<p><img src="https://md.ulovecode.com/static/posts/20200729010146.png" alt="image-20200729010146305" style="zoom: 50%;"></p>
+<p>index 是当前包括i的最大扩展的中心位置，其边界我们叫做左大和右大，i 是当前要扩展的位置，因为 i 在扩展中心内，index是一个大回文字符串，那么 i 的回文字符串也应该有 i’ 镜像的回文字符串。在情况 1 下，以 i 为中心的回文字符串被完全包括在大字符串内，那么 i 的扩展到最大的位置一定是 i 的右小边界，不可能超过右小边界，因为 i 字符串完全以 index 为中心扩展，如果可以再向右扩，镜像 i’ 早就应该扩了。在情况 2 下， i 的镜像 i’ 的左小’超过了左大边界，i的字符串最多能扩到右大边界，因为 i 以 index 为镜像，如果 i 能扩到超出右大的边界，同时 i‘ 镜像和 i 的字符串是回文的，index 为什么不继续向外扩展了，因为当前能扩展的最大最位置为右大，因此 i 必定不能向外扩展，i能扩展到的最大值为右大位置。情况下，i’  的 镜像左小‘ 和左大重叠的时候，这个时候 i 以右大为边界可能可以继续向外扩展，这种情况是左小‘的左边一个字符不等于右小’的右边一个字符，整个index字符串没有向外扩，说明左大左边一个字符不等于右大右边一个字符，但是因为右小没有超过右大，左小左边的字符串是有可能等于右小右边的字符串，向外扩展的情况是未知的。</p>
+<h2 id="进行中心扩展法"><a href="#进行中心扩展法" class="headerlink" title="进行中心扩展法"></a>进行中心扩展法</h2><p>进行处理之后，我们就可以进行扩展</p>
+<h1 id="三、算法实现"><a href="#三、算法实现" class="headerlink" title="三、算法实现"></a>三、算法实现</h1><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">maxLcpsLength</span><span class="hljs-params">(s <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> s == <span class="hljs-string">""</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span></span><br><span class="line">	&#125;</span><br><span class="line">	runes := manacherSring(s)</span><br><span class="line">	pArr := <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">int</span>, <span class="hljs-number">0</span>, <span class="hljs-built_in">len</span>(runes))</span><br><span class="line">	<span class="hljs-keyword">var</span> index, pR, max = <span class="hljs-number">-1</span>, <span class="hljs-number">-1</span>, math.MinInt32</span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">len</span>(runes); i++ &#123;</span><br><span class="line">		pArr[i] = <span class="hljs-number">1</span></span><br><span class="line">		<span class="hljs-keyword">if</span> pR &gt; i &#123;</span><br><span class="line">			pArr[i] = pArr[<span class="hljs-number">2</span>*index-i]</span><br><span class="line">			<span class="hljs-keyword">if</span> pArr[<span class="hljs-number">2</span>*index-i] &gt; pR-i &#123;</span><br><span class="line">				pArr[i] = pR - i</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">for</span> ; i+pArr[i] &lt; <span class="hljs-built_in">len</span>(runes) &amp;&amp; i-pArr[i] &gt; <span class="hljs-number">-1</span> &amp;&amp; runes[i+pArr[i]] == runes[i-pArr[i]]; pArr[i]++ &#123;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> i+pArr[i] &gt; pR &#123;</span><br><span class="line">			pR = i + pArr[i]</span><br><span class="line">			index = i</span><br><span class="line">		&#125;</span><br><span class="line">		max = <span class="hljs-keyword">int</span>(math.Max(<span class="hljs-keyword">float64</span>(max), <span class="hljs-keyword">float64</span>(pArr[i])))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> max<span class="hljs-number">-1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>2*index-i</code> 找到镜像位置，假如 j 是 i的镜像位置，那么  <code>i + j = 2 * index</code> , <code>j = 2 * index-i</code></p>
+<h1 id="四、Manacher-算法的复杂度"><a href="#四、Manacher-算法的复杂度" class="headerlink" title="四、Manacher 算法的复杂度"></a>四、Manacher 算法的复杂度</h1><p>每次迭代均会使pR增加 ，在算法运行过程中从不减小。所以扩出去检查的次数就是O（N）的级别。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E7%AE%97%E6%B3%95/" rel="tag">算法</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/08/22/Rust/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3Rust%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E%E5%80%9F%E7%94%A8/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">深入理解Rust所有权与借用</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/07/14/Go/Golang%E8%AF%91%E6%96%87/%E5%A6%82%E4%BD%95%E4%BC%98%E9%9B%85%E5%85%B3%E9%97%ADGo-Channel/">
+                <span class="level-item">(译) 如何优雅的关闭Go Channel</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'adcc63bcd064f4b8466817a71e7b087d',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、算法由来">
+        <span class="has-mr-6">1</span>
+        <span>一、算法由来</span>
+        </a></li><li>
+        <a class="is-flex" href="#二、算法思想">
+        <span class="has-mr-6">2</span>
+        <span>二、算法思想</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#处理字符串奇偶数之间的差异">
+        <span class="has-mr-6">2.1</span>
+        <span>处理字符串奇偶数之间的差异</span>
+        </a></li><li>
+        <a class="is-flex" href="#加速扩过程">
+        <span class="has-mr-6">2.2</span>
+        <span>加速扩过程</span>
+        </a></li><li>
+        <a class="is-flex" href="#进行中心扩展法">
+        <span class="has-mr-6">2.3</span>
+        <span>进行中心扩展法</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#三、算法实现">
+        <span class="has-mr-6">3</span>
+        <span>三、算法实现</span>
+        </a></li><li>
+        <a class="is-flex" href="#四、Manacher-算法的复杂度">
+        <span class="has-mr-6">4</span>
+        <span>四、Manacher 算法的复杂度</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Manacher算法" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

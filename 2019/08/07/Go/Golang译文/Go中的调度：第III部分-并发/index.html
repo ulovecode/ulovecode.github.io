@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) Go中的调度：第III部分 - 并发 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="这是三部分系列中的第三篇文章,它将提供对Go中调度程序背后的机制和语义的理解。这篇文章重点关注并发性。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) Go中的调度：第III部分 - 并发">
+<meta property="og:url" content="https://www.ulovecode.com/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACIII%E9%83%A8%E5%88%86-%E5%B9%B6%E5%8F%91/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="这是三部分系列中的第三篇文章,它将提供对Go中调度程序背后的机制和语义的理解。这篇文章重点关注并发性。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/d3/aa/d3255c179c7ea60b5364f3f82fbd73aa.jpg?x-oss-process=image/crop,x_131,w_1148,h_852/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-08-07T04:32:00.000Z">
+<meta property="article:modified_time" content="2019-08-07T04:32:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go中的垃圾收集">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/d3/aa/d3255c179c7ea60b5364f3f82fbd73aa.jpg?x-oss-process=image/crop,x_131,w_1148,h_852/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的调度：第III部分 - 并发" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//static001.infoq.cn/resource/image/d3/aa/d3255c179c7ea60b5364f3f82fbd73aa.jpg?x-oss-process=image/crop,x_131,w_1148,h_852/resize,w_1280,h_847" alt="(译) Go中的调度：第III部分 - 并发">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-07T04:32:00.000Z">2019-08-07</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E8%AF%91%E6%96%87/">Golang译文</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    34 分钟 读完 (大约 5165 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) Go中的调度：第III部分 - 并发
+            
+        </h1>
+        <div class="content">
+            <p>这是三部分系列中的第三篇文章,它将提供对Go中调度程序背后的机制和语义的理解。这篇文章重点关注并发性。</p>
+<a id="more"></a>
+<ol>
+<li><a href="https://www.ulovecode.com/2019/08/06/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACI%E9%83%A8%E5%88%86%20-%20OS%E8%B0%83%E5%BA%A6%E7%A8%8B%E5%BA%8F/">Go中的调度：第I部分 - OS调度程序</a></li>
+<li><a href="https://www.ulovecode.com/2019/08/07/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACII%E9%83%A8%E5%88%86%20-%20Go%20Scheduler/#more">Go中的调度：第II部分 - Go Scheduler</a></li>
+<li><a href="https://www.ulovecode.com/2019/08/07/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACIII%E9%83%A8%E5%88%86%20-%20%E5%B9%B6%E5%8F%91/#more">Go中的调度：第III部分 - 并发</a></li>
+</ol>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>当我解决问题时,特别是如果这是一个新问题,我最初并不会考虑并发是否适合。我首先寻找顺序解决方案并确保它正常工作。然后在可读性和技术评论之后,我将开始提出并发性是否合理和实用的问题。有时很明显,并发性是一个很好的选择,有时则不太清楚。</p>
+<p>在本系列的第一部分中,我解释了操作系统调度程序的机制和语义,如果你计划编写多线程代码,我认为这很重要。在第二部分中,我解释了Go调度程序的语义,我认为这对于理解如何在Go中编写并发代码非常重要。在这篇文章中,我将开始将操作系统和Go调度程序的机制和语义结合在一起,以便更深入地了解并发性和不兼容性。</p>
+<p>这篇文章的目标是：</p>
+<ul>
+<li><p>提供有关必须考虑的语义的指导,以确定工作负载是否适合使用并发。</p>
+</li>
+<li><p>向你展示不同类型的工作负载如何改变语义,从而改变你想要做出的工程决策。</p>
+</li>
+</ul>
+<h1 id="什么是并发"><a href="#什么是并发" class="headerlink" title="什么是并发"></a>什么是并发</h1><p>并发意味着“乱序”执行。获取一组指令,否则这些指令将按顺序执行,并找到一种无序执行它们的方法,并仍然产生相同的结果。对于你面前的问题,必须明显的是,乱序执行会增加价值。当我说价值时,我的意思是为复杂性成本增加足够的性能增益。根据你的问题,可能无法执行乱序执行甚至有意义。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/96_figure1.png" alt=""><br>图1：并发与并行</p>
+<p>在图1中,你可以看到两个逻辑处理器（P）的图表,每个处理器的独立OS线程（M）连接到计算机上的独立硬件线程（Core）。你可以看到两个Goroutines（G1和G2）并行执行,同时在各自的操作系统上执行它们的指令。在每个逻辑处理器中,三个Goroutines轮流共享各自的OS线程。所有这些Goroutines同时运行,没有特定顺序执行他们的指令并在OS线程上共享时间。</p>
+<p>这就是摩擦,有时利用没有并行性的并发性实际上可以减慢吞吐量。有趣的是,有时利用并发性和并行性并不会给你带来比你认为可以实现的更大的性能提升。</p>
+<h1 id="工作负载"><a href="#工作负载" class="headerlink" title="工作负载"></a>工作负载</h1><p>你怎么知道什么时候可能无序执行或有意义？了解问题所处理的工作负载类型是一个很好的起点。在考虑并发时,有两种类型的工作负载是很重要的。</p>
+<ul>
+<li><p>CPU绑定：这是一个永远不会产生Goroutines自然进出等待状态的工作负载。这是不断进行计算的工作。计算Pi到第N位的线程将是CPU绑定的。</p>
+</li>
+<li><p>IO绑定：这是一个导致Goroutines自然进入等待状态的工作负载。这项工作包括请求通过网络访问资源,或将系统调用进入操作系统,或等待事件发生。需要读取文件的Goroutine将是IO绑定。我会包含同步事件（互斥,原子）,导致Goroutine等待此类别的一部分。</p>
+</li>
+</ul>
+<p>使用CPU绑定工作负载,你需要并行来利用并发性。处理多个Goroutines的单个操作系统效率不高,因为Goroutines作为其工作负载的一部分不会进入和退出等待状态。拥有更多的Goroutines而不是操作系统/硬件线程可以减慢工作负载执行速度,因为在操作系统线程上移动和关闭Goroutines的延迟成本（花费的时间）。上下文切换正在为你的工作负载创建“Stop The World”事件,因为在切换期间你的工作负载都没有被执行。</p>
+<p>使用IO绑定工作负载,你不需要并行来使用并发。单个操作系统线程可以高效地处理多个Goroutines,因为Goroutines作为其工作负载的一部分自然地进出等待状态。拥有比操作系统/硬件线程更多的Goroutines可以加快工作负载执行速度,因为在操作系统线程上移动和移除Goroutines的延迟成本并不会产生“停止世界”事件。你的工作负载自然停止,这允许不同的Goroutine有效地利用相同的操作系统线程,而不是让操作系统线程闲置。</p>
+<p>你如何知道每个线程有多少Goroutines提供最佳吞吐量？很少有Goroutines,你有更多的空闲时间。Goroutines太多,你有更多的上下文切换延迟时间。这是你要考虑的事情,但超出了这个特定职位的范围。</p>
+<p>现在,重要的是要检查一些代码以巩固你识别工作负载何时可以利用并发性的能力,何时不能并且是否需要并行性。</p>
+<h1 id="添加数字"><a href="#添加数字" class="headerlink" title="添加数字"></a>添加数字</h1><p>我们不需要复杂的代码来可视化和理解这些语义。查看以下命名的函数,该函数add汇总整数集合。</p>
+<p>清单1<br><a href="https://play.golang.org/p/r9LdqUsEzEz" target="_blank" rel="noopener">https://play.golang.org/p/r9LdqUsEzEz</a></p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">36</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">add</span><span class="hljs-params">(numbers []<span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line"><span class="hljs-number">37</span>     <span class="hljs-keyword">var</span> v <span class="hljs-keyword">int</span></span><br><span class="line"><span class="hljs-number">38</span>     <span class="hljs-keyword">for</span> _, n := <span class="hljs-keyword">range</span> numbers &#123;</span><br><span class="line"><span class="hljs-number">39</span>         v += n</span><br><span class="line"><span class="hljs-number">40</span>     &#125;</span><br><span class="line"><span class="hljs-number">41</span>     <span class="hljs-keyword">return</span> v</span><br><span class="line"><span class="hljs-number">42</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>在第36行的清单1中,add声明了一个名为的函数,它接受一个整数集合并返回集合的总和。它从第37行开始,v变量声明包含总和。然后在第38行,函数线性地遍历集合,并且每个数字被添加到第39行的当前总和。最后在第41行,函数将最终的总和返回给调用者。</p>
+<p>问题：该add功能是一个适合乱序执行的工作负载吗？我相信答案是肯定的。整数集合可以分解为较小的列表,并且可以同时处理这些列表。一旦将所有较小的列表相加,就可以将这组和被加在一起以产生与顺序版本相同的答案。</p>
+<p>但是,还有另一个问题浮现在脑海中。应该独立创建和处理多少个较小的列表以获得最佳吞吐量？要回答此问题,你必须知道add正在执行的工作负载类型。该add函数正在执行CPU绑定工作负载,因为该算法正在执行纯数学,并且它不会导致goroutine进入自然等待状态。这意味着每个操作系统线程使用一个Goroutine就可以获得良好的吞吐量。</p>
+<p>下面的清单2是我的并发版本add。</p>
+<p>注意：编写并发版本的add时,可以采用多种方法和选项。暂时不要挂断我的特定实现。如果你有一个更易读的版本,表现相同或更好,我希望你能分享它。</p>
+<p>清单2<br><a href="https://play.golang.org/p/r9LdqUsEzEz" target="_blank" rel="noopener">https://play.golang.org/p/r9LdqUsEzEz</a></p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">44</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">addConcurrent</span><span class="hljs-params">(goroutines <span class="hljs-keyword">int</span>, numbers []<span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line"><span class="hljs-number">45</span>     <span class="hljs-keyword">var</span> v <span class="hljs-keyword">int64</span></span><br><span class="line"><span class="hljs-number">46</span>     totalNumbers := <span class="hljs-built_in">len</span>(numbers)</span><br><span class="line"><span class="hljs-number">47</span>     lastGoroutine := goroutines - <span class="hljs-number">1</span></span><br><span class="line"><span class="hljs-number">48</span>     stride := totalNumbers / goroutines</span><br><span class="line"><span class="hljs-number">49</span></span><br><span class="line"><span class="hljs-number">50</span>     <span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line"><span class="hljs-number">51</span>     wg.Add(goroutines)</span><br><span class="line"><span class="hljs-number">52</span></span><br><span class="line"><span class="hljs-number">53</span>     <span class="hljs-keyword">for</span> g := <span class="hljs-number">0</span>; g &lt; goroutines; g++ &#123;</span><br><span class="line"><span class="hljs-number">54</span>         <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(g <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line"><span class="hljs-number">55</span>             start := g * stride</span><br><span class="line"><span class="hljs-number">56</span>             end := start + stride</span><br><span class="line"><span class="hljs-number">57</span>             <span class="hljs-keyword">if</span> g == lastGoroutine &#123;</span><br><span class="line"><span class="hljs-number">58</span>                 end = totalNumbers</span><br><span class="line"><span class="hljs-number">59</span>             &#125;</span><br><span class="line"><span class="hljs-number">60</span></span><br><span class="line"><span class="hljs-number">61</span>             <span class="hljs-keyword">var</span> lv <span class="hljs-keyword">int</span></span><br><span class="line"><span class="hljs-number">62</span>             <span class="hljs-keyword">for</span> _, n := <span class="hljs-keyword">range</span> numbers[start:end] &#123;</span><br><span class="line"><span class="hljs-number">63</span>                 lv += n</span><br><span class="line"><span class="hljs-number">64</span>             &#125;</span><br><span class="line"><span class="hljs-number">65</span></span><br><span class="line"><span class="hljs-number">66</span>             atomic.AddInt64(&amp;v, <span class="hljs-keyword">int64</span>(lv))</span><br><span class="line"><span class="hljs-number">67</span>             wg.Done()</span><br><span class="line"><span class="hljs-number">68</span>         &#125;(g)</span><br><span class="line"><span class="hljs-number">69</span>     &#125;</span><br><span class="line"><span class="hljs-number">70</span></span><br><span class="line"><span class="hljs-number">71</span>     wg.Wait()</span><br><span class="line"><span class="hljs-number">72</span></span><br><span class="line"><span class="hljs-number">73</span>     <span class="hljs-keyword">return</span> <span class="hljs-keyword">int</span>(v)</span><br><span class="line"><span class="hljs-number">74</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>在清单2中,显示了addConcurrent函数,它是函数的并发版本add。并发版本使用26行代码而不是非并发版本的5行代码。有很多代码,所以我只强调要理解的重要内容。</p>
+<p>第48行：每个Goroutine都会得到他们自己独特但更小的数字列表。列表的大小是通过获取集合的大小并将其除以Goroutines的数量来计算的。</p>
+<p>第53行：创建Goroutines池以执行添加工作。</p>
+<p>第57-59行：最后一个Goroutine将添加剩余的数字列表,这些数字可能比其他Goroutines更大。</p>
+<p>第66行：将较小的列表的总和加在一起作为最终总和。</p>
+<p>并发版本肯定比顺序版本更复杂但复杂性值得吗？回答这个问题的最好方法是创建一个基准。对于这些基准测试,我使用了1000万个数字的集合,关闭了垃圾收集器。有一个使用该add函数的顺序版本和使用该函数的并发版本addConcurrent。</p>
+<p>清单3</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">BenchmarkSequential</span><span class="hljs-params">(b *testing.B)</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">        add(numbers)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">BenchmarkConcurrent</span><span class="hljs-params">(b *testing.B)</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">        addConcurrent(runtime.NumCPU(), numbers)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>清单3显示了基准函数。以下是所有Goroutines只有一个操作系统线程可用的结果。顺序版本使用1个Goroutine,并发版本runtime.NumCPU在我的机器上使用或8个Goroutines。在这种情况下,并发版本正在利用没有并行性的并发性。</p>
+<p>清单4</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">10</span> Million Numbers using <span class="hljs-number">8</span> goroutines with <span class="hljs-number">1</span> core</span><br><span class="line"><span class="hljs-number">2.9</span> GHz Intel <span class="hljs-number">4</span> Core i7</span><br><span class="line">Concurrency WITHOUT Parallelism</span><br><span class="line">-----------------------------------------------------------------------------</span><br><span class="line">$ GOGC=off <span class="hljs-keyword">go</span> test -cpu <span class="hljs-number">1</span> -run none -bench . -benchtime <span class="hljs-number">3</span>s</span><br><span class="line">goos: darwin</span><br><span class="line">goarch: amd64</span><br><span class="line">pkg: github.com/ardanlabs/gotraining/topics/<span class="hljs-keyword">go</span>/testing/benchmarks/cpu-bound</span><br><span class="line">BenchmarkSequential      	    <span class="hljs-number">1000</span>	   <span class="hljs-number">5720764</span> ns/op : ~<span class="hljs-number">10</span>% Faster</span><br><span class="line">BenchmarkConcurrent      	    <span class="hljs-number">1000</span>	   <span class="hljs-number">6387344</span> ns/op</span><br><span class="line">BenchmarkSequentialAgain 	    <span class="hljs-number">1000</span>	   <span class="hljs-number">5614666</span> ns/op : ~<span class="hljs-number">13</span>% Faster</span><br><span class="line">BenchmarkConcurrentAgain 	    <span class="hljs-number">1000</span>	   <span class="hljs-number">6482612</span> ns/op</span><br></pre></td></tr></table></figure>
+<p>注意：在本地计算机上运行基准测试很复杂。有许多因素可能导致你的基准测试不准确。确保你的机器尽可能空闲并运行基准测试几次。你希望确保在结果中看到一致性。通过测试工具运行两次基准测试,可以为此基准测试提供最一致的结果。</p>
+<p>清单4中的基准测试表明,当只有一个操作系统线程可供所有Goroutines使用时,Sequential版本比Concurrent快约10％到13％。这是我所期望的,因为并发版本具有单个操作系统线程上的上下文切换和Goroutines管理的开销。</p>
+<p>以下是每个Goroutine可用的单独操作系统线程的结果。顺序版本使用1个Goroutine,并发版本runtime.NumCPU在我的机器上使用或8个Goroutines。在这种情况下,并发版本正在利用并行性和并发性。</p>
+<p>清单5</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">10</span> Million Numbers using <span class="hljs-number">8</span> goroutines with <span class="hljs-number">8</span> cores</span><br><span class="line"><span class="hljs-number">2.9</span> GHz Intel <span class="hljs-number">4</span> Core i7</span><br><span class="line">Concurrency WITH Parallelism</span><br><span class="line">-----------------------------------------------------------------------------</span><br><span class="line">$ GOGC=off <span class="hljs-keyword">go</span> test -cpu <span class="hljs-number">8</span> -run none -bench . -benchtime <span class="hljs-number">3</span>s</span><br><span class="line">goos: darwin</span><br><span class="line">goarch: amd64</span><br><span class="line">pkg: github.com/ardanlabs/gotraining/topics/<span class="hljs-keyword">go</span>/testing/benchmarks/cpu-bound</span><br><span class="line">BenchmarkSequential<span class="hljs-number">-8</span>        	    <span class="hljs-number">1000</span>	   <span class="hljs-number">5910799</span> ns/op</span><br><span class="line">BenchmarkConcurrent<span class="hljs-number">-8</span>        	    <span class="hljs-number">2000</span>	   <span class="hljs-number">3362643</span> ns/op : ~<span class="hljs-number">43</span>% Faster</span><br><span class="line">BenchmarkSequentialAgain<span class="hljs-number">-8</span>   	    <span class="hljs-number">1000</span>	   <span class="hljs-number">5933444</span> ns/op</span><br><span class="line">BenchmarkConcurrentAgain<span class="hljs-number">-8</span>   	    <span class="hljs-number">2000</span>	   <span class="hljs-number">3477253</span> ns/op : ~<span class="hljs-number">41</span>% Faster</span><br></pre></td></tr></table></figure>
+<p>清单5中的基准测试表明,当每个Goroutine可以使用单独的操作系统线程时,并发版本比顺序版本快大约41％到43％。这是我所期望的,因为所有Goroutines现在并行运行,八个Goroutines同时执行他们的同时工作。</p>
+<h1 id="排序"><a href="#排序" class="headerlink" title="排序"></a>排序</h1><p>重要的是要了解并非所有CPU绑定工作负载都适合并发。当破坏工作和/或组合所有结果非常昂贵时,这是主要的。使用名为冒号排序的排序算法可以看到这方面的一个例子。查看以下在Go中实现冒泡排序的代码。</p>
+<p>清单6<br><a href="https://play.golang.org/p/S0Us1wYBqG6" target="_blank" rel="noopener">https://play.golang.org/p/S0Us1wYBqG6</a></p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">01</span> <span class="hljs-keyword">package</span> main</span><br><span class="line"><span class="hljs-number">02</span></span><br><span class="line"><span class="hljs-number">03</span> <span class="hljs-keyword">import</span> <span class="hljs-string">"fmt"</span></span><br><span class="line"><span class="hljs-number">04</span></span><br><span class="line"><span class="hljs-number">05</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">bubbleSort</span><span class="hljs-params">(numbers []<span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line"><span class="hljs-number">06</span>     n := <span class="hljs-built_in">len</span>(numbers)</span><br><span class="line"><span class="hljs-number">07</span>     <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; n; i++ &#123;</span><br><span class="line"><span class="hljs-number">08</span>         <span class="hljs-keyword">if</span> !sweep(numbers, i) &#123;</span><br><span class="line"><span class="hljs-number">09</span>             <span class="hljs-keyword">return</span></span><br><span class="line"><span class="hljs-number">10</span>         &#125;</span><br><span class="line"><span class="hljs-number">11</span>     &#125;</span><br><span class="line"><span class="hljs-number">12</span> &#125;</span><br><span class="line"><span class="hljs-number">13</span></span><br><span class="line"><span class="hljs-number">14</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">sweep</span><span class="hljs-params">(numbers []<span class="hljs-keyword">int</span>, currentPass <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">bool</span></span> &#123;</span><br><span class="line"><span class="hljs-number">15</span>     <span class="hljs-keyword">var</span> idx <span class="hljs-keyword">int</span></span><br><span class="line"><span class="hljs-number">16</span>     idxNext := idx + <span class="hljs-number">1</span></span><br><span class="line"><span class="hljs-number">17</span>     n := <span class="hljs-built_in">len</span>(numbers)</span><br><span class="line"><span class="hljs-number">18</span>     <span class="hljs-keyword">var</span> swap <span class="hljs-keyword">bool</span></span><br><span class="line"><span class="hljs-number">19</span></span><br><span class="line"><span class="hljs-number">20</span>     <span class="hljs-keyword">for</span> idxNext &lt; (n - currentPass) &#123;</span><br><span class="line"><span class="hljs-number">21</span>         a := numbers[idx]</span><br><span class="line"><span class="hljs-number">22</span>         b := numbers[idxNext]</span><br><span class="line"><span class="hljs-number">23</span>         <span class="hljs-keyword">if</span> a &gt; b &#123;</span><br><span class="line"><span class="hljs-number">24</span>             numbers[idx] = b</span><br><span class="line"><span class="hljs-number">25</span>             numbers[idxNext] = a</span><br><span class="line"><span class="hljs-number">26</span>             swap = <span class="hljs-literal">true</span></span><br><span class="line"><span class="hljs-number">27</span>         &#125;</span><br><span class="line"><span class="hljs-number">28</span>         idx++</span><br><span class="line"><span class="hljs-number">29</span>         idxNext = idx + <span class="hljs-number">1</span></span><br><span class="line"><span class="hljs-number">30</span>     &#125;</span><br><span class="line"><span class="hljs-number">31</span>     <span class="hljs-keyword">return</span> swap</span><br><span class="line"><span class="hljs-number">32</span> &#125;</span><br><span class="line"><span class="hljs-number">33</span></span><br><span class="line"><span class="hljs-number">34</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line"><span class="hljs-number">35</span>     org := []<span class="hljs-keyword">int</span>&#123;<span class="hljs-number">1</span>, <span class="hljs-number">3</span>, <span class="hljs-number">2</span>, <span class="hljs-number">4</span>, <span class="hljs-number">8</span>, <span class="hljs-number">6</span>, <span class="hljs-number">7</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>, <span class="hljs-number">0</span>&#125;</span><br><span class="line"><span class="hljs-number">36</span>     fmt.Println(org)</span><br><span class="line"><span class="hljs-number">37</span></span><br><span class="line"><span class="hljs-number">38</span>     bubbleSort(org)</span><br><span class="line"><span class="hljs-number">39</span>     fmt.Println(org)</span><br><span class="line"><span class="hljs-number">40</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>在清单6中,有一个用Go编写的冒泡排序的例子。这种排序算法会扫描每次传递时交换值的整数集合。根据列表的顺序,在对所有内容进行排序之前,可能需要多次遍历集合。</p>
+<p>问题：该bubbleSort功能是一个适合乱序执行的工作负载吗？我相信答案是否定的。整数集合可以分解为较小的列表,并且可以同时对这些列表进行排序。但是,在完成所有并发工作之后,没有有效的方法将较小的列表排序在一起。以下是冒泡排序的并发版本的示例。</p>
+<p>清单8</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">01</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">bubbleSortConcurrent</span><span class="hljs-params">(goroutines <span class="hljs-keyword">int</span>, numbers []<span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line"><span class="hljs-number">02</span>     totalNumbers := <span class="hljs-built_in">len</span>(numbers)</span><br><span class="line"><span class="hljs-number">03</span>     lastGoroutine := goroutines - <span class="hljs-number">1</span></span><br><span class="line"><span class="hljs-number">04</span>     stride := totalNumbers / goroutines</span><br><span class="line"><span class="hljs-number">05</span></span><br><span class="line"><span class="hljs-number">06</span>     <span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line"><span class="hljs-number">07</span>     wg.Add(goroutines)</span><br><span class="line"><span class="hljs-number">08</span></span><br><span class="line"><span class="hljs-number">09</span>     <span class="hljs-keyword">for</span> g := <span class="hljs-number">0</span>; g &lt; goroutines; g++ &#123;</span><br><span class="line"><span class="hljs-number">10</span>         <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(g <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line"><span class="hljs-number">11</span>             start := g * stride</span><br><span class="line"><span class="hljs-number">12</span>             end := start + stride</span><br><span class="line"><span class="hljs-number">13</span>             <span class="hljs-keyword">if</span> g == lastGoroutine &#123;</span><br><span class="line"><span class="hljs-number">14</span>                 end = totalNumbers</span><br><span class="line"><span class="hljs-number">15</span>             &#125;</span><br><span class="line"><span class="hljs-number">16</span></span><br><span class="line"><span class="hljs-number">17</span>             bubbleSort(numbers[start:end])</span><br><span class="line"><span class="hljs-number">18</span>             wg.Done()</span><br><span class="line"><span class="hljs-number">19</span>         &#125;(g)</span><br><span class="line"><span class="hljs-number">20</span>     &#125;</span><br><span class="line"><span class="hljs-number">21</span></span><br><span class="line"><span class="hljs-number">22</span>     wg.Wait()</span><br><span class="line"><span class="hljs-number">23</span></span><br><span class="line"><span class="hljs-number">24</span>     <span class="hljs-comment">// Ugh, we have to sort the entire list again.</span></span><br><span class="line"><span class="hljs-number">25</span>     bubbleSort(numbers)</span><br><span class="line"><span class="hljs-number">26</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>在清单8中,显示了bubbleSortConcurrent函数,它是函数的并发版本冒泡排序。它使用多个Goroutines同时对列表的某些部分进行排序。但是,你剩下的是以块为单位的已排序值列表。给定一个包含12个数字的36个数字的列表,如果整个列表在第25行没有再次排序,这将是结果列表。</p>
+<p>清单9</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Before:</span><br><span class="line">  <span class="hljs-number">25</span> <span class="hljs-number">51</span> <span class="hljs-number">15</span> <span class="hljs-number">57</span> <span class="hljs-number">87</span> <span class="hljs-number">10</span> <span class="hljs-number">10</span> <span class="hljs-number">85</span> <span class="hljs-number">90</span> <span class="hljs-number">32</span> <span class="hljs-number">98</span> <span class="hljs-number">53</span></span><br><span class="line">  <span class="hljs-number">91</span> <span class="hljs-number">82</span> <span class="hljs-number">84</span> <span class="hljs-number">97</span> <span class="hljs-number">67</span> <span class="hljs-number">37</span> <span class="hljs-number">71</span> <span class="hljs-number">94</span> <span class="hljs-number">26</span>  <span class="hljs-number">2</span> <span class="hljs-number">81</span> <span class="hljs-number">79</span></span><br><span class="line">  <span class="hljs-number">66</span> <span class="hljs-number">70</span> <span class="hljs-number">93</span> <span class="hljs-number">86</span> <span class="hljs-number">19</span> <span class="hljs-number">81</span> <span class="hljs-number">52</span> <span class="hljs-number">75</span> <span class="hljs-number">85</span> <span class="hljs-number">10</span> <span class="hljs-number">87</span> <span class="hljs-number">49</span></span><br><span class="line"></span><br><span class="line">After:</span><br><span class="line">  <span class="hljs-number">10</span> <span class="hljs-number">10</span> <span class="hljs-number">15</span> <span class="hljs-number">25</span> <span class="hljs-number">32</span> <span class="hljs-number">51</span> <span class="hljs-number">53</span> <span class="hljs-number">57</span> <span class="hljs-number">85</span> <span class="hljs-number">87</span> <span class="hljs-number">90</span> <span class="hljs-number">98</span></span><br><span class="line">   <span class="hljs-number">2</span> <span class="hljs-number">26</span> <span class="hljs-number">37</span> <span class="hljs-number">67</span> <span class="hljs-number">71</span> <span class="hljs-number">79</span> <span class="hljs-number">81</span> <span class="hljs-number">82</span> <span class="hljs-number">84</span> <span class="hljs-number">91</span> <span class="hljs-number">94</span> <span class="hljs-number">97</span></span><br><span class="line">  <span class="hljs-number">10</span> <span class="hljs-number">19</span> <span class="hljs-number">49</span> <span class="hljs-number">52</span> <span class="hljs-number">66</span> <span class="hljs-number">70</span> <span class="hljs-number">75</span> <span class="hljs-number">81</span> <span class="hljs-number">85</span> <span class="hljs-number">86</span> <span class="hljs-number">87</span> <span class="hljs-number">93</span></span><br></pre></td></tr></table></figure>
+<p>由于冒泡排序的本质是扫描列表,因此bubbleSort对第25行的调用将抵消使用并发性带来的任何潜在收益。使用冒泡排序,使用并发性没有性能提升。</p>
+<h1 id="阅读文件"><a href="#阅读文件" class="headerlink" title="阅读文件"></a>阅读文件</h1><p>已经介绍了两个CPU绑定工作负载,但是IO绑定工作负载呢？当Goroutines自然地进出等待状态时,语义是否不同？查看读取文件并执行文本搜索的IO绑定工作负载。</p>
+<p>第一个版本是一个名为的函数的顺序版本find。</p>
+<p>清单10<br><a href="https://play.golang.org/p/8gFe5F8zweN" target="_blank" rel="noopener">https://play.golang.org/p/8gFe5F8zweN</a></p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">42</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">find</span><span class="hljs-params">(topic <span class="hljs-keyword">string</span>, docs []<span class="hljs-keyword">string</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line"><span class="hljs-number">43</span>     <span class="hljs-keyword">var</span> found <span class="hljs-keyword">int</span></span><br><span class="line"><span class="hljs-number">44</span>     <span class="hljs-keyword">for</span> _, doc := <span class="hljs-keyword">range</span> docs &#123;</span><br><span class="line"><span class="hljs-number">45</span>         items, err := read(doc)</span><br><span class="line"><span class="hljs-number">46</span>         <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">47</span>             <span class="hljs-keyword">continue</span></span><br><span class="line"><span class="hljs-number">48</span>         &#125;</span><br><span class="line"><span class="hljs-number">49</span>         <span class="hljs-keyword">for</span> _, item := <span class="hljs-keyword">range</span> items &#123;</span><br><span class="line"><span class="hljs-number">50</span>             <span class="hljs-keyword">if</span> strings.Contains(item.Description, topic) &#123;</span><br><span class="line"><span class="hljs-number">51</span>                 found++</span><br><span class="line"><span class="hljs-number">52</span>             &#125;</span><br><span class="line"><span class="hljs-number">53</span>         &#125;</span><br><span class="line"><span class="hljs-number">54</span>     &#125;</span><br><span class="line"><span class="hljs-number">55</span>     <span class="hljs-keyword">return</span> found</span><br><span class="line"><span class="hljs-number">56</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>在清单10中,你可以看到该find函数的顺序版本。在第43行,found声明一个名为变量的变量,以维持topic在给定文档中找到指定的次数。然后在第44行,迭代文档并使用该read函数在第45行读取每个文档。最后在第49-53行,包中的Contains函数strings用于检查是否可以在从文档中读取的项集合中找到主题。如果找到主题,则found变量加1。</p>
+<p>这是read被调用的函数的实现find。</p>
+<p>清单11<br><a href="https://play.golang.org/p/8gFe5F8zweN" target="_blank" rel="noopener">https://play.golang.org/p/8gFe5F8zweN</a></p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">33</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">read</span><span class="hljs-params">(doc <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">([]item, error)</span></span> &#123;</span><br><span class="line"><span class="hljs-number">34</span>     time.Sleep(time.Millisecond) <span class="hljs-comment">// Simulate blocking disk read.</span></span><br><span class="line"><span class="hljs-number">35</span>     <span class="hljs-keyword">var</span> d document</span><br><span class="line"><span class="hljs-number">36</span>     <span class="hljs-keyword">if</span> err := xml.Unmarshal([]<span class="hljs-keyword">byte</span>(file), &amp;d); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">37</span>         <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, err</span><br><span class="line"><span class="hljs-number">38</span>     &#125;</span><br><span class="line"><span class="hljs-number">39</span>     <span class="hljs-keyword">return</span> d.Channel.Items, <span class="hljs-literal">nil</span></span><br><span class="line"><span class="hljs-number">40</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>read清单11中的函数time.Sleep以一毫秒的调用开始。此调用用于模拟在我们执行实际系统调用以从磁盘读取文档时可能产生的延迟。此延迟的一致性对于准确测量find针对并发版本的顺序版本的性能非常重要。然后在第35-39行,将存储在全局变量中的模拟xml文档file解组为struct值以进行处理。最后,在第39行将一组项目返回给调用者。</p>
+<p>有了顺序版本,这里是并发版本。</p>
+<p>注意：编写并发版本的find时,可以采用多种方法和选项。暂时不要挂断我的特定实现。如果你有一个更易读的版本,表现相同或更好,我希望你能分享它。</p>
+<p>清单12<br><a href="https://play.golang.org/p/8gFe5F8zweN" target="_blank" rel="noopener">https://play.golang.org/p/8gFe5F8zweN</a></p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">58</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">findConcurrent</span><span class="hljs-params">(goroutines <span class="hljs-keyword">int</span>, topic <span class="hljs-keyword">string</span>, docs []<span class="hljs-keyword">string</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line"><span class="hljs-number">59</span>     <span class="hljs-keyword">var</span> found <span class="hljs-keyword">int64</span></span><br><span class="line"><span class="hljs-number">60</span></span><br><span class="line"><span class="hljs-number">61</span>     ch := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">string</span>, <span class="hljs-built_in">len</span>(docs))</span><br><span class="line"><span class="hljs-number">62</span>     <span class="hljs-keyword">for</span> _, doc := <span class="hljs-keyword">range</span> docs &#123;</span><br><span class="line"><span class="hljs-number">63</span>         ch &lt;- doc</span><br><span class="line"><span class="hljs-number">64</span>     &#125;</span><br><span class="line"><span class="hljs-number">65</span>     <span class="hljs-built_in">close</span>(ch)</span><br><span class="line"><span class="hljs-number">66</span></span><br><span class="line"><span class="hljs-number">67</span>     <span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line"><span class="hljs-number">68</span>     wg.Add(goroutines)</span><br><span class="line"><span class="hljs-number">69</span></span><br><span class="line"><span class="hljs-number">70</span>     <span class="hljs-keyword">for</span> g := <span class="hljs-number">0</span>; g &lt; goroutines; g++ &#123;</span><br><span class="line"><span class="hljs-number">71</span>         <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line"><span class="hljs-number">72</span>             <span class="hljs-keyword">var</span> lFound <span class="hljs-keyword">int64</span></span><br><span class="line"><span class="hljs-number">73</span>             <span class="hljs-keyword">for</span> doc := <span class="hljs-keyword">range</span> ch &#123;</span><br><span class="line"><span class="hljs-number">74</span>                 items, err := read(doc)</span><br><span class="line"><span class="hljs-number">75</span>                 <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">76</span>                     <span class="hljs-keyword">continue</span></span><br><span class="line"><span class="hljs-number">77</span>                 &#125;</span><br><span class="line"><span class="hljs-number">78</span>                 <span class="hljs-keyword">for</span> _, item := <span class="hljs-keyword">range</span> items &#123;</span><br><span class="line"><span class="hljs-number">79</span>                     <span class="hljs-keyword">if</span> strings.Contains(item.Description, topic) &#123;</span><br><span class="line"><span class="hljs-number">80</span>                         lFound++</span><br><span class="line"><span class="hljs-number">81</span>                     &#125;</span><br><span class="line"><span class="hljs-number">82</span>                 &#125;</span><br><span class="line"><span class="hljs-number">83</span>             &#125;</span><br><span class="line"><span class="hljs-number">84</span>             atomic.AddInt64(&amp;found, lFound)</span><br><span class="line"><span class="hljs-number">85</span>             wg.Done()</span><br><span class="line"><span class="hljs-number">86</span>         &#125;()</span><br><span class="line"><span class="hljs-number">87</span>     &#125;</span><br><span class="line"><span class="hljs-number">88</span></span><br><span class="line"><span class="hljs-number">89</span>     wg.Wait()</span><br><span class="line"><span class="hljs-number">90</span></span><br><span class="line"><span class="hljs-number">91</span>     <span class="hljs-keyword">return</span> <span class="hljs-keyword">int</span>(found)</span><br><span class="line"><span class="hljs-number">92</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>在清单12中,显示了findConcurrent函数,它是函数的并发版本find。并发版本使用30行代码而不是非并发版本的13行代码。我实现并发版本的目标是控制用于处理未知数量文档的Goroutine的数量。我选择使用通道用于给予Goroutines池的池模式。</p>
+<p>有很多代码,所以我只强调要理解的重要内容。</p>
+<p>第61-64行：创建一个通道并填充要处理的所有文档。</p>
+<p>第65行：通道关闭,因此当处理完所有文件后,Goroutines池自然终止。</p>
+<p>第70行：创建了Goroutines游泳池。</p>
+<p>第73-83行：池中的每个Goroutine从通道接收文档,将文档读入内存并检查主题的内容。当匹配时,本地找到的变量递增。</p>
+<p>第84行：将各个Goroutine计数的总和加在一起作为最终计数。</p>
+<p>并发版本肯定比顺序版本更复杂但复杂性值得吗？再次回答这个问题的最好方法是创建一个基准。对于这些基准测试,我使用了一千个文件的集合,关闭了垃圾收集器。有一个使用该find函数的顺序版本和使用该函数的并发版本findConcurrent。</p>
+<p>清单13</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">BenchmarkSequential</span><span class="hljs-params">(b *testing.B)</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">        find(<span class="hljs-string">"test"</span>, docs)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">BenchmarkConcurrent</span><span class="hljs-params">(b *testing.B)</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; b.N; i++ &#123;</span><br><span class="line">        findConcurrent(runtime.NumCPU(), <span class="hljs-string">"test"</span>, docs)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>清单13显示了基准函数。以下是所有Goroutines只有一个操作系统线程可用的结果。顺序使用1个Goroutine,并发版本runtime.NumCPU在我的机器上使用或8个Goroutines。在这种情况下,并发版本正在利用没有并行性的并发性。</p>
+<p>清单14</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">10 Thousand Documents using 8 goroutines with 1 core</span><br><span class="line">2.9 GHz Intel 4 Core i7</span><br><span class="line">Concurrency WITHOUT Parallelism</span><br><span class="line">-----------------------------------------------------------------------------</span><br><span class="line">$ GOGC=off go <span class="hljs-built_in">test</span> -cpu 1 -run none -bench . -benchtime 3s</span><br><span class="line">goos: darwin</span><br><span class="line">goarch: amd64</span><br><span class="line">pkg: github.com/ardanlabs/gotraining/topics/go/testing/benchmarks/io-bound</span><br><span class="line">BenchmarkSequential      	       3	1483458120 ns/op</span><br><span class="line">BenchmarkConcurrent      	      20	 188941855 ns/op : ~87% Faster</span><br><span class="line">BenchmarkSequentialAgain 	       2	1502682536 ns/op</span><br><span class="line">BenchmarkConcurrentAgain 	      20	 184037843 ns/op : ~88% Faster</span><br></pre></td></tr></table></figure>
+<p>清单14中的基准测试显示,当只有一个操作系统线程可用于所有Goroutines时,并发版本比顺序版本快大约87％到88％。这是我所期望的,因为所有Goroutines都有效地共享单个操作系统线程。read调用时每个Goroutine发生的自然上下文切换允许在单个操作系统线程上进行更多工作。</p>
+<p>以下是并行使用并发时的基准。</p>
+<p>清单15</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">10 Thousand Documents using 8 goroutines with 1 core</span><br><span class="line">2.9 GHz Intel 4 Core i7</span><br><span class="line">Concurrency WITH Parallelism</span><br><span class="line">-----------------------------------------------------------------------------</span><br><span class="line">$ GOGC=off go <span class="hljs-built_in">test</span> -run none -bench . -benchtime 3s</span><br><span class="line">goos: darwin</span><br><span class="line">goarch: amd64</span><br><span class="line">pkg: github.com/ardanlabs/gotraining/topics/go/testing/benchmarks/io-bound</span><br><span class="line">BenchmarkSequential-8        	       3	1490947198 ns/op</span><br><span class="line">BenchmarkConcurrent-8        	      20	 187382200 ns/op : ~88% Faster</span><br><span class="line">BenchmarkSequentialAgain-8   	       3	1416126029 ns/op</span><br><span class="line">BenchmarkConcurrentAgain-8   	      20	 185965460 ns/op : ~87% Faster</span><br></pre></td></tr></table></figure>
+<p>清单15中的基准测试表明,引入额外的操作系统线程不能提供更好的性能。</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>这篇文章的目的是提供有关必须考虑的语义的指导,以确定工作负载是否适合使用并发。我尝试提供不同类型的算法和工作负载的示例,以便你可以看到语义上的差异以及需要考虑的不同工程决策。</p>
+<p>你可以清楚地看到,使用IO绑定工作负载并不需要并行性来获得性能上的大幅提升。这与你在CPU绑定工作中看到的相反。当涉及像冒泡排序这样的算法时,并发性的使用会增加复杂性,而不会带来任何实际的性能优势。确定你的工作负载是否适合并发,然后确定必须使用正确语义的工作负载类型非常重要。</p>
+<p>原文:</p>
+<p><a href="https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part1.html" target="_blank" rel="noopener">1) Scheduling In Go : Part I - OS Scheduler</a><br><a href="https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part2.html" target="_blank" rel="noopener">2) Scheduling In Go : Part II - Go Scheduler</a><br><a href="https://www.ardanlabs.com/blog/2018/12/scheduling-in-go-part3.html" target="_blank" rel="noopener">3) Scheduling In Go : Part III - Concurrency</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" rel="tag">Go中的垃圾收集</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%B8%80%E9%83%A8%E5%88%86-%E8%AF%AD%E4%B9%89/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Go中的垃圾收集：第一部分 - 语义</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACII%E9%83%A8%E5%88%86-Go%20Scheduler/">
+                <span class="level-item">(译) Go中的调度：第II部分 - Go Scheduler</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'd1930de22b34977ae30ec68ed372111f',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#介绍">
+        <span class="has-mr-6">1</span>
+        <span>介绍</span>
+        </a></li><li>
+        <a class="is-flex" href="#什么是并发">
+        <span class="has-mr-6">2</span>
+        <span>什么是并发</span>
+        </a></li><li>
+        <a class="is-flex" href="#工作负载">
+        <span class="has-mr-6">3</span>
+        <span>工作负载</span>
+        </a></li><li>
+        <a class="is-flex" href="#添加数字">
+        <span class="has-mr-6">4</span>
+        <span>添加数字</span>
+        </a></li><li>
+        <a class="is-flex" href="#排序">
+        <span class="has-mr-6">5</span>
+        <span>排序</span>
+        </a></li><li>
+        <a class="is-flex" href="#阅读文件">
+        <span class="has-mr-6">6</span>
+        <span>阅读文件</span>
+        </a></li><li>
+        <a class="is-flex" href="#结论">
+        <span class="has-mr-6">7</span>
+        <span>结论</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的调度：第III部分 - 并发" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

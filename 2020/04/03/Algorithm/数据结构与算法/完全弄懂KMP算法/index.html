@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>完全弄懂 KMP 算法 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="在大学时期,学习 KMP 算法感觉自己好似懂,但是好似又不懂,书里看的云里雾里不知所起然,最近对算法重新进行学习,对于 KMP 算法有了更深刻的理解。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="完全弄懂 KMP 算法">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/03/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%AE%8C%E5%85%A8%E5%BC%84%E6%87%82KMP%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="在大学时期,学习 KMP 算法感觉自己好似懂,但是好似又不懂,书里看的云里雾里不知所起然,最近对算法重新进行学习,对于 KMP 算法有了更深刻的理解。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/02/09/027f8fa139e4c09af25859527a5dc909.png?x-oss-process=image/crop,y_65,w_1134,h_636/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-04-02T18:06:00.000Z">
+<meta property="article:modified_time" content="2020-04-02T18:06:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="算法">
+<meta property="article:tag" content="kmp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/02/09/027f8fa139e4c09af25859527a5dc909.png?x-oss-process=image/crop,y_65,w_1134,h_636/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="完全弄懂 KMP 算法" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/02/09/027f8fa139e4c09af25859527a5dc909.png?x-oss-process=image/crop,y_65,w_1134,h_636/resize,w_1280,h_847" alt="完全弄懂 KMP 算法">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-02T18:06:00.000Z">2020-04-03</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Algorithm/">Algorithm</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/">数据结构与算法</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1554 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                完全弄懂 KMP 算法
+            
+        </h1>
+        <div class="content">
+            <p>在大学时期,学习 KMP 算法感觉自己好似懂,但是好似又不懂,书里看的云里雾里不知所起然,最近对算法重新进行学习,对于 KMP 算法有了更深刻的理解。</p>
+<a id="more"></a>
+<h1 id="一、KMP-算法"><a href="#一、KMP-算法" class="headerlink" title="一、KMP 算法"></a>一、KMP 算法</h1><h2 id="1-算法由来"><a href="#1-算法由来" class="headerlink" title="1.算法由来"></a>1.算法由来</h2><blockquote>
+<p>KMP 算法是由D.E. Knuth、J.H.Morris和V.R. Pratt提出的,可在一个主文本字符串S内查找一个词W的出现位置。此算法通过运用对这个词在不匹配时本身就包含足够的信息来确定下一个匹配将在哪里开始的发现,从而避免重新检查先前匹配的字符。这个算法是由高德纳和沃恩·普拉特在1974年构思,同年詹姆斯·H·莫里斯也独立地设计出该算法,最终由三人于1977年联合发表。该算法减少了BF算法中i回溯所进行的无谓操作,极大地提高了字符串匹配算法的效率。 [1],由D.E.Knuth,J.H.Morris和V.R.Pratt提出的,因此人们称它为克努特—莫里斯—普拉特操作（简称KMP算法）。</p>
+</blockquote>
+<h2 id="2-算法的核心思想"><a href="#2-算法的核心思想" class="headerlink" title="2.算法的核心思想"></a>2.算法的核心思想</h2><p>KMP算法的核心是利用匹配失败后的信息,尽量减少模式串与主串的匹配次数以达到快速匹配的目的。具体实现就是通过一个next()函数实现,函数本身包含了模式串的局部匹配信息。KMP算法的时间复杂度O(m+n)。</p>
+<h2 id="3-解释"><a href="#3-解释" class="headerlink" title="3.解释"></a>3.解释</h2><p>我们BF算法就是通过逐个扫描,从主串到模版串进行注意匹配,而 kmp 算法做的就是减少从头开始匹配的过程,来避免多次进行不必要的匹配。那么假设我们已经得到了模板串的滑动数组,该数组作用就是当从某一个位置匹配失败时,可以迅速的找到之前一个类似的匹配位置。因此我们可以根据 BF 算法轻易的写出关于kmp算法的雏形。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">kmpMatch</span><span class="hljs-params">(s <span class="hljs-keyword">string</span>, m <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	next := getNextArray(m)</span><br><span class="line">	mlen, slen := <span class="hljs-built_in">len</span>(m), <span class="hljs-built_in">len</span>(s)</span><br><span class="line">	si, mi := <span class="hljs-number">0</span>, <span class="hljs-number">0</span></span><br><span class="line">	<span class="hljs-keyword">for</span> si &lt; slen &amp;&amp; mi &lt; mlen &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> s[si] == m[mi] &#123;</span><br><span class="line">			si++</span><br><span class="line">			mi++</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> next[mi] == <span class="hljs-number">-1</span> &#123;</span><br><span class="line">			si++</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			mi = next[mi]</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	index := <span class="hljs-number">-1</span></span><br><span class="line">	<span class="hljs-keyword">if</span> mi == mlen &#123;</span><br><span class="line">		index = si - mlen</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> index</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我可以根据字符串遍历的程度,要判断是否匹配成功,如果模版串遍历完成,遍历索引等于模版字符串的长度,那么就说明在主串中找到了包含模版串。否则就能知道是主串已经遍历完成,但是模版串还没有遍历完成。</p>
+<p>在整个for循环中,如果主串的位置,和模板串的字符匹配,那么就进行下一个位置的匹配。如果滑动数组已经滑动到最开始的位置,那么直接将主串向前滑动一步,此时模板串已经处于索引为0处。如果以上两种情况都不是,那么认为滑动数组还没有滑动到索引为0的位置,认为当前位置可以继续尝试匹配,那么让滑动数组回到上一个认为可以滑动的位置,再进行匹配。</p>
+<p>下面我门讨论一下如何得到next数组:</p>
+<p><img src="https://wiki.jikexueyuan.com/project/kmp-algorithm/images/322.jpg" alt="abab"></p>
+<p>图上给出的就是一个next数组,其中当前值代表的是之前有多少个字符串与开头字符串相匹配,可以看到<code>i=0</code>时,没有字符串和它匹配,并且是开头就特殊标记为 -1,<code>i=1</code>时,我们定义滑动数组为前缀数组与后缀数组（不包含第一个字符）的匹配,所以当前<code>i=1</code>位置,如果即使是<code>a</code>,值也为0。所以将当前位置值设置为0。再来看<code>i=2</code>时 ,<code>next[1]</code>为0,那么表示从头开始匹配,<code>s[0](a)</code>位置与<code>s[1](b)</code>位置不匹配,那么之前没有匹配的字符串,所以当前值也填为0。<code>i=3</code>时,这个时候可以看到<code>s[0](a)</code>位置与<code>s[2](a)</code>位置匹配,所以当前位置可以设置为1,反复如此,求出next数组。</p>
+<p><img src="https://md.ulovecode.com/static/images/posts/kmp-1-2.png" alt="kmp"></p>
+<p>那么上图就画出了匹配情况<code>m[k]</code>与<code>m[j]</code>匹配情况与不匹配的情况。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">getNextArray</span><span class="hljs-params">(m <span class="hljs-keyword">string</span>)</span> []<span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(m) &lt;= <span class="hljs-number">2</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> []<span class="hljs-keyword">int</span>&#123;<span class="hljs-number">-1</span>, <span class="hljs-number">0</span>&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	next := <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">int</span>, <span class="hljs-built_in">len</span>(m))</span><br><span class="line">	next[<span class="hljs-number">0</span>] = <span class="hljs-number">-1</span></span><br><span class="line">	next[<span class="hljs-number">1</span>] = <span class="hljs-number">0</span></span><br><span class="line">	pos := <span class="hljs-number">2</span></span><br><span class="line">	cn := <span class="hljs-number">0</span></span><br><span class="line">	<span class="hljs-keyword">for</span> pos &lt; <span class="hljs-built_in">len</span>(next) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> m[pos<span class="hljs-number">-1</span>] == m[cn] &#123;</span><br><span class="line">			cn++</span><br><span class="line">			next[pos] = cn</span><br><span class="line">			pos++</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> cn &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">			cn = next[cn]</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			next[pos] = <span class="hljs-number">0</span></span><br><span class="line">			pos++</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> next</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>next[0]</code>规定为-1,只是一个特殊的标记这是滑动数组的开头,并且之前也可能会有相匹配的字符串,一般为负数就可以,通常为-1。<code>m[1]</code>来说,<code>m[0]</code>,但next数组的定义要求任何子串的后缀不能包括第一个字符（<code>m[0]</code>）,<code>m[1]</code>之前的字符串只有长度为0的后缀字符串,<code>next[1]</code>为0。</p>
+<p>创建一个变量<code>cn</code>,作用是记录当前匹配的长度。创建一个遍历<code>pos</code>,作用是推进下标前进,判断当前位置之前有几个字符串于之匹配。这样实际上是两个指针<code>cn</code>指针代表当前匹配的长度,<code>pos</code>指针则是主指针,推动数组下标前进,更新当前匹配了之前有多少个字符串相匹配。</p>
+<p>在for循环内,从位置<code>index = 2</code>开始匹配。</p>
+<ol>
+<li>如果当前位置的前一个位置的字符 和<code>m[cn]</code>字符相等,那么将当前将记录当前匹配长度的<code>cn++</code>,同时将该<code>pos</code>位置的值设置为当前匹配的长度,然后将<code>pos++</code>,进行下一轮匹配。</li>
+<li>否则,如果当前记录的匹配长度没有到0,那么将<code>cn</code>指针的位置回退到前一个位置进行匹配。</li>
+<li>否则,如果当前<code>cn</code>指针的位置已经到0,那么就将<code>pos</code>位置的值设置为0,因为之前没有任何一个位置匹配,同时<code>pos++</code>,进行下一轮匹配。</li>
+</ol>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/kmp/" rel="tag">kmp</a>, <a class="has-link-grey -link" href="/tags/%E7%AE%97%E6%B3%95/" rel="tag">算法</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/04/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/TOP-K%E9%97%AE%E9%A2%98%E7%9A%84%E7%BB%88%E6%9E%81%E7%AE%97%E6%B3%95-BFPRT%E7%AE%97%E6%B3%95/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">TOP-K 问题的终极算法 - BFPRT 算法</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/04/02/%E9%9D%A2%E8%AF%95/Golang%E9%9D%A2%E8%AF%95%E9%A2%98/">
+                <span class="level-item">Golang 面试题</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '379e52f994ac47ed9a43bd57bd4d7bb0',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、KMP-算法">
+        <span class="has-mr-6">1</span>
+        <span>一、KMP 算法</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-算法由来">
+        <span class="has-mr-6">1.1</span>
+        <span>1.算法由来</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-算法的核心思想">
+        <span class="has-mr-6">1.2</span>
+        <span>2.算法的核心思想</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-解释">
+        <span class="has-mr-6">1.3</span>
+        <span>3.解释</span>
+        </a></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="完全弄懂 KMP 算法" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

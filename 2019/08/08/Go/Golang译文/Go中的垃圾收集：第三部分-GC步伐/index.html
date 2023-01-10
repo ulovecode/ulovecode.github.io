@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) Go中的垃圾收集：第三部分 - GC步伐 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="这是三部分系列中的第三篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。这篇文章重点介绍GC如何自我调整。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) Go中的垃圾收集：第三部分 - GC步伐">
+<meta property="og:url" content="https://www.ulovecode.com/2019/08/08/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86-GC%E6%AD%A5%E4%BC%90/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="这是三部分系列中的第三篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。这篇文章重点介绍GC如何自我调整。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/22/33/22b027913f7d79f5cb861580a1736433.png?x-oss-process=image/crop,w_1919,h_1078/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-08-08T12:43:00.000Z">
+<meta property="article:modified_time" content="2019-08-08T12:43:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go中的垃圾收集">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/22/33/22b027913f7d79f5cb861580a1736433.png?x-oss-process=image/crop,w_1919,h_1078/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的垃圾收集：第三部分 - GC步伐" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/22/33/22b027913f7d79f5cb861580a1736433.png?x-oss-process=image/crop,w_1919,h_1078/resize,w_1280,h_847" alt="(译) Go中的垃圾收集：第三部分 - GC步伐">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-08T12:43:00.000Z">2019-08-08</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E8%AF%91%E6%96%87/">Golang译文</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    27 分钟 读完 (大约 4118 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) Go中的垃圾收集：第三部分 - GC步伐
+            
+        </h1>
+        <div class="content">
+            <p>这是三部分系列中的第三篇文章,它将提供对Go中垃圾收集器背后的机制和语义的理解。这篇文章重点介绍GC如何自我调整。</p>
+<a id="more"></a>
+<p>三部分系列的索引：<br>1）Go中的垃圾收集：第一部分 - 语义<br>2）Go中的垃圾收集：第二部分 - GC跟踪<br>3）Go中的垃圾收集：第三部分 - GC步伐</p>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>在第二篇文章中,我向你展示了垃圾收集器的行为以及如何使用工具查看收集器对正在运行的应用程序造成的延迟。我带你了解了一个真实的Web应用程序,并向你展示了如何生成GC跟踪和应用程序配置文件。然后,我向你展示了如何解释这些工具的输出,以便你可以找到提高应用程序性能的方法。</p>
+<p>该帖子的最终结论与第一篇相同：如果减少堆上的压力,你将减少延迟成本,从而提高应用程序的性能。与垃圾收集器同情的最佳策略是减少每个工作的分配数量或数量。在这篇文章中,我将展示调步算法如何能够识别给定工作负载随时间的最佳速度。</p>
+<h1 id="并发示例代码"><a href="#并发示例代码" class="headerlink" title="并发示例代码"></a>并发示例代码</h1><p>我将使用此链接中的代码。</p>
+<p><a href="https://github.com/ardanlabs/gotraining/tree/master/topics/go/profiling/trace" target="_blank" rel="noopener">https://github.com/ardanlabs/gotraining/tree/master/topics/go/profiling/trace</a></p>
+<p>该程序确定在RSS新闻订阅源文档集合中可以找到特定主题的频率。跟踪程序包含不同版本的查找算法,以测试不同的并发模式。我将集中在freq,freqConcurrent和freqNumCPU的算法版本。</p>
+<p>注意：我在Macbook Pro上运行代码,使用带有12个硬件线程的Intel i9处理器,使用go1.12.7。你将在不同的体系结构,操作系统和Go版本上看到不同的结果。该职位的核心成果应保持不变。</p>
+<p>我先从freq版本开始。它表示程序的非并发顺序版本。这将为后续的并发版本提供基线。</p>
+<p>清单1</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">01</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">freq</span><span class="hljs-params">(topic <span class="hljs-keyword">string</span>, docs []<span class="hljs-keyword">string</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line"><span class="hljs-number">02</span>     <span class="hljs-keyword">var</span> found <span class="hljs-keyword">int</span></span><br><span class="line"><span class="hljs-number">03</span></span><br><span class="line"><span class="hljs-number">04</span>     <span class="hljs-keyword">for</span> _, doc := <span class="hljs-keyword">range</span> docs &#123;</span><br><span class="line"><span class="hljs-number">05</span>         file := fmt.Sprintf(<span class="hljs-string">"%s.xml"</span>, doc[:<span class="hljs-number">8</span>])</span><br><span class="line"><span class="hljs-number">06</span>         f, err := os.OpenFile(file, os.O_RDONLY, <span class="hljs-number">0</span>)</span><br><span class="line"><span class="hljs-number">07</span>         <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">08</span>             log.Printf(<span class="hljs-string">"Opening Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">09</span>             <span class="hljs-keyword">return</span> <span class="hljs-number">0</span></span><br><span class="line"><span class="hljs-number">10</span>         &#125;</span><br><span class="line"><span class="hljs-number">11</span>         <span class="hljs-keyword">defer</span> f.Close()</span><br><span class="line"><span class="hljs-number">12</span></span><br><span class="line"><span class="hljs-number">13</span>         data, err := ioutil.ReadAll(f)</span><br><span class="line"><span class="hljs-number">14</span>         <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">15</span>             log.Printf(<span class="hljs-string">"Reading Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">16</span>             <span class="hljs-keyword">return</span> <span class="hljs-number">0</span></span><br><span class="line"><span class="hljs-number">17</span>         &#125;</span><br><span class="line"><span class="hljs-number">18</span></span><br><span class="line"><span class="hljs-number">19</span>         <span class="hljs-keyword">var</span> d document</span><br><span class="line"><span class="hljs-number">20</span>         <span class="hljs-keyword">if</span> err := xml.Unmarshal(data, &amp;d); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">21</span>             log.Printf(<span class="hljs-string">"Decoding Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">22</span>             <span class="hljs-keyword">return</span> <span class="hljs-number">0</span></span><br><span class="line"><span class="hljs-number">23</span>         &#125;</span><br><span class="line"><span class="hljs-number">24</span></span><br><span class="line"><span class="hljs-number">25</span>         <span class="hljs-keyword">for</span> _, item := <span class="hljs-keyword">range</span> d.Channel.Items &#123;</span><br><span class="line"><span class="hljs-number">26</span>             <span class="hljs-keyword">if</span> strings.Contains(item.Title, topic) &#123;</span><br><span class="line"><span class="hljs-number">27</span>                 found++</span><br><span class="line"><span class="hljs-number">28</span>                 <span class="hljs-keyword">continue</span></span><br><span class="line"><span class="hljs-number">29</span>             &#125;</span><br><span class="line"><span class="hljs-number">30</span></span><br><span class="line"><span class="hljs-number">31</span>             <span class="hljs-keyword">if</span> strings.Contains(item.Description, topic) &#123;</span><br><span class="line"><span class="hljs-number">32</span>                 found++</span><br><span class="line"><span class="hljs-number">33</span>             &#125;</span><br><span class="line"><span class="hljs-number">34</span>        &#125;</span><br><span class="line"><span class="hljs-number">35</span>     &#125;</span><br><span class="line"><span class="hljs-number">36</span></span><br><span class="line"><span class="hljs-number">37</span>     <span class="hljs-keyword">return</span> found</span><br><span class="line"><span class="hljs-number">38</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>清单1显示了该freq函数。此顺序版本的范围超过文件名集合,并执行四个操作：打开,读取,解码和搜索。它为每个文件执行此操作,一次一个。</p>
+<p>当我freq在我的机器上运行此版本时,我得到以下结果。</p>
+<p>清单2</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ time ./trace</span><br><span class="line">2019/07/02 13:40:49 Searching 4000 files, found president 28000 <span class="hljs-built_in">times</span>.</span><br><span class="line">./trace  2.54s user 0.12s system 105% cpu 2.512 total</span><br></pre></td></tr></table></figure>
+<p>你可以通过输出时间看到,程序需要大约2.5秒来处理4000个文件。很高兴看到在垃圾收集中花费了多少时间。你可以通过查看程序的痕迹来做到这一点。由于这是一个启动和完成的程序,因此你可以使用跟踪包生成跟踪。</p>
+<p>清单3</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">03 import <span class="hljs-string">"runtime/trace"</span></span><br><span class="line">04</span><br><span class="line">05 func <span class="hljs-function"><span class="hljs-title">main</span></span>() &#123;</span><br><span class="line">06     trace.Start(os.Stdout)</span><br><span class="line">07     defer trace.Stop()</span><br></pre></td></tr></table></figure>
+<p>清单3显示了从程序生成跟踪所需的代码。trace从runtime标准库中的文件夹导入包后,调用trace.Start和trace.Stop。将跟踪输出os.Stdout定向为简化代码。</p>
+<p>使用此代码,现在你可以重新生成并再次运行该程序。不要忘记重定向stdout到文件。</p>
+<p>清单4</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ go build</span><br><span class="line">$ time ./trace &gt; t.out</span><br><span class="line">Searching 4000 files, found president 28000 <span class="hljs-built_in">times</span>.</span><br><span class="line">./trace &gt; t.out  2.67s user 0.13s system 106% cpu 2.626 total</span><br></pre></td></tr></table></figure>
+<p>运行时添加了100多毫秒,但这是预期的。跟踪捕获每个函数调用,进出,直到微秒。重要的是,现在有一个名为t.out包含跟踪数据的文件。</p>
+<p>要查看跟踪,需要通过跟踪工具运行跟踪数据。</p>
+<p>清单5</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ go tool trace t.out</span><br></pre></td></tr></table></figure>
+<p>运行该命令会使用以下屏幕启动Chrome浏览器。</p>
+<p>注意：跟踪工具使用Chrome浏览器内置的工具。此工具仅适用于Chrome。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure1.png" alt=""><br>图1</p>
+<p>图1显示了跟踪工具启动时显示的9个链接。现在重要的链接是第一个链接View trace。选择该链接后,你将看到类似于以下内容的内容。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure2.png" alt=""><br>图2</p>
+<p>图2显示了在我的机器上运行程序的完整跟踪窗口。对于这篇文章,我将重点介绍与垃圾收集器相关的部分。这是第二部分标记Heap,第四部分标记GC。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure3.png" alt=""><br>图3</p>
+<p>图3更详细地展示了跟踪的前200毫秒。将注意力集中在Heap（绿色和橙色区域）和GC（底部的蓝线）上。该Heap部分向你展示了两件事。橙色区域是堆上任何给定微秒的当前正在使用的空间。绿色是堆上将触发下一个集合的正在使用的空间量。这就是为什么每当橙色区域到达绿色区域的顶部时,就会发生垃圾收集。蓝线代表垃圾收集。</p>
+<p>在此版本的程序中,堆上使用的内存在整个程序运行时保持在~4mcg。要查看有关发生的所有单个垃圾收集的统计信息,请使用选择工具并在所有蓝线周围绘制一个框。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure4.png" alt=""><br>图4</p>
+<p>图4显示了如何使用箭头工具在蓝线周围绘制蓝​​框。你想在每一行画出框。框内的数字表示从图表中选择的项目消耗的时间量。在这种情况下,选择接近316毫秒（ms,μs,ns）来生成此图像。选择所有蓝线后,将提供以下统计数据。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure5.png" alt=""><br>图5</p>
+<p>图5显示图中的所有蓝线都在15.911毫秒标记到2.596秒标记之间。共有232个垃圾收集,代表64.524毫秒的时间,平均收集时间为287.121微秒。知道程序运行需要2.626秒,这意味着垃圾收集只占总运行时间的2％。基本上垃圾收集器是运行该程序的一个微不足道的成本。</p>
+<p>有了可以使用的基线,可以使用并发算法执行相同的工作,以期加快程序的速度。</p>
+<p>清单6</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">01</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">freqConcurrent</span><span class="hljs-params">(topic <span class="hljs-keyword">string</span>, docs []<span class="hljs-keyword">string</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line"><span class="hljs-number">02</span>     <span class="hljs-keyword">var</span> found <span class="hljs-keyword">int32</span></span><br><span class="line"><span class="hljs-number">03</span></span><br><span class="line"><span class="hljs-number">04</span>     g := <span class="hljs-built_in">len</span>(docs)</span><br><span class="line"><span class="hljs-number">05</span>     <span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line"><span class="hljs-number">06</span>     wg.Add(g)</span><br><span class="line"><span class="hljs-number">07</span></span><br><span class="line"><span class="hljs-number">08</span>     <span class="hljs-keyword">for</span> _, doc := <span class="hljs-keyword">range</span> docs &#123;</span><br><span class="line"><span class="hljs-number">09</span>         <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(doc <span class="hljs-keyword">string</span>)</span></span> &#123;</span><br><span class="line"><span class="hljs-number">10</span>             <span class="hljs-keyword">var</span> lFound <span class="hljs-keyword">int32</span></span><br><span class="line"><span class="hljs-number">11</span>             <span class="hljs-keyword">defer</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line"><span class="hljs-number">12</span>                 atomic.AddInt32(&amp;found, lFound)</span><br><span class="line"><span class="hljs-number">13</span>                 wg.Done()</span><br><span class="line"><span class="hljs-number">14</span>             &#125;()</span><br><span class="line"><span class="hljs-number">15</span></span><br><span class="line"><span class="hljs-number">16</span>             file := fmt.Sprintf(<span class="hljs-string">"%s.xml"</span>, doc[:<span class="hljs-number">8</span>])</span><br><span class="line"><span class="hljs-number">17</span>             f, err := os.OpenFile(file, os.O_RDONLY, <span class="hljs-number">0</span>)</span><br><span class="line"><span class="hljs-number">18</span>             <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">19</span>                 log.Printf(<span class="hljs-string">"Opening Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">20</span>                 <span class="hljs-keyword">return</span></span><br><span class="line"><span class="hljs-number">21</span>             &#125;</span><br><span class="line"><span class="hljs-number">22</span>             <span class="hljs-keyword">defer</span> f.Close()</span><br><span class="line"><span class="hljs-number">23</span></span><br><span class="line"><span class="hljs-number">24</span>             data, err := ioutil.ReadAll(f)</span><br><span class="line"><span class="hljs-number">25</span>             <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">26</span>                 log.Printf(<span class="hljs-string">"Reading Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">27</span>                 <span class="hljs-keyword">return</span></span><br><span class="line"><span class="hljs-number">28</span>             &#125;</span><br><span class="line"><span class="hljs-number">29</span></span><br><span class="line"><span class="hljs-number">30</span>             <span class="hljs-keyword">var</span> d document</span><br><span class="line"><span class="hljs-number">31</span>             <span class="hljs-keyword">if</span> err := xml.Unmarshal(data, &amp;d); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">32</span>                 log.Printf(<span class="hljs-string">"Decoding Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">33</span>                 <span class="hljs-keyword">return</span></span><br><span class="line"><span class="hljs-number">34</span>             &#125;</span><br><span class="line"><span class="hljs-number">35</span></span><br><span class="line"><span class="hljs-number">36</span>             <span class="hljs-keyword">for</span> _, item := <span class="hljs-keyword">range</span> d.Channel.Items &#123;</span><br><span class="line"><span class="hljs-number">37</span>                 <span class="hljs-keyword">if</span> strings.Contains(item.Title, topic) &#123;</span><br><span class="line"><span class="hljs-number">38</span>                     lFound++</span><br><span class="line"><span class="hljs-number">39</span>                     <span class="hljs-keyword">continue</span></span><br><span class="line"><span class="hljs-number">40</span>                 &#125;</span><br><span class="line"><span class="hljs-number">41</span></span><br><span class="line"><span class="hljs-number">42</span>                 <span class="hljs-keyword">if</span> strings.Contains(item.Description, topic) &#123;</span><br><span class="line"><span class="hljs-number">43</span>                     lFound++</span><br><span class="line"><span class="hljs-number">44</span>                 &#125;</span><br><span class="line"><span class="hljs-number">45</span>             &#125;</span><br><span class="line"><span class="hljs-number">46</span>         &#125;(doc)</span><br><span class="line"><span class="hljs-number">47</span>     &#125;</span><br><span class="line"><span class="hljs-number">48</span></span><br><span class="line"><span class="hljs-number">49</span>     wg.Wait()</span><br><span class="line"><span class="hljs-number">50</span>     <span class="hljs-keyword">return</span> <span class="hljs-keyword">int</span>(found)</span><br><span class="line"><span class="hljs-number">51</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>清单6显示了一个可能的并发版本freq。此版本的核心设计模式是使用扇出模式。对于docs集合中列出的每个文件,都会创建一个Goroutine来处理该文件。如果要处理4000个文档,则使用4000个Goroutine。这种算法的优点是它是利用并发性的最简单方法。每个Goroutine处理1个且只有1个文件。等待处理每个文档的编排可以使用a来执行WaitGroup,并且原子指令可以使计数器保持同步。</p>
+<p>该算法的缺点在于它不能很好地适应文档或核心的数量。所有的Goroutine都会有时间在程序开始时很早就运行,这意味着很快就会消耗大量的内存。found在第12行添加变量也存在缓存一致性问题。由于每个核心共享该变量的相同缓存行,这将导致内存抖动。随着文件或核心数量的增加,这会变得更糟。</p>
+<p>使用此代码,现在你可以重新生成并再次运行该程序。</p>
+<p>清单7</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ go build</span><br><span class="line">$ time ./trace &gt; t.out</span><br><span class="line">Searching 4000 files, found president 28000 <span class="hljs-built_in">times</span>.</span><br><span class="line">./trace &gt; t.out  6.49s user 2.46s system 941% cpu 0.951 total</span><br></pre></td></tr></table></figure>
+<p>你可以通过清单7中的输出看到,程序现在需要951毫秒来处理相同的4000个文件。这是性能提升约64％。看看跟踪。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure6.png" alt=""><br>图6</p>
+<p>图6显示了此版本程序正在使用的计算机上的CPU容量。图表的开头有很多密度。这是因为当所有Goroutine都被创建时,它们会运行并开始尝试在堆中分配内存。一旦分配了前4兆内存,这很快就会启动GC。在此GC期间,每个Goroutine都有时间运行,并且当它们在堆上请求内存时,大多数都会进入等待状态。到GC完成时,至少有9个Goroutine继续运行并将堆增加到~26 meg。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure7.png" alt=""><br>图7</p>
+<p>图7显示了第一个GC的大部分时间内大量的Goroutine处于Runnable和Running状态以及如何快速重新启动。请注意,堆配置文件看起来不规则,并且集合不像以前那样处于任何常规节奏上。如果仔细观察,第二个GC几乎会在第一个GC后立即开始。</p>
+<p>如果你选择此图表中的所有集合,你将看到以下内容。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure8.png" alt=""><br>图8</p>
+<p>图8显示图中的所有蓝线都在4.828毫秒标记到906.939毫秒标记之间。共有23个垃圾收集,代表284.447毫秒的时间,平均收集时间为12.367毫秒。知道该程序运行需要951毫秒,这意味着垃圾收集占总运行时间的约34％。</p>
+<p>这与顺序版本在性能和GC时间方面存在显着差异。但是,按照它的方式并行运行更多的Goroutine,可以让工作完成~64％的速度。成本需要更多的资源在机器上。不幸的是,在堆上一次正在使用大约200兆的内存。</p>
+<p>使用并发基线,下一个并发算法会尝试使用资源更高效。</p>
+<p>清单8</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-number">01</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">freqNumCPU</span><span class="hljs-params">(topic <span class="hljs-keyword">string</span>, docs []<span class="hljs-keyword">string</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line"><span class="hljs-number">02</span>     <span class="hljs-keyword">var</span> found <span class="hljs-keyword">int32</span></span><br><span class="line"><span class="hljs-number">03</span></span><br><span class="line"><span class="hljs-number">04</span>     g := runtime.NumCPU()</span><br><span class="line"><span class="hljs-number">05</span>     <span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line"><span class="hljs-number">06</span>     wg.Add(g)</span><br><span class="line"><span class="hljs-number">07</span></span><br><span class="line"><span class="hljs-number">08</span>     ch := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">string</span>, g)</span><br><span class="line"><span class="hljs-number">09</span></span><br><span class="line"><span class="hljs-number">10</span>     <span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; g; i++ &#123;</span><br><span class="line"><span class="hljs-number">11</span>         <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line"><span class="hljs-number">12</span>             <span class="hljs-keyword">var</span> lFound <span class="hljs-keyword">int32</span></span><br><span class="line"><span class="hljs-number">13</span>             <span class="hljs-keyword">defer</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line"><span class="hljs-number">14</span>                 atomic.AddInt32(&amp;found, lFound)</span><br><span class="line"><span class="hljs-number">15</span>                 wg.Done()</span><br><span class="line"><span class="hljs-number">16</span>             &#125;()</span><br><span class="line"><span class="hljs-number">17</span></span><br><span class="line"><span class="hljs-number">18</span>             <span class="hljs-keyword">for</span> doc := <span class="hljs-keyword">range</span> ch &#123;</span><br><span class="line"><span class="hljs-number">19</span>                 file := fmt.Sprintf(<span class="hljs-string">"%s.xml"</span>, doc[:<span class="hljs-number">8</span>])</span><br><span class="line"><span class="hljs-number">20</span>                 f, err := os.OpenFile(file, os.O_RDONLY, <span class="hljs-number">0</span>)</span><br><span class="line"><span class="hljs-number">21</span>                 <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">22</span>                     log.Printf(<span class="hljs-string">"Opening Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">23</span>                     <span class="hljs-keyword">return</span></span><br><span class="line"><span class="hljs-number">24</span>                 &#125;</span><br><span class="line"><span class="hljs-number">25</span></span><br><span class="line"><span class="hljs-number">26</span>                 data, err := ioutil.ReadAll(f)</span><br><span class="line"><span class="hljs-number">27</span>                 <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">28</span>                     f.Close()</span><br><span class="line"><span class="hljs-number">29</span>                     log.Printf(<span class="hljs-string">"Reading Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">23</span>                     <span class="hljs-keyword">return</span></span><br><span class="line"><span class="hljs-number">24</span>                 &#125;</span><br><span class="line"><span class="hljs-number">25</span>                 f.Close()</span><br><span class="line"><span class="hljs-number">26</span></span><br><span class="line"><span class="hljs-number">27</span>                 <span class="hljs-keyword">var</span> d document</span><br><span class="line"><span class="hljs-number">28</span>                 <span class="hljs-keyword">if</span> err := xml.Unmarshal(data, &amp;d); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line"><span class="hljs-number">29</span>                     log.Printf(<span class="hljs-string">"Decoding Document [%s] : ERROR : %v"</span>, doc, err)</span><br><span class="line"><span class="hljs-number">30</span>                     <span class="hljs-keyword">return</span></span><br><span class="line"><span class="hljs-number">31</span>                 &#125;</span><br><span class="line"><span class="hljs-number">32</span></span><br><span class="line"><span class="hljs-number">33</span>                 <span class="hljs-keyword">for</span> _, item := <span class="hljs-keyword">range</span> d.Channel.Items &#123;</span><br><span class="line"><span class="hljs-number">34</span>                     <span class="hljs-keyword">if</span> strings.Contains(item.Title, topic) &#123;</span><br><span class="line"><span class="hljs-number">35</span>                         lFound++</span><br><span class="line"><span class="hljs-number">36</span>                         <span class="hljs-keyword">continue</span></span><br><span class="line"><span class="hljs-number">37</span>                     &#125;</span><br><span class="line"><span class="hljs-number">38</span></span><br><span class="line"><span class="hljs-number">39</span>                     <span class="hljs-keyword">if</span> strings.Contains(item.Description, topic) &#123;</span><br><span class="line"><span class="hljs-number">40</span>                         lFound++</span><br><span class="line"><span class="hljs-number">41</span>                     &#125;</span><br><span class="line"><span class="hljs-number">42</span>                 &#125;</span><br><span class="line"><span class="hljs-number">43</span>             &#125;</span><br><span class="line"><span class="hljs-number">44</span>         &#125;()</span><br><span class="line"><span class="hljs-number">45</span>     &#125;</span><br><span class="line"><span class="hljs-number">46</span></span><br><span class="line"><span class="hljs-number">47</span>     <span class="hljs-keyword">for</span> _, doc := <span class="hljs-keyword">range</span> docs &#123;</span><br><span class="line"><span class="hljs-number">48</span>         ch &lt;- doc</span><br><span class="line"><span class="hljs-number">49</span>     &#125;</span><br><span class="line"><span class="hljs-number">50</span>     <span class="hljs-built_in">close</span>(ch)</span><br><span class="line"><span class="hljs-number">51</span></span><br><span class="line"><span class="hljs-number">52</span>     wg.Wait()</span><br><span class="line"><span class="hljs-number">53</span>     <span class="hljs-keyword">return</span> <span class="hljs-keyword">int</span>(found)</span><br><span class="line"><span class="hljs-number">54</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>清单8显示了freqNumCPU该程序的版本。此版本的核心设计模式是使用池模式。基于处理所有文件的逻辑处理器数量的Goroutine池。如果有12个逻辑处理器可供使用,则使用12个Goroutine。该算法的优点在于它始终保持程序的资源使用一致。由于使用了固定数量的Goroutine,因此只需要在任何给定时间需要12个Goroutine的存储器。这也解决了缓存一致性问题与内存抖动。这是因为对第14行的原子指令的调用只需要发生很小的固定次数。</p>
+<p>该算法的缺点是更复杂。它增加了一个通道的使用来为Goroutines池提供所有工作。在使用任何时间池时,识别池的“正确”数量的Goroutine是复杂的。作为一般规则,我为每个逻辑处理器启用池1一个Goroutine。然后执行负载测试或使用生产指标,可以计算池的最终值。</p>
+<p>使用此代码,现在你可以重新生成并再次运行该程序。</p>
+<p>清单9</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ go build</span><br><span class="line">$ time ./trace &gt; t.out</span><br><span class="line">Searching 4000 files, found president 28000 <span class="hljs-built_in">times</span>.</span><br><span class="line">./trace &gt; t.out  6.22s user 0.64s system 909% cpu 0.754 total</span><br></pre></td></tr></table></figure>
+<p>你可以通过清单9中的输出看到,该程序现在需要754毫秒来处理相同的4000个文件。该程序的速度提高约200毫秒,这对于这个小负载来说非常重要。看看跟踪。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure9.png" alt=""><br>图9</p>
+<p>图9显示了此版本程序如何使用我机器上的所有CPU容量。如果你密切关注,那么该计划将再次具有一致的干扰。与顺序版非常相似。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure10.png" alt=""><br>图10</p>
+<p>图10显示了如何仔细查看程序前20毫秒的核心指标。这些集合肯定比顺序版本更长,但有12个Goroutines正在运行。堆上使用的内存在整个程序运行时保持在~4mcg。同样,与程序的顺序版本相同。</p>
+<p>如果你选择此图表中的所有集合,你将看到以下内容。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/103_figure11.png" alt=""><br>图11</p>
+<p>图11显示图中的所有蓝线都在3.055毫秒标记到719.928毫秒标记之间。共有467个垃圾收集,代表177.709毫秒的时间,平均收集时间为380.535微秒。知道该程序运行需要754毫秒,这意味着垃圾收集占总运行时间的约25％。比其他并发版本提高9％。</p>
+<p>此版本的并发算法似乎可以使用更多文件和内核进行更好的扩展。我认为复杂性成本是值得的。可以通过将列表切换成每个<code>Goroutin</code>e的工作桶来替换该通道。这肯定会增加更多的复杂性,尽管它可以减少通道产生的一些延迟成本。在更多文件和核心上,这可能是重要的,但需要测量复杂性成本。这是你可以自己尝试的东西。</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>我喜欢比较算法的三个版本是GC如何处理每种情况。处理文件所需的内存总量不会随任何版本而变化。程序如何分配有什么变化。</p>
+<p>当只有一个Goroutine时,只需要一个4兆的基础堆。当程序立即将所有工作都放在运行时时,GC采用了让堆增长的方法,减少了集合的数量,但运行了更长的集合。当程序控制在任何给定时间处理的文件数时,GC采取了再次保持堆小的方法,增加了集合的数量但运行较小的集合。GC采用的每种方法基本上允许程序运行,GC可能对程序产生最小的影响。</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">| Algorithm  | Program | GC Time  | % Of GC | <span class="hljs-comment"># of GC’s | Avg GC   | Max Heap |</span></span><br><span class="line">|------------|---------|----------|---------|-----------|----------|----------|</span><br><span class="line">| freq       | 2626 ms |  64.5 ms |     ~2% |       232 |   278 μs |    4 meg |</span><br><span class="line">| concurrent |  951 ms | 284.4 ms |    ~34% |        23 |  12.3 ms |  200 meg |</span><br><span class="line">| numCPU     |  754 ms | 177.7 ms |    ~25% |       467 | 380.5 μs |    4 meg |</span><br></pre></td></tr></table></figure>
+<p>该freqNumCPU版本还有其他功能,比如更好地处理缓存一致性,这是有帮助的。但是,每个程序的GC时间总量的差异非常接近,约为284.4毫秒vs 177.7毫秒。有些日子在我的机器上运行这个程序,这些数字更接近。使用版本1.13.beta1运行一些实验,我看到两个算法在相同的时间运行。潜在地暗示它们可能会有一些改进,使GC能够更好地预测如何运行。</p>
+<p>所有这些让我有信心在运行时抛出大量工作。这是一个使用50k Goroutines的Web服务,它本质上是一个类似于第一个并发算法的扇出模式。GC将研究工作量并找到服务的最佳速度以避开它。至少对我来说,不必考虑任何这个是值得入场的代价。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86/" rel="tag">Go中的垃圾收集</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/09/03/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(1)-net.http/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Go源码分析(1) - net.http</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/08/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%BA%8C%E9%83%A8%E5%88%86-GC%E7%97%95%E8%BF%B9/">
+                <span class="level-item">(译) Go中的垃圾收集：第二部分 - GC痕迹</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'd332cb75ff8966cb64435acaebff8791',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#介绍">
+        <span class="has-mr-6">1</span>
+        <span>介绍</span>
+        </a></li><li>
+        <a class="is-flex" href="#并发示例代码">
+        <span class="has-mr-6">2</span>
+        <span>并发示例代码</span>
+        </a></li><li>
+        <a class="is-flex" href="#结论">
+        <span class="has-mr-6">3</span>
+        <span>结论</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的垃圾收集：第三部分 - GC步伐" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

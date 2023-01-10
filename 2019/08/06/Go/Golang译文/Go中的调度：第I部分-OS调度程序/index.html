@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) Go中的调度：第I部分 - OS调度程序 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="这是三部分系列中的第一篇文章,它将提供对Go中调度程序背后的机制和语义的理解。本文重点介绍操作系统调度程序。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) Go中的调度：第I部分 - OS调度程序">
+<meta property="og:url" content="https://www.ulovecode.com/2019/08/06/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACI%E9%83%A8%E5%88%86-OS%E8%B0%83%E5%BA%A6%E7%A8%8B%E5%BA%8F/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="这是三部分系列中的第一篇文章,它将提供对Go中调度程序背后的机制和语义的理解。本文重点介绍操作系统调度程序。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/9c/91/9c840cf2bf9498ff6605ba2c5328e791.jpg?x-oss-process=image/crop,y_130,w_5170,h_2664/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-08-06T10:06:00.000Z">
+<meta property="article:modified_time" content="2019-08-06T10:06:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go中的调度">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/9c/91/9c840cf2bf9498ff6605ba2c5328e791.jpg?x-oss-process=image/crop,y_130,w_5170,h_2664/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的调度：第I部分 - OS调度程序" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//static001.infoq.cn/resource/image/9c/91/9c840cf2bf9498ff6605ba2c5328e791.jpg?x-oss-process=image/crop,y_130,w_5170,h_2664/resize,w_1280,h_847" alt="(译) Go中的调度：第I部分 - OS调度程序">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-06T10:06:00.000Z">2019-08-06</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E8%AF%91%E6%96%87/">Golang译文</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    34 分钟 读完 (大约 5171 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) Go中的调度：第I部分 - OS调度程序
+            
+        </h1>
+        <div class="content">
+            <p>这是三部分系列中的第一篇文章,它将提供对Go中调度程序背后的机制和语义的理解。本文重点介绍操作系统调度程序。</p>
+<a id="more"></a>
+<p>三部分系列的索引：</p>
+<ol>
+<li><a href="https://www.ulovecode.com/2019/08/06/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACI%E9%83%A8%E5%88%86%20-%20OS%E8%B0%83%E5%BA%A6%E7%A8%8B%E5%BA%8F/">Go中的调度：第I部分 - OS调度程序</a></li>
+<li><a href="https://www.ulovecode.com/2019/08/07/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACII%E9%83%A8%E5%88%86%20-%20Go%20Scheduler/#more">Go中的调度：第II部分 - Go Scheduler</a></li>
+<li><a href="https://www.ulovecode.com/2019/08/07/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACIII%E9%83%A8%E5%88%86%20-%20%E5%B9%B6%E5%8F%91/#more">Go中的调度：第III部分 - 并发</a></li>
+</ol>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>Go调度程序的设计和行为使你的多线程Go程序更高效,更高效。这要归功于Go调度程序对操作系统（OS）调度程序的机械支持。但是,如果多线程Go软件的设计和行为与调度程序的工作方式没有机械上的支持,那么这一切都不重要。了解OS和Go调度程序如何正确设计多线程软件非常重要。</p>
+<p>这篇由多部分组成的文章将重点介绍调度程序的更高级别的机制和语义。我将提供足够的详细信息,以便你可以看到工作原理,以便你做出更好的工程决策。尽管你需要为多线程应用程序做出很多工程决策,但是机制和语义构成了你所需的基础知识的关键部分。</p>
+<h1 id="OS-Scheduler"><a href="#OS-Scheduler" class="headerlink" title="OS Scheduler"></a>OS Scheduler</h1><p>操作系统调度程序是复杂的软件。他们必须考虑他们运行的硬件的布局和设置。这包括但不限于存在多个处理器和内核,CPU缓存和NUMA。没有这些知识,调度程序就不能尽可能高效。最棒的是,你仍然可以开发一个关于操作系统调度程序如何工作的良好心理模型,而无需深入研究这些主题。</p>
+<p>你的程序只是一系列需要依次执行的机器指令。为了实现这一点,操作系统使用处理的概念。线程的工作是考虑并顺序执行它分配的指令集。执行继续,直到没有更多的线程执行指令。这就是我称之为“执行之路”的线程的原因。</p>
+<p>你运行的每个程序都会创建一个处理器,并为每个处理器提供一个初始线程。线程可以创建更多的线程。所有这些不同的线程彼此独立地运行,并且调度决策在线程级别进行,而不是在进程级别。线程可以同时运行（每个线程在单个核心上转向）,也可以并行运行（每个线程在不同的核心上同时运行）。线程还保持自己的状态,以允许安全,本地和独立执行其指令。</p>
+<p>如果存在可以执行的线程,则OS调度程序负责确保核心不空闲。它还必须创建一个错觉,即可以执行的所有线程同时执行。在创建这种错觉的过程中,调度程序需要运行优先级高于低优先级线程的线程。但是,具有较低优先级的线程不能缺乏执行时间。调度程序还需要通过快速而明智的决策尽可能地最小化调度延迟。</p>
+<p>为实现这一目标,很多算法都要考虑到这一点,但幸运的是,该行业能够利用数十年的工作和经验。为了更好地理解所有这些,最好描述和定义一些重要的概念。</p>
+<h1 id="执行指令"><a href="#执行指令" class="headerlink" title="执行指令"></a>执行指令</h1><p>该程序计数器（PC）,有时被称为指令指针（IP）,就是允许的线程来跟踪下一个执行指令的。在大多数处理器中,PC指向下一条指令而不是当前指令。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/92_figure1.jpeg" alt=""></p>
+<p>如果你曾经看过Go程序的堆栈跟踪,你可能已经注意到每行末尾的这些小十六进制数字。寻找+0x39和+0x72清单1所示。</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">goroutine 1 [running]:</span><br><span class="line">   main.example(0xc000042748, 0x2, 0x4, 0x106abae, 0x5, 0xa)</span><br><span class="line">       stack_trace/example1/example1.go:13 +0x39                 &lt;- LOOK HERE</span><br><span class="line">   main.main()</span><br><span class="line">       stack_trace/example1/example1.go:8 +0x72                  &lt;- LOOK HERE</span><br></pre></td></tr></table></figure>
+<p>这些数字表示从相应功能的顶部偏移的PC值。该+0x39PC的偏移量代表的下一个指令线程将内部已经执行example的功能,如果该方法没有panic。在0+x72PC偏移值是内部的下一个指令main功能,如果控制正巧回到那个功能。更重要的是,该指针之前的指令会告诉你正在执行的指令。</p>
+<p>查看清单2中的程序,该程序导致清单1中的堆栈跟踪。</p>
+<p>清单2</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">https:<span class="hljs-comment">//github.com/ardanlabs/gotraining/blob/master/topics/go/profiling/stack_trace/example1/example1.go</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-number">07</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line"><span class="hljs-number">08</span>     example(<span class="hljs-built_in">make</span>([]<span class="hljs-keyword">string</span>, <span class="hljs-number">2</span>, <span class="hljs-number">4</span>), <span class="hljs-string">"hello"</span>, <span class="hljs-number">10</span>)</span><br><span class="line"><span class="hljs-number">09</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-number">12</span> <span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">example</span><span class="hljs-params">(slice []<span class="hljs-keyword">string</span>, str <span class="hljs-keyword">string</span>, i <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line"><span class="hljs-number">13</span>    <span class="hljs-built_in">panic</span>(<span class="hljs-string">"Want stack trace"</span>)</span><br><span class="line"><span class="hljs-number">14</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>十六进制数+0x39表示example函数内部指令的PC偏移量,该指令比函数的起始指令低57（基数10）字节。在下面的清单3中,你可以看到一个objdump对的example从二元函数。找到第12条指令,它在底部列出。注意该指令上面的代码行是对它的调用panic。</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ go tool objdump -S -s <span class="hljs-string">"main.example"</span> ./example1</span><br><span class="line">TEXT main.example(SB) stack_trace/example1/example1.go</span><br><span class="line">func example(slice []string, str string, i int) &#123;</span><br><span class="line">  0x104dfa0		65488b0c2530000000	MOVQ GS:0x30, CX</span><br><span class="line">  0x104dfa9		483b6110		CMPQ 0x10(CX), SP</span><br><span class="line">  0x104dfad		762c			JBE 0x104dfdb</span><br><span class="line">  0x104dfaf		4883ec18		SUBQ <span class="hljs-variable">$0x18</span>, SP</span><br><span class="line">  0x104dfb3		48896c2410		MOVQ BP, 0x10(SP)</span><br><span class="line">  0x104dfb8		488d6c2410		LEAQ 0x10(SP), BP</span><br><span class="line">	panic(<span class="hljs-string">"Want stack trace"</span>)</span><br><span class="line">  0x104dfbd		488d059ca20000	LEAQ runtime.types+41504(SB), AX</span><br><span class="line">  0x104dfc4		48890424		MOVQ AX, 0(SP)</span><br><span class="line">  0x104dfc8		488d05a1870200	LEAQ main.statictmp_0(SB), AX</span><br><span class="line">  0x104dfcf		4889442408		MOVQ AX, 0x8(SP)</span><br><span class="line">  0x104dfd4		e8c735fdff		CALL runtime.gopanic(SB)</span><br><span class="line">  0x104dfd9		0f0b			UD2              &lt;--- LOOK HERE PC(+0x39)</span><br></pre></td></tr></table></figure>
+<p>请记住：PC是下一条指令,而不是当前指令。清单3是基于amd64的指令的一个很好的例子,该Go程序的Thread负责顺序执行。</p>
+<h1 id="线程状态"><a href="#线程状态" class="headerlink" title="线程状态"></a>线程状态</h1><p>另一个重要的概念是线程状态,它规定了调度程序对线程所采用的角色。线程可以处于以下三种状态之一：等待,可运行,执行。</p>
+<ul>
+<li><p>等待：这意味着线程停止并等待某些东西才能继续。这可能是因为等待硬件（磁盘,网络）,操作系统（系统调用）或同步调用（原子,互斥）等原因。这些类型的延迟是性能不佳的根本原因。</p>
+</li>
+<li><p>可运行：这意味着线程需要时间在核心上,以便它可以执行其分配的机器指令。如果你有很多需要时间的线程,那么线程必须等待更长时间才能获得时间。此外,随着更多线程争用时间,缩短了任何给定线程获得的单独时间量。这种类型的调度延迟也可能是性能不佳的原因。</p>
+</li>
+<li><p>执行：这意味着线程已被放置在核心上并正在执行其机器指令。与应用程序相关的工作即将完成。这是每个人都想要的。</p>
+</li>
+</ul>
+<h1 id="工作类型"><a href="#工作类型" class="headerlink" title="工作类型"></a>工作类型</h1><p>线程可以执行两种类型的工作。第一个称为CPU绑定,第二个称为IO绑定。</p>
+<ul>
+<li><p>CPU绑定：这是永远不会创建线程可能处于等待状态的情况的工作。这是不断进行计算的工作。计算Pi到第N位的线程将是CPU绑定的。</p>
+</li>
+<li><p>IO绑定：这是导致线程进入等待状态的工作。这项工作包括请求通过网络访问资源或将系统调用进入操作系统。需要访问数据库的线程将是IO绑定。我将包括同步事件（互斥,原子）,导致线程等待此类别的一部分。</p>
+</li>
+</ul>
+<h1 id="上下文切换"><a href="#上下文切换" class="headerlink" title="上下文切换"></a>上下文切换</h1><p>如果你在Linux,Mac或Windows上运行,则运行在具有抢占式调度程序的操作系统上。这意味着一些重要的事情。首先,它意味着调度程序在任何给定时间选择运行什么线程时都是不可预测的。线程优先级与事件一起（如在网络上接收数据）使得无法确定调度程序将选择执行什么操作以及何时执行操作。</p>
+<p>其次,这意味着你必须永远不要根据你有幸经历的一些感知行为编写代码,但不能保证每次都能发生。很容易让自己思考,因为我已经看到过这种情况发生了1000次,这是有保障的行为。如果在应用程序中需要确定性,则必须控制线程的同步和编排。</p>
+<p>在核心上交换线程的物理行为称为上下文切换。当调度程序从核心拉出执行中的线程并用可运行的线程替换它时,就会发生上下文切换。从运行队列中选择的线程进入执行状态。被拉出的线程可以移回可运行状态（如果它仍然具有运行能力）,或者进入等待状态（如果由于IO绑定类型的请求而被替换）。</p>
+<p>上下文切换被认为是昂贵的,因为在核心上交换线程需要花费很多时间。在上下文切换期间存在的等待时间量取决于不同的因素,但是它在~1000和~1500纳秒之间花费是不合理的。考虑到硬件应该能够合理地执行（平均）每个核心每纳秒12条指令,上下文切换可能需要大约12k到18k的延迟指令。实质上,你的程序在上下文切换期间失去了执行大量指令的能力。</p>
+<p>如果你有一个专注于IO绑定工作的程序,那么上下文切换将是一个优势。一旦线程进入等待中状态,另一个处于可运行状态的线程就可以取代它。这使得核心始终可以正常工作。这是调度的最重要方面之一。如果有工作（处于可运行状态的线程）,则不允许内核空闲。</p>
+<p>如果你的程序专注于CPU绑定工作,那么上下文切换将成为性能的噩梦。由于Thead总是有工作要做,因此上下文切换正在停止这项工作的进展。这种情况与IO绑定工作负载的情况形成鲜明对比</p>
+<h1 id="少即是多"><a href="#少即是多" class="headerlink" title="少即是多"></a>少即是多</h1><p>在处理器只有一个核心的早期阶段,调度并不过分复杂。因为你有一个单核处理器,所以在任何给定时间只能执行一个线程。我们的想法是定义一个调度程序周期并尝试在该段时间内执行所有Runnable线程。没问题：采用调度周期并除以需要执行的线程数。</p>
+<p>例如,如果你将调度程序周期定义为10毫秒（毫秒）并且你有2个线程,则每个线程各获得5毫秒。如果你有5个线程,每个线程各获得2ms。但是,当你有100个线程时会发生什么？为每个线程提供10μs（微秒）的时间片不起作用,因为你将在上下文切换中花费大量时间。</p>
+<p>你需要的是限制切片的短时间。在最后一种情况下,如果最小时间片是2ms并且你有100个线程,则调度程序周期需要增加到2000ms或2s（秒）。如果有1000个线程,现在你正在查看20秒的调度期间。如果每个线程使用其全时间片,则在此简单示例中所有线程运行一次需要20秒。</p>
+<p>请注意,这是一个非常简单的世界观。在制定调度决策时,调度程序需要考虑和处理更多事情。您可以控制在应用程序中使用的线程数。当需要考虑更多的线程,并且发生IO-Bound工作时,会出现更多混乱和不确定行为。事情需要更长的时间来安排和执行。</p>
+<p>这就是为什么游戏规则是“少即是多”。可运行状态中较少的线程意味着较少的调度开销和每个线程随时间推移的更多时间。处于可运行状态的更多线程意味着每个线程随时间变化的时间更短。这意味着你的工作也会随着时间的推移完成。</p>
+<h1 id="找到平衡点"><a href="#找到平衡点" class="headerlink" title="找到平衡点"></a>找到平衡点</h1><p>你需要在你拥有的核心数量和获得应用程序最佳吞吐量所需的线程数之间找到平衡点。在管理这种平衡时,线程池是一个很好的答案。我将在第二部分告诉你,Go不再需要这个。我认为这是Go为使多线程应用程序开发更容易做的好事之一。</p>
+<p>在Go编码之前,我用C ++编写代码,用NT编写C＃。在该操作系统上,使用IOCP（IO完成端口）线程池对于编写多线程软件至关重要。作为工程师,你需要确定所需的线程池数量和任何给定池的最大线程数,以最大化你给定的核心数量的吞吐量。</p>
+<p>在编写与数据库通信的Web服务时,每个核心3个线程的神奇数量似乎始终在NT上提供最佳吞吐量。换句话说,每个内核3个线程最小化了上下文切换的延迟成本,同时最大化了内核上的执行时间。在创建IOCP线程池时,我知道在主机上识别出的每个核心都至少有1个线程和最多3个线程。</p>
+<p>如果我每个核心使用2个线程,则需要更长时间才能完成所有工作,因为我有空闲时间可以完成工作。如果我每个核心使用4个线程,它也需要更长的时间,因为我在上下文切换中有更多的延迟。无论出于何种原因,每个核心3个线程的平衡似乎总是在NT上的神奇数字。</p>
+<p>如果你的服务正在进行许多不同类型的工作,该怎么办？这可能会产生不同且不一致的延迟。也许它还会创建许多需要处理的不同系统级事件。可能无法找到一直适用于所有不同工作负载的幻数。当使用线程池来调整服务的性能时,找到正确的一致配置会变得非常复杂。</p>
+<h1 id="缓存行"><a href="#缓存行" class="headerlink" title="缓存行"></a>缓存行</h1><p>从主存储器访问数据具有如此高的延迟成本（约100至约300个时钟周期）,处理器和内核具有本地高速缓存以使数据保持接近需要它的硬件线程。从高速缓存访​​问数据的成本要低得多（约3到约40个时钟周期）,具体取决于所访问的高速缓存。今天,性能的一个方面是关于如何有效地将数据导入处理器以减少这些数据访问延迟。编写改变状态的多线程应用程序需要考虑缓存系统的机制。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/92_figure2.png" alt=""></p>
+<p>使用高速缓存行在处理器和主存储器之间交换数据。高速缓存行是在主存储器和高速缓存系统之间交换的64字节内存块。每个核心都有自己需要的任何缓存行的副本,这意味着硬件使用值语义。这就是为什么多线程应用程序中的内存突变会造成性能噩梦的原因。</p>
+<p>当并行运行的多个线程访问相同的数据值或甚至是彼此接近的数据值时,它们将访问同一缓存线上的数据。在任何核心上运行的任何线程都将获得其自己的同一缓存行的副本。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/92_figure3.png" alt=""></p>
+<p>如果给定核心上的一个线程对其高速缓存行的副本进行了更改,那么通过硬件的能力,同一高速缓存行的所有其他副本都必须标记为脏状态。当线程尝试对脏缓存行进行读或写访问时,需要主存储器访问（约100到约300个时钟周期）来获取缓存行的新副本。</p>
+<p>也许在2核处理器上这不是什么大问题,但是并行运行32个线程的32核处理器在同一个缓存线上访问和改变数据呢？具有两个物理处理器的系统如何,每个处理器有16个核心？由于处理器到处理器通信的延迟增加,情况会更糟。该应用程序将通过内存进行颠簸,性能将变得非常糟糕,而且很可能,你将无法理解为什么。</p>
+<p>这称为缓存一致性问题,并且还引入了诸如错误共享之类的问题。在编写将改变共享状态的多线程应用程序时,必须考虑缓存系统。</p>
+<h1 id="调度决策场景"><a href="#调度决策场景" class="headerlink" title="调度决策场景"></a>调度决策场景</h1><p>想象一下,我已经要求你根据我给你的高级信息编写OS调度程序。想想你必须考虑的这种情况。请记住,这是调度程序在做出调度决策时必须考虑的许多有趣的事情之一。</p>
+<p>启动应用程序并创建主线程并在核心1上执行。当线程开始执行其指令时,正在检索缓存行,因为需要数据。Thread现在决定为某些并发处理创建一个新的Thread。这是个问题。</p>
+<p>一旦创建了Thread并准备好了,调度程序应该是：</p>
+<ol>
+<li><p>上下文切换核心1的主线程？这样做有助于提高性能,因为这个新线程需要相同的数据已经被缓存的可能性非常大。但主线程没有得到它的全部时间片。</p>
+</li>
+<li><p>是否等待核心1在主线程的时间片完成之前可用？线程未运行,但一旦启动,将取消获取数据的延迟。</p>
+</li>
+<li><p>让线程等待下一个可用的核心？这将意味着将刷新,检索和复制所选核心的高速缓存行,从而导致延迟。但是线程会更快地启动,主线程可以完成其时间片。</p>
+</li>
+</ol>
+<p>玩得开心吗？这些是OS调度程序在做出调度决策时需要考虑的有趣问题。对每个人来说幸运的是,我不是那个制作它们的人。我可以告诉你的是,如果有空闲核心,它将会被使用。你希望线程在运行时运行。</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>这篇文章的第一部分提供了在编写多线程应用程序时对线程和OS调度程序必须考虑的内容的见解。这些是Go调度程序也考虑到的事情。在下一篇文章中,我将描述Go调度程序的语义以及它们如何与此信息相关。最后,你将通过运行几个程序来看到所有这些。</p>
+<p>原文:</p>
+<p><a href="https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part1.html" target="_blank" rel="noopener">1) Scheduling In Go : Part I - OS Scheduler</a><br><a href="https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part2.html" target="_blank" rel="noopener">2) Scheduling In Go : Part II - Go Scheduler</a><br><a href="https://www.ardanlabs.com/blog/2018/12/scheduling-in-go-part3.html" target="_blank" rel="noopener">3) Scheduling In Go : Part III - Concurrency</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6/" rel="tag">Go中的调度</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACII%E9%83%A8%E5%88%86-Go%20Scheduler/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Go中的调度：第II部分 - Go Scheduler</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/06/Go/Golang%E8%AF%91%E6%96%87/Go%E5%AE%9E%E6%97%B6GC%E2%80%94%E2%80%94%E4%B8%89%E8%89%B2%E7%AE%97%E6%B3%95%E7%90%86%E8%AE%BA%E4%B8%8E%E5%AE%9E%E8%B7%B5%20/">
+                <span class="level-item">(译) Go实时GC——三色算法理论与实践</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'c552a618ca01657c73523c4fd99f2172',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#介绍">
+        <span class="has-mr-6">1</span>
+        <span>介绍</span>
+        </a></li><li>
+        <a class="is-flex" href="#OS-Scheduler">
+        <span class="has-mr-6">2</span>
+        <span>OS Scheduler</span>
+        </a></li><li>
+        <a class="is-flex" href="#执行指令">
+        <span class="has-mr-6">3</span>
+        <span>执行指令</span>
+        </a></li><li>
+        <a class="is-flex" href="#线程状态">
+        <span class="has-mr-6">4</span>
+        <span>线程状态</span>
+        </a></li><li>
+        <a class="is-flex" href="#工作类型">
+        <span class="has-mr-6">5</span>
+        <span>工作类型</span>
+        </a></li><li>
+        <a class="is-flex" href="#上下文切换">
+        <span class="has-mr-6">6</span>
+        <span>上下文切换</span>
+        </a></li><li>
+        <a class="is-flex" href="#少即是多">
+        <span class="has-mr-6">7</span>
+        <span>少即是多</span>
+        </a></li><li>
+        <a class="is-flex" href="#找到平衡点">
+        <span class="has-mr-6">8</span>
+        <span>找到平衡点</span>
+        </a></li><li>
+        <a class="is-flex" href="#缓存行">
+        <span class="has-mr-6">9</span>
+        <span>缓存行</span>
+        </a></li><li>
+        <a class="is-flex" href="#调度决策场景">
+        <span class="has-mr-6">10</span>
+        <span>调度决策场景</span>
+        </a></li><li>
+        <a class="is-flex" href="#结论">
+        <span class="has-mr-6">11</span>
+        <span>结论</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的调度：第I部分 - OS调度程序" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

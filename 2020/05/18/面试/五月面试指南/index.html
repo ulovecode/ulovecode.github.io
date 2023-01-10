@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>五月面试指南 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="五月份关于序章科技,腾讯云和腾讯视频,晓信科技的面试题以及答案,抽空整理成博文与大家分享一下。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="五月面试指南">
+<meta property="og:url" content="https://www.ulovecode.com/2020/05/18/%E9%9D%A2%E8%AF%95/%E4%BA%94%E6%9C%88%E9%9D%A2%E8%AF%95%E6%8C%87%E5%8D%97/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="五月份关于序章科技,腾讯云和腾讯视频,晓信科技的面试题以及答案,抽空整理成博文与大家分享一下。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/40/b7/4085ba5b572aba8944db733c882dadb7.jpg?x-oss-process=image/crop,y_81,w_1279,h_730/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-05-17T16:15:00.000Z">
+<meta property="article:modified_time" content="2020-05-17T16:15:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="面试">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/40/b7/4085ba5b572aba8944db733c882dadb7.jpg?x-oss-process=image/crop,y_81,w_1279,h_730/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="五月面试指南" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/40/b7/4085ba5b572aba8944db733c882dadb7.jpg?x-oss-process=image/crop,y_81,w_1279,h_730/resize,w_1280,h_847" alt="五月面试指南">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-05-17T16:15:00.000Z">2020-05-18</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E9%9D%A2%E8%AF%95/">面试</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    31 分钟 读完 (大约 4677 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                五月面试指南
+            
+        </h1>
+        <div class="content">
+            <p>五月份关于序章科技,腾讯云和腾讯视频,晓信科技的面试题以及答案,抽空整理成博文与大家分享一下。</p>
+<a id="more"></a>
+<h3 id="一-、TCP相关基础知识"><a href="#一-、TCP相关基础知识" class="headerlink" title="一 、TCP相关基础知识"></a>一 、TCP相关基础知识</h3><h5 id="三次握手过程"><a href="#三次握手过程" class="headerlink" title="三次握手过程"></a>三次握手过程</h5><p>刚开始客户端处于 Closed 的状态,服务端处于 Listen 状态,进行三次握手：</p>
+<p>第一次握手：客户端给服务端发一个 SYN 报文,并指明客户端的初始化序列号 ISN(c)。此时客户端处于<code>SYN_SENT</code>状态。</p>
+<ul>
+<li>首部的同步位SYN=1,初始序号seq=x,SYN=1的报文段不能携带数据,但要消耗掉一个序号。</li>
+</ul>
+<p>第二次握手：服务器收到客户端的 SYN 报文之后,会以自己的 SYN 报文作为应答,并且也是指定了自己的初始化序列号 ISN(s)。同时会把客户端的 ISN + 1 作为ACK 的值,表示自己已经收到了客户端的 SYN,此时服务器处于<code>SYN_RCVD</code>的状态。</p>
+<ul>
+<li>在确认报文段中SYN=1,ACK=1,确认号ack=x+1,初始序号seq=y。</li>
+</ul>
+<p>第三次握手：客户端收到 SYN 报文之后,会发送一个 ACK 报文,当然,也是一样把服务器的 ISN + 1 作为 ACK 的值,表示已经收到了服务端的 SYN 报文,此时客户端处于<code>ESTABLISHED</code>状态。服务器收到 ACK 报文之后,也处于<code>ESTABLISHED</code>状态,此时,双方已建立起了连接。</p>
+<ul>
+<li>确认报文段ACK=1,确认号ack=y+1,序号seq=x+1（初始为seq=x,第二个报文段所以要+1）,ACK报文段可以携带数据,不携带数据则不消耗序号。</li>
+</ul>
+<p><img src="https://md.ulovecode.com/static/images/posts/1460000020610340.png?imageView2/2/w/1280/h/847" alt="三次握手.png"></p>
+<h5 id="四次挥手的过程"><a href="#四次挥手的过程" class="headerlink" title="四次挥手的过程"></a>四次挥手的过程</h5><p>刚开始双方都处于 ESTABLISHED 状态,假如是客户端先发起关闭请求。四次挥手的过程如下：</p>
+<p>第一次挥手：客户端发送一个 FIN 报文,报文中会指定一个序列号。此时客户端处于<code>FIN_WAIT1</code>状态。</p>
+<ul>
+<li>即发出连接释放报文段（FIN=1,序号seq=u）,并停止再发送数据,主动关闭TCP连接,进入<code>FIN_WAIT1</code>（终止等待1）状态,等待服务端的确认。</li>
+</ul>
+<p>第二次挥手：服务端收到 FIN 之后,会发送 ACK 报文,且把客户端的序列号值 +1 作为 ACK 报文的序列号值,表明已经收到客户端的报文了,此时服务端处于<code>CLOSE_WAIT</code>状态。</p>
+<ul>
+<li>即服务端收到连接释放报文段后即发出<strong>确认报文段</strong>（ACK=1,确认号ack=u+1,序号seq=v）,服务端进入<code>CLOSE_WAIT</code>（关闭等待）状态,此时的TCP处于半关闭状态,客户端到服务端的连接释放。客户端收到服务端的确认后,进入<code>FIN_WAIT2</code>（终止等待2）状态,等待服务端发出的连接释放报文段。</li>
+</ul>
+<p>第三次挥手：如果服务端也想断开连接了,和客户端的第一次挥手一样,发给 FIN 报文,且指定一个序列号。此时服务端处于<code>LAST_ACK</code>的状态。</p>
+<ul>
+<li>即服务端没有要向客户端发出的数据,服务端发出<strong>连接释放报文段</strong>（FIN=1,ACK=1,序号seq=w,确认号ack=u+1）,服务端进入<code>LAST_ACK</code>（最后确认）状态,等待客户端的确认。</li>
+</ul>
+<p>第四次挥手：客户端收到 FIN 之后,一样发送一个 ACK 报文作为应答,且把服务端的序列号值 +1 作为自己 ACK 报文的序列号值,此时客户端处于<code>TIME_WAIT</code>状态。需要过一阵子以确保服务端收到自己的 ACK 报文之后才会进入<code>CLOSED</code>状态,服务端收到 ACK 报文之后,就处于关闭连接了,处于<code>CLOSED</code>状态。</p>
+<ul>
+<li>即客户端收到服务端的连接释放报文段后,对此发出<strong>确认报文段</strong>（ACK=1,seq=u+1,ack=w+1）,客户端进入<code>TIME_WAIT</code>（时间等待）状态。此时TCP未释放掉,需要经过时间等待计时器设置的时间2MSL后,客户端才进入<code>CLOSED</code>状态。</li>
+</ul>
+<p><img src="https://md.ulovecode.com/static/images/posts/1460000020610341.png?imageView2/2/w/1280/h/847" alt="image.png"></p>
+<h5 id="三次握手过程中可以携带数据吗？"><a href="#三次握手过程中可以携带数据吗？" class="headerlink" title="三次握手过程中可以携带数据吗？"></a>三次握手过程中可以携带数据吗？</h5><p>第一次握手不可以放数据,其中一个简单的原因就是会让服务器更加容易受到攻击了。而对于第三次的话,此时客户端已经处于 ESTABLISHED 状态。对于客户端来说,他已经建立起连接了,并且也已经知道服务器的接收、发送能力是正常的了,所以能携带数据。</p>
+<h5 id="什么是半连接队列？"><a href="#什么是半连接队列？" class="headerlink" title="什么是半连接队列？"></a>什么是半连接队列？</h5><p>服务器第一次收到客户端的 SYN 之后,就会处于<code>SYN_RCVD</code>状态,此时双方还没有完全建立其连接,服务器会把此种状态下请求连接放在一个队列里,我们把这种队列称之为半连接队列。</p>
+<h5 id="TCP是通过什么机制保障可靠性的"><a href="#TCP是通过什么机制保障可靠性的" class="headerlink" title="TCP是通过什么机制保障可靠性的?"></a>TCP是通过什么机制保障可靠性的?</h5><ol>
+<li>应用数据被分割成TCP认为最适合发送的数据块。这和UDP完全不同,应用程序产生的数据报长度将保持不变。</li>
+<li>超时重传</li>
+<li>需要确认</li>
+<li>保持首部和数据的检验和</li>
+<li>数据后重新排序</li>
+<li>丢弃重复</li>
+<li>流量控制</li>
+</ol>
+<p>从四个方面进行回答,ACK确认机制、超时重传、滑动窗口以及流量控制,深入的话要求详细讲出流量控制的机制。</p>
+<h5 id="tcp为什么要三次握手和四次挥手？"><a href="#tcp为什么要三次握手和四次挥手？" class="headerlink" title="tcp为什么要三次握手和四次挥手？"></a>tcp为什么要三次握手和四次挥手？</h5><p>三次握手：</p>
+<ul>
+<li>第一次握手: 确认客户端的发送能力、服务端的接收能力是正常的。</li>
+<li>第二次握手: 客户端可以知道客户端的接收,发送能力正常,服务器自己的发送、接收能力也正常。但是服务器端还不知道。</li>
+<li>第三次握手: 服务端可以知道客户端的接收,能力正常,服务器自己的发送、接收能力也正常。</li>
+</ul>
+<p>四次挥手：</p>
+<ul>
+<li>原因是因为tcp是<strong>全双工模式</strong> ，<strong>接收到FIN时意味将没有数据再发来,但是还是可以继续发送数据。</strong></li>
+</ul>
+<h5 id="tcp怎么保证有序传输的？"><a href="#tcp怎么保证有序传输的？" class="headerlink" title="tcp怎么保证有序传输的？"></a>tcp怎么保证有序传输的？</h5><ol>
+<li><p>为了保证数据包的可靠传递,发送方必须把已发送的数据包保留在缓冲区；</p>
+</li>
+<li><p>并为每个已发送的数据包启动一个超时定时器；</p>
+</li>
+<li><p>如在定时器超时之前收到了对方发来的应答信息（可能是对本包的应答,也可以是对本包后续包的应答）,则释放该数据包占用的缓冲区;</p>
+</li>
+<li><p>否则,重传该数据包,直到收到应答或重传次数超过规定的最大次数为止。</p>
+</li>
+<li><p>接收方收到数据包后,先进行CRC校验,如果正确则把数据交给上层协议,然后给发送方发送一个累计应答包,表明该数据已收到,并且可以携带数据。</p>
+</li>
+</ol>
+<h5 id="ISN-Initial-Sequence-Number-是怎么生成的？"><a href="#ISN-Initial-Sequence-Number-是怎么生成的？" class="headerlink" title="ISN(Initial Sequence Number)是怎么生成的？"></a>ISN(Initial Sequence Number)是怎么生成的？</h5><p><strong>ISN = M + F(localhost, localport, remotehost, remoteport).</strong></p>
+<p><strong>M</strong>是一个计时器,这个计时器每隔4毫秒加1。</p>
+<p><strong>F</strong>是一个Hash算法,根据源IP、目的IP、源端口、目的端口生成一个随机数值。要保证hash算法不能被外部轻易推算得出,用<strong>MD5</strong>算法是一个比较好的选择。</p>
+<p>TCP初始化序列号不能设置为一个固定值,因为这样容易被攻击者猜出后续序列号,从而遭到攻击。</p>
+<h3 id="二、-操作系统"><a href="#二、-操作系统" class="headerlink" title="二、 操作系统"></a>二、 操作系统</h3><h5 id="描述线程、进程以及协程的区别-描述线程、进程以及协程的定义和区别-顺便描述Go语言中三者的使用。"><a href="#描述线程、进程以及协程的区别-描述线程、进程以及协程的定义和区别-顺便描述Go语言中三者的使用。" class="headerlink" title="描述线程、进程以及协程的区别? 描述线程、进程以及协程的定义和区别,顺便描述Go语言中三者的使用。"></a>描述线程、进程以及协程的区别? 描述线程、进程以及协程的定义和区别,顺便描述Go语言中三者的使用。</h5><p>一、定义</p>
+<p>1、进程</p>
+<p>进程是具有一定独立功能的程序关于某个数据集合上的一次运行活动,进程是系统进行资源分配和调度的一个独立单位。每个进程都有自己的<strong>独立内存空间</strong>,不同进程通过进程间通信来通信。由于进程比较重量,占据独立的内存,所以上下文进程间的切换开销（栈、寄存器、虚拟内存、文件句柄等）比较大,但相对比较稳定安全。</p>
+<p>2、线程</p>
+<p>线程是进程的一个实体,是CPU调度和分派的基本单位,它是比进程更小的能独立运行的基本单位.线程自己基本上不拥有系统资源,只拥有一点在运行中必不可少的资源(如程序计数器,一组寄存器和栈),但是它可与同属一个进程的其他的线程共享进程所拥有的全部资源。线程间通信主要通过<strong>共享内存</strong>,上下文切换很快,资源开销较少,但相比进程不够稳定容易丢失数据。</p>
+<p>3、协程</p>
+<p>协程是一种用户态的轻量级线程,协程的调度完全由用户控制。协程拥有自己的寄存器上下文和栈。协程调度切换时,将寄存器上下文和栈保存到其他地方,在切回来的时候,恢复先前保存的寄存器上下文和栈,直接操作栈则基本<strong>没有内核切换的开销</strong>,可以不加锁的访问全局变量,所以上下文的切换非常快。</p>
+<p>二、区别：</p>
+<p>1、进程多与线程比较</p>
+<p>线程是指进程内的一个执行单元,也是进程内的可调度实体。线程与进程的区别:<br>1) 地址空间:线程是进程内的一个执行单元,进程内至少有一个线程,它们共享进程的地址空间,而进程有自己独立的地址空间<br>2) 资源拥有:进程是资源分配和拥有的单位,同一个进程内的线程共享进程的资源<br>3) 线程是处理器调度的基本单位,但进程不是<br>4) 二者均可并发执行</p>
+<p>5) 每个独立的线程有一个程序运行的入口、顺序执行序列和程序的出口,但是线程不能够独立执行,必须依存在应用程序中,由应用程序提供多个线程执行控制</p>
+<p>2、协程多与线程进行比较</p>
+<p>1) 协程能保留上一次调用时的状态,每次过程重入时,就相当于进入上一次调用的状态。</p>
+<p>2)协程切换<strong>完全在用户空间进行</strong>,线程切换涉及<strong>特权模式切换,需要在内核空间完成</strong>。</p>
+<h5 id="为什么在用户态和内核态之间切换调度成本比较高？"><a href="#为什么在用户态和内核态之间切换调度成本比较高？" class="headerlink" title="为什么在用户态和内核态之间切换调度成本比较高？"></a>为什么在用户态和内核态之间切换调度成本比较高？</h5><h3 id="三、-网络编程相关基础"><a href="#三、-网络编程相关基础" class="headerlink" title="三、 网络编程相关基础"></a>三、 网络编程相关基础</h3><h5 id="网络IO模型有哪些"><a href="#网络IO模型有哪些" class="headerlink" title="网络IO模型有哪些?"></a>网络IO模型有哪些?</h5><ol>
+<li><strong>同步模型（synchronous IO）</strong></li>
+<li>阻塞IO（bloking IO）</li>
+<li>非阻塞IO（non-blocking IO）</li>
+<li>多路复用IO（multiplexing IO）</li>
+<li>信号驱动式IO（signal-driven IO）</li>
+<li><strong>异步IO（asynchronous IO）</strong></li>
+</ol>
+<p>具体描述：</p>
+<blockquote>
+<p><a href="https://www.jianshu.com/p/486b0965c296" target="_blank" rel="noopener">https://www.jianshu.com/p/486b0965c296</a></p>
+</blockquote>
+<h5 id="I-O多路复用中select-poll-epoll的区别？"><a href="#I-O多路复用中select-poll-epoll的区别？" class="headerlink" title="I/O多路复用中select/poll/epoll的区别？"></a>I/O多路复用中select/poll/epoll的区别？</h5><ol>
+<li><strong>Select</strong></li>
+</ol>
+<ul>
+<li><p><strong>工作原理:</strong></p>
+<ol>
+<li><p>从用户空间拷贝fd_set到内核空间,也即从当前程序拷贝fd_set数组进内核。</p>
+</li>
+<li><p>对所有的fd进行一次poll操作,即把当前进程挂载到fd上。</p>
+</li>
+<li><p>poll操作过程中select会唤醒所有的队列中节点,进行遍历,得到它们的掩码（不同的掩码表示不同的就绪状态）。</p>
+</li>
+<li><p>如果所有设备返回的掩码都没有显示任何的事件触发,就去掉回调函数的函数指针,进入有限时的睡眠状态,再恢复和不断做poll,再作有限时的睡眠,直到其中一个设备有事件触发为止。</p>
+</li>
+<li>只要有事件触发,系统调用返回,将fd_set从内核空间拷贝到用户空间,回到用户态,用户就可以对相关的fd作进一步的读或者写操作了。</li>
+</ol>
+</li>
+<li><p><strong>三个缺点：</strong></p>
+<ol>
+<li><p>select最大的缺陷就是单个进程所打开的FD是有一定限制的,它由FD_SETSIZE设置,默认值是1024。</p>
+</li>
+<li><p>对socket进行扫描时是线性扫描,即采用轮询的方法,效率较低。</p>
+</li>
+<li><p>需要维护一个用来存放大量fd的数据结构,这样会使得用户空间和内核空间在传递该结构时复制开销大。</p>
+</li>
+</ol>
+</li>
+</ul>
+<ol start="2">
+<li><p><strong>poll</strong></p>
+<p>poll本质上和select没有区别,但它没有最大连接数的限制,原因是它是基于链表来存储的。<code>poll还有一个特点是“水平触发”</code>,如果报告了fd后,没有被处理,那么下次poll时会再次报告该fd。</p>
+</li>
+<li><p><strong>epoll</strong></p>
+</li>
+</ol>
+<ul>
+<li><strong>基本原理：</strong></li>
+</ul>
+<p><code>epoll支持水平触发和边缘触发,最大的特点在于边缘触发,它只告诉进程哪些fd刚刚变为就绪态,并且只会通知一次</code>。还有一个特点是,<code>epoll使用“事件”的就绪通知方式</code>,通过epoll_ctl注册fd,<code>一旦该fd就绪,内核就会采用类似callback的回调机制来激活该fd</code>,epoll_wait便可以收到通知。</p>
+<ul>
+<li><p><strong>优点</strong>：</p>
+<ol>
+<li><p><code>没有最大并发连接的限制</code>,能打开的FD的上限远大于1024（1G的内存上能监听约10万个端口）。</p>
+</li>
+<li><p><code>效率提升,不是轮询的方式,不会随着FD数目的增加效率下降</code>。只有活跃可用的FD才会调用callback函数；<code>即Epoll最大的优点就在于它只管你“活跃”的连接,而跟连接总数无关</code>,因此在实际的网络环境中,Epoll的效率就会远远高于select和poll。</p>
+</li>
+<li><p><code>内存拷贝</code>,利用mmap()文件映射内存加速与内核空间的消息传递；<code>即epoll使用mmap减少复制开销</code>。</p>
+</li>
+</ol>
+</li>
+<li><p><strong><code>LT（level trigger）和ET（edge trigger）</code></strong></p>
+<ol>
+<li><p>LT模式：当epoll_wait检测到描述符事件发生并将此事件通知应用程序,<code>应用程序可以不立即处理该事件</code>。下次调用epoll_wait时,会再次响应应用程序并通知此事件。</p>
+</li>
+<li><p>ET模式：当epoll_wait检测到描述符事件发生并将此事件通知应用程序,<code>应用程序必须立即处理该事件</code>。如果不处理,下次调用epoll_wait时,不会再次响应应用程序并通知此事件。</p>
+</li>
+</ol>
+</li>
+</ul>
+<h3 id="四、-HTTP-相关基础"><a href="#四、-HTTP-相关基础" class="headerlink" title="四、 HTTP 相关基础"></a>四、 HTTP 相关基础</h3><h5 id="客户端访问url到服务器-整个过程会经历哪些？"><a href="#客户端访问url到服务器-整个过程会经历哪些？" class="headerlink" title="客户端访问url到服务器,整个过程会经历哪些？"></a>客户端访问url到服务器,整个过程会经历哪些？</h5><blockquote>
+<p> <a href="https://blog.fundebug.com/2019/02/28/what-happens-from-url-to-webpage/" target="_blank" rel="noopener">https://blog.fundebug.com/2019/02/28/what-happens-from-url-to-webpage/</a></p>
+</blockquote>
+<h5 id="描述HTTPS和HTTP的区别。"><a href="#描述HTTPS和HTTP的区别。" class="headerlink" title="描述HTTPS和HTTP的区别。"></a>描述HTTPS和HTTP的区别。</h5><blockquote>
+<p> <a href="https://juejin.im/entry/58d7635e5c497d0057fae036" target="_blank" rel="noopener">https://juejin.im/entry/58d7635e5c497d0057fae036</a></p>
+</blockquote>
+<h5 id="HTTP1-0、HTTP1-1-和-HTTP2-0-的区别。"><a href="#HTTP1-0、HTTP1-1-和-HTTP2-0-的区别。" class="headerlink" title="HTTP1.0、HTTP1.1 和 HTTP2.0 的区别。"></a>HTTP1.0、HTTP1.1 和 HTTP2.0 的区别。</h5><blockquote>
+<p><a href="https://juejin.im/entry/5981c5df518825359a2b9476" target="_blank" rel="noopener">https://juejin.im/entry/5981c5df518825359a2b9476</a></p>
+</blockquote>
+<h5 id="RESTful-风格-API-有什么优点和缺点"><a href="#RESTful-风格-API-有什么优点和缺点" class="headerlink" title="RESTful 风格 API 有什么优点和缺点"></a>RESTful 风格 API 有什么优点和缺点</h5><blockquote>
+<p><a href="https://www.lanhusoft.com/Article/626.html" target="_blank" rel="noopener">https://www.lanhusoft.com/Article/626.html</a></p>
+</blockquote>
+<h5 id="对比-GraphQL-与RESTFUL两种HTTP-API的差异"><a href="#对比-GraphQL-与RESTFUL两种HTTP-API的差异" class="headerlink" title="对比 GraphQL 与RESTFUL两种HTTP API的差异"></a>对比 GraphQL 与RESTFUL两种HTTP API的差异</h5><blockquote>
+<p><a href="https://www.jianshu.com/p/2ad286397f7a" target="_blank" rel="noopener">https://www.jianshu.com/p/2ad286397f7a</a></p>
+</blockquote>
+<h3 id="五、-数据库和中间件的基础知识"><a href="#五、-数据库和中间件的基础知识" class="headerlink" title="五、 数据库和中间件的基础知识"></a>五、 数据库和中间件的基础知识</h3><h5 id="5-1-Redis"><a href="#5-1-Redis" class="headerlink" title="5.1 Redis"></a>5.1 Redis</h5><h6 id="描述一下redis有哪些数据结构。"><a href="#描述一下redis有哪些数据结构。" class="headerlink" title="描述一下redis有哪些数据结构。"></a>描述一下redis有哪些数据结构。</h6><p>基础的数据结构有5种,String/List/Hash/Set/Zset,高级数据结构HyperLogLog/BitMap/BloomFilter/GeoHash。</p>
+<h6 id="Redis的LRU实现"><a href="#Redis的LRU实现" class="headerlink" title="Redis的LRU实现"></a>Redis的LRU实现</h6><blockquote>
+<p><a href="https://zhuanlan.zhihu.com/p/34133067" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/34133067</a></p>
+</blockquote>
+<h6 id="Redis的持久化机制"><a href="#Redis的持久化机制" class="headerlink" title="Redis的持久化机制"></a>Redis的持久化机制</h6><blockquote>
+<p><a href="https://juejin.im/post/5befacfa5188254e3b31934e" target="_blank" rel="noopener">https://juejin.im/post/5befacfa5188254e3b31934e</a></p>
+</blockquote>
+<h6 id="zset跳表的数据结构"><a href="#zset跳表的数据结构" class="headerlink" title="zset跳表的数据结构"></a>zset跳表的数据结构</h6><blockquote>
+<p><a href="https://redisbook.readthedocs.io/en/latest/internal-datastruct/skiplist.html" target="_blank" rel="noopener">https://redisbook.readthedocs.io/en/latest/internal-datastruct/skiplist.html</a></p>
+<p><a href="https://www.ulovecode.com/2019/06/02/Algorithm/数据结构与算法/跳跃表实现/#more">跳跃表实现</a></p>
+</blockquote>
+<h6 id="Redis的分布式锁"><a href="#Redis的分布式锁" class="headerlink" title="Redis的分布式锁"></a>Redis的分布式锁</h6><blockquote>
+<p><a href="https://juejin.im/post/5cc165816fb9a03202221dd5" target="_blank" rel="noopener">https://juejin.im/post/5cc165816fb9a03202221dd5</a></p>
+</blockquote>
+<h5 id="5-2-Mysql"><a href="#5-2-Mysql" class="headerlink" title="5.2 Mysql"></a>5.2 Mysql</h5><h6 id="MVCC-实现原理"><a href="#MVCC-实现原理" class="headerlink" title="MVCC 实现原理?"></a>MVCC 实现原理?</h6><p>   通过在每行记录后面保存两个隐藏的列来实现的。</p>
+<ul>
+<li>行的创建时间。</li>
+<li><p>行的过期时间（或删除时间）。</p>
+<blockquote>
+<p>当然存储的并不是实际的时间值,而是系统版本号（system version number）。每开始一个新的事务,系统版本号都会自动递增。事务开始时刻的系统版本号会作为事务的版本号,用来和查询到的每行记录的版本号进行比较。</p>
+</blockquote>
+<h5 id="SELECT"><a href="#SELECT" class="headerlink" title="SELECT"></a>SELECT</h5></li>
+<li><p>只查找版本早于当前事务版本的数据行。</p>
+</li>
+<li><p>行的删除版本要么未定义,要么大于当前事务版本号。</p>
+<h5 id="INSERT"><a href="#INSERT" class="headerlink" title="INSERT"></a>INSERT</h5><p>为新插入的每一行保存当前系统版本号作为行版本号。</p>
+<h5 id="DELETE"><a href="#DELETE" class="headerlink" title="DELETE"></a>DELETE</h5><p>为删除的每一行保存当前系统版本号作为行删除标识。</p>
+<h5 id="UPDATE"><a href="#UPDATE" class="headerlink" title="UPDATE"></a>UPDATE</h5><p>为插入一行新记录,保存当前系统版本号作为行版本号,同时保存当前系统版本号到原来的行作为行删除标识。</p>
+</li>
+</ul>
+<h6 id="Sql-如何优化"><a href="#Sql-如何优化" class="headerlink" title="Sql 如何优化?"></a>Sql 如何优化?</h6><blockquote>
+<p><a href="https://www.ulovecode.com/2020/05/03/数据库/mysql/高性能mysql(4)/#more">https://www.ulovecode.com/2020/05/03/数据库/mysql/高性能mysql(4)/#more</a></p>
+</blockquote>
+<h5 id="5-3-Kafak"><a href="#5-3-Kafak" class="headerlink" title="5.3 Kafak"></a>5.3 Kafak</h5><h6 id="Kafka的复制机制"><a href="#Kafka的复制机制" class="headerlink" title="Kafka的复制机制"></a>Kafka的复制机制</h6><blockquote>
+<p><a href="https://colobu.com/2017/11/02/kafka-replication/" target="_blank" rel="noopener">https://colobu.com/2017/11/02/kafka-replication/</a></p>
+</blockquote>
+<h6 id="消息中间件选型分析"><a href="#消息中间件选型分析" class="headerlink" title="消息中间件选型分析"></a>消息中间件选型分析</h6><blockquote>
+<p><a href="https://www.infoq.cn/article/kafka-vs-rabbitmq" target="_blank" rel="noopener">https://www.infoq.cn/article/kafka-vs-rabbitmq</a></p>
+</blockquote>
+<h6 id="Kafka中的选举"><a href="#Kafka中的选举" class="headerlink" title="Kafka中的选举"></a>Kafka中的选举</h6><blockquote>
+<p><a href="https://xie.infoq.cn/article/e64e4881675ca585b67ab914a" target="_blank" rel="noopener">https://xie.infoq.cn/article/e64e4881675ca585b67ab914a</a></p>
+</blockquote>
+<h6 id="Kafka为什么吞吐量大、速度快？"><a href="#Kafka为什么吞吐量大、速度快？" class="headerlink" title="Kafka为什么吞吐量大、速度快？"></a>Kafka为什么吞吐量大、速度快？</h6><blockquote>
+<p><a href="https://blog.csdn.net/kzadmxz/article/details/101576401" target="_blank" rel="noopener">https://blog.csdn.net/kzadmxz/article/details/101576401</a></p>
+</blockquote>
+<h6 id="HW机制"><a href="#HW机制" class="headerlink" title="HW机制"></a>HW机制</h6><blockquote>
+<p><a href="http://objcoding.com/2019/10/31/kafka-hw/" target="_blank" rel="noopener">http://objcoding.com/2019/10/31/kafka-hw/</a></p>
+</blockquote>
+<h3 id="六、-算法以及数学题及智力题"><a href="#六、-算法以及数学题及智力题" class="headerlink" title="六、 算法以及数学题及智力题"></a>六、 算法以及数学题及智力题</h3><ol>
+<li><p><a href="https://leetcode-cn.com/problems/reverse-nodes-in-k-group/" target="_blank" rel="noopener"> K 个一组翻转链表</a></p>
+</li>
+<li><p>随机打乱一个数组</p>
+</li>
+<li><p><a href="https://www.nowcoder.com/discuss/413599?type=1" target="_blank" rel="noopener">毒蘑菇最大体力</a></p>
+</li>
+<li><p><a href="https://leetcode-cn.com/problems/add-two-numbers/" target="_blank" rel="noopener">两数相加</a></p>
+</li>
+<li><p>给出一个数字 n,代表 n 个人的序号,偶数是女生奇数是男生,假设 n 人想出去团建,行政需要帮忙订房间每个房间 2 个人,男女不能同房,要写一个函数 randomRoom 随机出配出所有房间的人。</p>
+</li>
+<li><p>一个路口30分钟内有车通过的概率是90%,则5分钟内有车通过的概率是多少？</p>
+</li>
+<li><p>12箱黄金,每箱100块,每块一两。有个贪官,把某一箱的每块都磨去一钱。请称一次找到不足量的那个箱子。</p>
+</li>
+</ol>
+<h3 id="七、-架构"><a href="#七、-架构" class="headerlink" title="七、 架构"></a>七、 架构</h3><h5 id="秒杀业务"><a href="#秒杀业务" class="headerlink" title="秒杀业务"></a>秒杀业务</h5><blockquote>
+<p>如何设计秒杀系统？ - 网易云的回答 - 知乎 <a href="https://www.zhihu.com/question/54895548/answer/259218876" target="_blank" rel="noopener">https://www.zhihu.com/question/54895548/answer/259218876</a></p>
+</blockquote>
+<h5 id="DNS-负载均衡算法"><a href="#DNS-负载均衡算法" class="headerlink" title="DNS 负载均衡算法"></a><em>DNS 负载均衡</em>算法</h5><blockquote>
+<p><a href="https://blog.csdn.net/lonelymanontheway/article/details/89222159" target="_blank" rel="noopener">https://blog.csdn.net/lonelymanontheway/article/details/89222159</a></p>
+</blockquote>
+<h5 id="水平扩展和垂直扩展"><a href="#水平扩展和垂直扩展" class="headerlink" title="水平扩展和垂直扩展"></a>水平扩展和垂直扩展</h5><blockquote>
+<p><a href="https://zhuanlan.zhihu.com/p/24830094" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/24830094</a></p>
+</blockquote>
+<h5 id="每秒100W请求-架构如何优化"><a href="#每秒100W请求-架构如何优化" class="headerlink" title="每秒100W请求,架构如何优化"></a>每秒100W请求,架构如何优化</h5><blockquote>
+<p><a href="https://blog.csdn.net/shenjian58/article/details/100681683" target="_blank" rel="noopener">https://blog.csdn.net/shenjian58/article/details/100681683</a></p>
+</blockquote>
+<h5 id="Redis分布式锁服务器挂了怎么办"><a href="#Redis分布式锁服务器挂了怎么办" class="headerlink" title="Redis分布式锁服务器挂了怎么办?"></a>Redis分布式锁服务器挂了怎么办?</h5><blockquote>
+<p><a href="https://xiaomi-info.github.io/2019/12/17/redis-distributed-lock/" target="_blank" rel="noopener">https://xiaomi-info.github.io/2019/12/17/redis-distributed-lock/</a></p>
+</blockquote>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/06/05/Go/Go%E5%A6%82%E4%BD%95%E7%BC%96%E5%86%99Grpc%E6%B5%8B%E8%AF%95/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Go如何编写Grpc测试</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/05/06/Go/Go%E9%99%90%E6%B5%81%E7%AE%97%E6%B3%95%E5%AE%9E%E6%88%98/">
+                <span class="level-item">Go 限流算法实战</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '6f9def22e20d7b4b0c4e8513152acc29',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一-、TCP相关基础知识">
+        <span class="has-mr-6">1</span>
+        <span>一 、TCP相关基础知识</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#三次握手过程">
+        <span class="has-mr-6">1.1</span>
+        <span>三次握手过程</span>
+        </a></li><li>
+        <a class="is-flex" href="#四次挥手的过程">
+        <span class="has-mr-6">1.2</span>
+        <span>四次挥手的过程</span>
+        </a></li><li>
+        <a class="is-flex" href="#三次握手过程中可以携带数据吗？">
+        <span class="has-mr-6">1.3</span>
+        <span>三次握手过程中可以携带数据吗？</span>
+        </a></li><li>
+        <a class="is-flex" href="#什么是半连接队列？">
+        <span class="has-mr-6">1.4</span>
+        <span>什么是半连接队列？</span>
+        </a></li><li>
+        <a class="is-flex" href="#TCP是通过什么机制保障可靠性的">
+        <span class="has-mr-6">1.5</span>
+        <span>TCP是通过什么机制保障可靠性的?</span>
+        </a></li><li>
+        <a class="is-flex" href="#tcp为什么要三次握手和四次挥手？">
+        <span class="has-mr-6">1.6</span>
+        <span>tcp为什么要三次握手和四次挥手？</span>
+        </a></li><li>
+        <a class="is-flex" href="#tcp怎么保证有序传输的？">
+        <span class="has-mr-6">1.7</span>
+        <span>tcp怎么保证有序传输的？</span>
+        </a></li><li>
+        <a class="is-flex" href="#ISN-Initial-Sequence-Number-是怎么生成的？">
+        <span class="has-mr-6">1.8</span>
+        <span>ISN(Initial Sequence Number)是怎么生成的？</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#二、-操作系统">
+        <span class="has-mr-6">2</span>
+        <span>二、 操作系统</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#描述线程、进程以及协程的区别-描述线程、进程以及协程的定义和区别-顺便描述Go语言中三者的使用。">
+        <span class="has-mr-6">2.1</span>
+        <span>描述线程、进程以及协程的区别? 描述线程、进程以及协程的定义和区别,顺便描述Go语言中三者的使用。</span>
+        </a></li><li>
+        <a class="is-flex" href="#为什么在用户态和内核态之间切换调度成本比较高？">
+        <span class="has-mr-6">2.2</span>
+        <span>为什么在用户态和内核态之间切换调度成本比较高？</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#三、-网络编程相关基础">
+        <span class="has-mr-6">3</span>
+        <span>三、 网络编程相关基础</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#网络IO模型有哪些">
+        <span class="has-mr-6">3.1</span>
+        <span>网络IO模型有哪些?</span>
+        </a></li><li>
+        <a class="is-flex" href="#I-O多路复用中select-poll-epoll的区别？">
+        <span class="has-mr-6">3.2</span>
+        <span>I/O多路复用中select/poll/epoll的区别？</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#四、-HTTP-相关基础">
+        <span class="has-mr-6">4</span>
+        <span>四、 HTTP 相关基础</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#客户端访问url到服务器-整个过程会经历哪些？">
+        <span class="has-mr-6">4.1</span>
+        <span>客户端访问url到服务器,整个过程会经历哪些？</span>
+        </a></li><li>
+        <a class="is-flex" href="#描述HTTPS和HTTP的区别。">
+        <span class="has-mr-6">4.2</span>
+        <span>描述HTTPS和HTTP的区别。</span>
+        </a></li><li>
+        <a class="is-flex" href="#HTTP1-0、HTTP1-1-和-HTTP2-0-的区别。">
+        <span class="has-mr-6">4.3</span>
+        <span>HTTP1.0、HTTP1.1 和 HTTP2.0 的区别。</span>
+        </a></li><li>
+        <a class="is-flex" href="#RESTful-风格-API-有什么优点和缺点">
+        <span class="has-mr-6">4.4</span>
+        <span>RESTful 风格 API 有什么优点和缺点</span>
+        </a></li><li>
+        <a class="is-flex" href="#对比-GraphQL-与RESTFUL两种HTTP-API的差异">
+        <span class="has-mr-6">4.5</span>
+        <span>对比 GraphQL 与RESTFUL两种HTTP API的差异</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#五、-数据库和中间件的基础知识">
+        <span class="has-mr-6">5</span>
+        <span>五、 数据库和中间件的基础知识</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#5-1-Redis">
+        <span class="has-mr-6">5.1</span>
+        <span>5.1 Redis</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#描述一下redis有哪些数据结构。">
+        <span class="has-mr-6">5.1.1</span>
+        <span>描述一下redis有哪些数据结构。</span>
+        </a></li><li>
+        <a class="is-flex" href="#Redis的LRU实现">
+        <span class="has-mr-6">5.1.2</span>
+        <span>Redis的LRU实现</span>
+        </a></li><li>
+        <a class="is-flex" href="#Redis的持久化机制">
+        <span class="has-mr-6">5.1.3</span>
+        <span>Redis的持久化机制</span>
+        </a></li><li>
+        <a class="is-flex" href="#zset跳表的数据结构">
+        <span class="has-mr-6">5.1.4</span>
+        <span>zset跳表的数据结构</span>
+        </a></li><li>
+        <a class="is-flex" href="#Redis的分布式锁">
+        <span class="has-mr-6">5.1.5</span>
+        <span>Redis的分布式锁</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#5-2-Mysql">
+        <span class="has-mr-6">5.2</span>
+        <span>5.2 Mysql</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#MVCC-实现原理">
+        <span class="has-mr-6">5.2.1</span>
+        <span>MVCC 实现原理?</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#SELECT">
+        <span class="has-mr-6">5.3</span>
+        <span>SELECT</span>
+        </a></li><li>
+        <a class="is-flex" href="#INSERT">
+        <span class="has-mr-6">5.4</span>
+        <span>INSERT</span>
+        </a></li><li>
+        <a class="is-flex" href="#DELETE">
+        <span class="has-mr-6">5.5</span>
+        <span>DELETE</span>
+        </a></li><li>
+        <a class="is-flex" href="#UPDATE">
+        <span class="has-mr-6">5.6</span>
+        <span>UPDATE</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Sql-如何优化">
+        <span class="has-mr-6">5.6.1</span>
+        <span>Sql 如何优化?</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#5-3-Kafak">
+        <span class="has-mr-6">5.7</span>
+        <span>5.3 Kafak</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Kafka的复制机制">
+        <span class="has-mr-6">5.7.1</span>
+        <span>Kafka的复制机制</span>
+        </a></li><li>
+        <a class="is-flex" href="#消息中间件选型分析">
+        <span class="has-mr-6">5.7.2</span>
+        <span>消息中间件选型分析</span>
+        </a></li><li>
+        <a class="is-flex" href="#Kafka中的选举">
+        <span class="has-mr-6">5.7.3</span>
+        <span>Kafka中的选举</span>
+        </a></li><li>
+        <a class="is-flex" href="#Kafka为什么吞吐量大、速度快？">
+        <span class="has-mr-6">5.7.4</span>
+        <span>Kafka为什么吞吐量大、速度快？</span>
+        </a></li><li>
+        <a class="is-flex" href="#HW机制">
+        <span class="has-mr-6">5.7.5</span>
+        <span>HW机制</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#六、-算法以及数学题及智力题">
+        <span class="has-mr-6">6</span>
+        <span>六、 算法以及数学题及智力题</span>
+        </a></li><li>
+        <a class="is-flex" href="#七、-架构">
+        <span class="has-mr-6">7</span>
+        <span>七、 架构</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#秒杀业务">
+        <span class="has-mr-6">7.1</span>
+        <span>秒杀业务</span>
+        </a></li><li>
+        <a class="is-flex" href="#DNS-负载均衡算法">
+        <span class="has-mr-6">7.2</span>
+        <span>DNS 负载均衡算法</span>
+        </a></li><li>
+        <a class="is-flex" href="#水平扩展和垂直扩展">
+        <span class="has-mr-6">7.3</span>
+        <span>水平扩展和垂直扩展</span>
+        </a></li><li>
+        <a class="is-flex" href="#每秒100W请求-架构如何优化">
+        <span class="has-mr-6">7.4</span>
+        <span>每秒100W请求,架构如何优化</span>
+        </a></li><li>
+        <a class="is-flex" href="#Redis分布式锁服务器挂了怎么办">
+        <span class="has-mr-6">7.5</span>
+        <span>Redis分布式锁服务器挂了怎么办?</span>
+        </a></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="五月面试指南" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

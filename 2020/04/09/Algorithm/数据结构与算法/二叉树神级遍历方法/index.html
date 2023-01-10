@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>二叉树神级遍历方法 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="二叉树遍历的方法有很多,例如：前序遍历,中序遍历,后序遍历。但是时间复杂度却只能做到 O(N), 空间时间复杂度 O(N)。今天要介绍是 morris 遍历,时间复杂度可以做到 O(N),空间时间复杂度可以做到 O(1)。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="二叉树神级遍历方法">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/09/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%A5%9E%E7%BA%A7%E9%81%8D%E5%8E%86%E6%96%B9%E6%B3%95/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="二叉树遍历的方法有很多,例如：前序遍历,中序遍历,后序遍历。但是时间复杂度却只能做到 O(N), 空间时间复杂度 O(N)。今天要介绍是 morris 遍历,时间复杂度可以做到 O(N),空间时间复杂度可以做到 O(1)。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/54/74/5480e607dd99420079d25bca37497a74.jpg?x-oss-process=image/crop,y_251,w_881,h_494/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-04-09T13:44:00.000Z">
+<meta property="article:modified_time" content="2020-04-09T13:44:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="数据结构与算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/54/74/5480e607dd99420079d25bca37497a74.jpg?x-oss-process=image/crop,y_251,w_881,h_494/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="二叉树神级遍历方法" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/54/74/5480e607dd99420079d25bca37497a74.jpg?x-oss-process=image/crop,y_251,w_881,h_494/resize,w_1280,h_847" alt="二叉树神级遍历方法">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-09T13:44:00.000Z">2020-04-09</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Algorithm/">Algorithm</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/">数据结构与算法</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1506 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                二叉树神级遍历方法
+            
+        </h1>
+        <div class="content">
+            <p>二叉树遍历的方法有很多,例如：前序遍历,中序遍历,后序遍历。但是时间复杂度却只能做到 O(N), 空间时间复杂度 O(N)。今天要介绍是 morris 遍历,时间复杂度可以做到 O(N),空间时间复杂度可以做到 O(1)。</p>
+<a id="more"></a>
+<h1 id="一、Morris-遍历"><a href="#一、Morris-遍历" class="headerlink" title="一、Morris 遍历"></a>一、Morris 遍历</h1><h5 id="1-该算法是如何做到空间时间复杂度为-O（1）"><a href="#1-该算法是如何做到空间时间复杂度为-O（1）" class="headerlink" title="1. 该算法是如何做到空间时间复杂度为 O（1）"></a><strong>1. 该算法是如何做到空间时间复杂度为 O（1）</strong></h5><p>在我们之前学习过的算法中,遍历二叉树的算法都会使用到栈空间,假如不递归,也会使用栈结构,所以空间时间复杂度是 O（N）无法避免。而 Morris 遍历则是使用当前节点的左节点的最右节点指向当前节点,来保证可以回到上层,所以不用使用栈空间结构。​</p>
+<h5 id="2-算法流程"><a href="#2-算法流程" class="headerlink" title="2. 算法流程"></a><strong>2. 算法流程</strong></h5><p><img src="https://md.ulovecode.com/static/images/posts/20161017175404766.png" alt="网图"></p>
+<ol>
+<li>从根节点开始遍历</li>
+<li>首先看左节点是否为空<ol>
+<li>如果为空</li>
+<li>否则直接遍历右节点</li>
+</ol>
+</li>
+<li>如果左节点不为空,则找到左节点的最右节点<ol>
+<li>如果最右节点指向的是当前节点,则将其置为空</li>
+<li>如果最右节点指向的是空,那么就将最右节点指向当前节点,直接进入下一次循环,从步骤 1</li>
+</ol>
+</li>
+<li>向右遍历</li>
+</ol>
+<h5 id="3-Morris-遍历是如何遍历完下层-然后回到上一层"><a href="#3-Morris-遍历是如何遍历完下层-然后回到上一层" class="headerlink" title="3. Morris 遍历是如何遍历完下层,然后回到上一层"></a><strong>3. Morris 遍历是如何遍历完下层,然后回到上一层</strong></h5><p>在之前说的算法流程中提过,将当前左节点的最右指针指向,这一次是第一次遍历到这个位置,当遍历到下层的时候,没有最左节点的时候,就会顺着我们定义好的右节点指向上一层节点移动,这个时候就回到了上层,然后往右遍历,会遍历到最右节点第二次。所以该节点会被遍历到两次。</p>
+<h1 id="二、-代码实现"><a href="#二、-代码实现" class="headerlink" title="二、 代码实现"></a>二、 代码实现</h1><h5 id="morris-遍历"><a href="#morris-遍历" class="headerlink" title="morris 遍历"></a><strong>morris 遍历</strong></h5><figure class="highlight python hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">morris</span><span class="hljs-params">(node: TreeNode)</span>:</span></span><br><span class="line">    cur = node</span><br><span class="line">    <span class="hljs-keyword">while</span> cur <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">        mostRight: TreeNode = cur.left</span><br><span class="line">        <span class="hljs-comment"># 没有左节点</span></span><br><span class="line">        <span class="hljs-keyword">if</span> mostRight <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">            <span class="hljs-comment"># 找到最右左节点</span></span><br><span class="line">            <span class="hljs-keyword">while</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">and</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> cur:</span><br><span class="line">                mostRight = mostRight.right</span><br><span class="line">            <span class="hljs-keyword">if</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:</span><br><span class="line">                 <span class="hljs-comment"># 1</span></span><br><span class="line">                mostRight.right = cur</span><br><span class="line">                cur = cur.left</span><br><span class="line">                <span class="hljs-keyword">continue</span></span><br><span class="line">            <span class="hljs-keyword">else</span>:</span><br><span class="line">                <span class="hljs-comment"># 2</span></span><br><span class="line">                mostRight.right = <span class="hljs-literal">None</span></span><br><span class="line">        <span class="hljs-keyword">else</span> </span><br><span class="line">            <span class="hljs-comment"># 3</span></span><br><span class="line">            <span class="hljs-keyword">pass</span></span><br><span class="line">        cur = cur.right</span><br></pre></td></tr></table></figure>
+<p>和我说算法流程一样,我就不解释了。解释一下遍历的位置,1 位置遍历到是每一个节点的起始节点,可以说是父母节点,2 位置则是第二次遍历的位置,此时子节点已经遍历完毕,该位置为后根节点 ,3 位置可以说是右节点的遍历。</p>
+<p>根据 morris 遍历,我们可以加工出前序遍历,中序遍历,后序遍历。</p>
+<h5 id="前序遍历"><a href="#前序遍历" class="headerlink" title="前序遍历"></a><strong>前序遍历</strong></h5><figure class="highlight python hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">preMorris</span><span class="hljs-params">(node: TreeNode, f)</span>:</span></span><br><span class="line">    cur = node</span><br><span class="line">    <span class="hljs-keyword">while</span> cur <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">        mostRight: TreeNode = cur.left</span><br><span class="line">        <span class="hljs-comment"># 没有左节点</span></span><br><span class="line">        <span class="hljs-keyword">if</span> mostRight <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">            <span class="hljs-comment"># 找到最右左节点</span></span><br><span class="line">            <span class="hljs-keyword">while</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">and</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> cur:</span><br><span class="line">                mostRight = mostRight.right</span><br><span class="line">            <span class="hljs-comment"># 指回cur节点   </span></span><br><span class="line">            <span class="hljs-keyword">if</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:</span><br><span class="line">                mostRight.right = cur</span><br><span class="line">                f(cur.val)</span><br><span class="line">                cur = cur.left</span><br><span class="line">                <span class="hljs-keyword">continue</span></span><br><span class="line">            <span class="hljs-comment"># 如果当前最右节点指向cur   后打印</span></span><br><span class="line">            <span class="hljs-keyword">else</span>:</span><br><span class="line">                mostRight.right = <span class="hljs-literal">None</span></span><br><span class="line">        <span class="hljs-keyword">else</span>:</span><br><span class="line">            f(cur.val)</span><br><span class="line">        cur = cur.right</span><br></pre></td></tr></table></figure>
+<p>根据我一开始的解释,应该能看的很明白,先遍历先根节点（包括左节点）,后遍历右节点。</p>
+<h5 id="中序遍历"><a href="#中序遍历" class="headerlink" title="中序遍历"></a><strong>中序遍历</strong></h5><figure class="highlight python hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">orderMorris</span><span class="hljs-params">(node: TreeNode, f)</span>:</span></span><br><span class="line">    cur = node</span><br><span class="line">    <span class="hljs-keyword">while</span> cur <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">        mostRight: TreeNode = cur.left</span><br><span class="line">        <span class="hljs-comment"># 没有左节点</span></span><br><span class="line">        <span class="hljs-keyword">if</span> mostRight <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">            <span class="hljs-comment"># 找到最右左节点</span></span><br><span class="line">            <span class="hljs-keyword">while</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">and</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> cur:</span><br><span class="line">                mostRight = mostRight.right</span><br><span class="line">            <span class="hljs-comment"># 指回cur节点 </span></span><br><span class="line">            <span class="hljs-keyword">if</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:</span><br><span class="line">                mostRight.right = cur</span><br><span class="line">                cur = cur.left</span><br><span class="line">                <span class="hljs-keyword">continue</span></span><br><span class="line">            <span class="hljs-comment"># 如果当前最右节点指向cur   后打印</span></span><br><span class="line">            <span class="hljs-keyword">else</span>:</span><br><span class="line">                mostRight.right = <span class="hljs-literal">None</span></span><br><span class="line">        <span class="hljs-keyword">else</span>:</span><br><span class="line">            <span class="hljs-keyword">pass</span></span><br><span class="line">        f(cur.val)</span><br><span class="line">        cur = cur.right</span><br></pre></td></tr></table></figure>
+<p>中序遍历可以直接使用最外面一层,最外一层的遍历方式就是,查找到最左节点后,这个时候才会走到中序遍历的过程,这个时候遍历的就是最左节点,然后最左节点的右节点指向上一层节点（父母节点）,也就是根节点,然后根节点,首先会将<code>mostRight.right</code>置为空,然后执行<code>cur = cur.right</code>往右遍历。此时遍历到的节点就是左根右,符合中序遍历,然后递推到整个过程就会将整棵树遍历完。</p>
+<h5 id="后序遍历"><a href="#后序遍历" class="headerlink" title="后序遍历"></a><strong>后序遍历</strong></h5><figure class="highlight python hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">reverseEdge</span><span class="hljs-params">(mostRight)</span> -&gt; TreeNode:</span></span><br><span class="line">    pre = <span class="hljs-literal">None</span></span><br><span class="line">    <span class="hljs-keyword">while</span> mostRight <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">        next = mostRight.right</span><br><span class="line">        mostRight.right = pre</span><br><span class="line">        pre = mostRight</span><br><span class="line">        mostRight = next</span><br><span class="line">    <span class="hljs-keyword">return</span> pre</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">printEdge</span><span class="hljs-params">(mostRight, f)</span>:</span></span><br><span class="line">    head: TreeNode = reverseEdge(mostRight)</span><br><span class="line">    <span class="hljs-keyword">while</span> head <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">        f(head.val)</span><br><span class="line">    reverseEdge(head)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">postmorris</span><span class="hljs-params">(node: TreeNode, f)</span>:</span></span><br><span class="line">    cur = node</span><br><span class="line">    <span class="hljs-keyword">while</span> cur <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">        mostRight: TreeNode = cur.left</span><br><span class="line">        <span class="hljs-comment"># 没有左节点</span></span><br><span class="line">        <span class="hljs-keyword">if</span> mostRight <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span>:</span><br><span class="line">            <span class="hljs-comment"># 找到最右左节点</span></span><br><span class="line">            <span class="hljs-keyword">while</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-literal">None</span> <span class="hljs-keyword">and</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> cur:</span><br><span class="line">                mostRight = mostRight.right</span><br><span class="line">            <span class="hljs-comment"># 指回cur节点 </span></span><br><span class="line">            <span class="hljs-keyword">if</span> mostRight.right <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:</span><br><span class="line">                <span class="hljs-comment"># 1</span></span><br><span class="line">                mostRight.right = cur</span><br><span class="line">                cur = cur.left</span><br><span class="line">                <span class="hljs-keyword">continue</span></span><br><span class="line">            <span class="hljs-comment"># 如果当前最右节点指向cur   后打印</span></span><br><span class="line">            <span class="hljs-keyword">else</span>:</span><br><span class="line">                <span class="hljs-comment"># 2</span></span><br><span class="line">                printEdge(mostRight, f)</span><br><span class="line">                mostRight.right = <span class="hljs-literal">None</span></span><br><span class="line">        cur = cur.right</span><br><span class="line">    printEdge(node, f)</span><br></pre></td></tr></table></figure>
+<p>后序遍历会稍微复杂点,其只用用到了第二次遍历,这个时候已经遍历到最左位置,过程为翻转最右链表,然后遍历,翻转回来,那么得到的结果就是左节点先被遍历到,然后是右节点,然后遍历到上一层后的节点就是根节点,那么顺序就是左右根。翻转第一次为了得到后序遍历顺序,翻转第二次,防止破坏原来的数据结构。遍历到最后只有<code>head</code>节点的右链表,因为<code>head</code>节点没有上层节点,所以<code>head</code>永远都不会进入 1 和 2 。所以最后我们需要手动遍历<code>head</code>节点。</p>
+<h1 id="三、总结"><a href="#三、总结" class="headerlink" title="三、总结"></a>三、总结</h1><p>morris 遍历作为一种不错的优化手段,其后序遍历较为复杂外,前序遍历和中序遍历都很简单,在这两种遍历的情况下,可以优先选择这种遍历。后序遍历的话,对空间复杂度有要求的话,则可以使用。当然其实都可以在日常使用这种遍历方式去遍历二叉树,因为也都不是很复杂。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/" rel="tag">数据结构与算法</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/11/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%B7%B1%E5%85%A5%E6%8E%A2%E7%A9%B6%E7%BA%A2%E9%BB%91%E6%A0%91/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">手撕红黑树</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/04/07/Go/%E6%88%91%E5%AF%B9%E4%BA%8EGolang%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B8%AD%E4%B8%8D%E5%90%8C%E7%9A%84%E7%90%86%E8%A7%A3/">
+                <span class="level-item">我对于 Golang 设计模式中不同的理解</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'b5ff68ebdc61aa036623b32d4fe41b69',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、Morris-遍历">
+        <span class="has-mr-6">1</span>
+        <span>一、Morris 遍历</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-该算法是如何做到空间时间复杂度为-O（1）">
+        <span class="has-mr-6">1.1</span>
+        <span>1. 该算法是如何做到空间时间复杂度为 O（1）</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-算法流程">
+        <span class="has-mr-6">1.2</span>
+        <span>2. 算法流程</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-Morris-遍历是如何遍历完下层-然后回到上一层">
+        <span class="has-mr-6">1.3</span>
+        <span>3. Morris 遍历是如何遍历完下层,然后回到上一层</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#二、-代码实现">
+        <span class="has-mr-6">2</span>
+        <span>二、 代码实现</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#morris-遍历">
+        <span class="has-mr-6">2.1</span>
+        <span>morris 遍历</span>
+        </a></li><li>
+        <a class="is-flex" href="#前序遍历">
+        <span class="has-mr-6">2.2</span>
+        <span>前序遍历</span>
+        </a></li><li>
+        <a class="is-flex" href="#中序遍历">
+        <span class="has-mr-6">2.3</span>
+        <span>中序遍历</span>
+        </a></li><li>
+        <a class="is-flex" href="#后序遍历">
+        <span class="has-mr-6">2.4</span>
+        <span>后序遍历</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#三、总结">
+        <span class="has-mr-6">3</span>
+        <span>三、总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="二叉树神级遍历方法" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

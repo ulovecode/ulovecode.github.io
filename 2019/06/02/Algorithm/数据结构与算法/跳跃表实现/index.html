@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>跳跃表实现 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="跳跃列表是一种数据结构。它允许快速查询一个有序连续元素的数据链表。跳跃列表的平均查找和插入时间复杂度都是O(log n),优于普通队列的O(n)。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="跳跃表实现">
+<meta property="og:url" content="https://www.ulovecode.com/2019/06/02/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E8%B7%B3%E8%B7%83%E8%A1%A8%E5%AE%9E%E7%8E%B0/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="跳跃列表是一种数据结构。它允许快速查询一个有序连续元素的数据链表。跳跃列表的平均查找和插入时间复杂度都是O(log n),优于普通队列的O(n)。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/de/e3/de3c3bf4e7b27d6eaf061b88f284c7e3.jpg?x-oss-process=image/crop,y_138,w_1920,h_1080/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-06-02T05:06:00.000Z">
+<meta property="article:modified_time" content="2019-06-02T05:06:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="数据结构">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/de/e3/de3c3bf4e7b27d6eaf061b88f284c7e3.jpg?x-oss-process=image/crop,y_138,w_1920,h_1080/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="跳跃表实现" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/de/e3/de3c3bf4e7b27d6eaf061b88f284c7e3.jpg?x-oss-process=image/crop,y_138,w_1920,h_1080/resize,w_1280,h_847" alt="跳跃表实现">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-06-02T05:06:00.000Z">2019-06-02</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Algorithm/">Algorithm</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/">数据结构与算法</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1452 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                跳跃表实现
+            
+        </h1>
+        <div class="content">
+            <p>跳跃列表是一种数据结构。它允许快速查询一个有序连续元素的数据链表。跳跃列表的平均查找和插入时间复杂度都是O(log n),优于普通队列的O(n)。</p>
+<a id="more"></a>
+<h2 id="白话跳跃表"><a href="#白话跳跃表" class="headerlink" title="白话跳跃表"></a>白话跳跃表</h2><p>我们知道如果是普通的链表,查找为O(n),插入也会O(n),如果是数据量过大的情况下,肯定是无法忍受的,怎么办？给链表加索引,比如说给100个数里面随机给10个数加索引,如果索引分布均匀的话,那么时间复杂是不是最多查找11次？,如果11次还嫌长了怎么办？继续提升索引,提升索引这个比例我们设置为50%,这样可以保证索引在每一层都能分布均匀,且上一层的索引数,差不多是下一层的两倍。听我这样讲是不是感觉很像平衡树的样子,是不是过程看起来很像。</p>
+<h2 id="跳跃表和平衡树的区别"><a href="#跳跃表和平衡树的区别" class="headerlink" title="跳跃表和平衡树的区别"></a>跳跃表和平衡树的区别</h2><p>跳跃列表不像平衡树等数据结构那样提供对最坏情况的性能保证：由于用来建造跳跃列表采用随机选取元素进入更高层的方法,在小概率情况下会生成一个不平衡的跳跃列表（最坏情况例如最底层仅有一个元素进入了更高层,此时跳跃列表的查找与普通列表一致）。但是在实际中它通常工作良好,随机化平衡方案也比平衡二叉查找树等数据结构中使用的确定性平衡方案容易实现。跳跃列表在并行计算中也很有用：插入可以在跳跃列表不同的部分并行地进行,而不用对数据结构进行全局的重新平衡。</p>
+<h2 id="跳跃表实现原理"><a href="#跳跃表实现原理" class="headerlink" title="跳跃表实现原理"></a>跳跃表实现原理</h2><p><img src="https://redisbook.readthedocs.io/en/latest/_images/skiplist.png" alt="跳跃表"></p>
+<p>从上面skiplist的创建和插入过程可以看出,每一个节点的层数（level）是随机出来的,而且新插入一个节点不会影响其它节点的层数。因此,插入操作只需要修改插入节点前后的指针,而不需要对很多节点都进行调整。这就降低了插入操作的复杂度。实际上,这是skiplist的一个很重要的特性,这让它在插入性能上明显优于平衡树</p>
+<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><p>下面我粘贴的是维基百科的伪代码实现,具体实现过程和伪代码差不多,提升节点采用是50%概率提升,来保证跳表索引高度为 log n。</p>
+<h3 id="伪代码如下"><a href="#伪代码如下" class="headerlink" title="伪代码如下"></a>伪代码如下</h3><figure class="highlight java hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">make all nodes level <span class="hljs-number">1</span></span><br><span class="line">j ← <span class="hljs-number">1</span></span><br><span class="line"><span class="hljs-keyword">while</span> the number of nodes at level j &gt; <span class="hljs-number">1</span> <span class="hljs-keyword">do</span></span><br><span class="line">  <span class="hljs-keyword">for</span> each i<span class="hljs-string">'th node at level j do</span></span><br><span class="line"><span class="hljs-string">    if i is odd </span></span><br><span class="line"><span class="hljs-string">      if i is not the last node at level j</span></span><br><span class="line"><span class="hljs-string">        randomly choose whether to promote it to level j+1</span></span><br><span class="line"><span class="hljs-string">      else</span></span><br><span class="line"><span class="hljs-string">        do not promote</span></span><br><span class="line"><span class="hljs-string">      end if</span></span><br><span class="line"><span class="hljs-string">    else if i is even and node i-1 was not promoted</span></span><br><span class="line"><span class="hljs-string">      promote it to level j+1</span></span><br><span class="line"><span class="hljs-string">    end if</span></span><br><span class="line"><span class="hljs-string">  repeat</span></span><br><span class="line"><span class="hljs-string">  j ← j + 1</span></span><br><span class="line"><span class="hljs-string">repeat</span></span><br></pre></td></tr></table></figure>
+<h3 id="使用-golang-实现跳跃表"><a href="#使用-golang-实现跳跃表" class="headerlink" title="使用 golang 实现跳跃表"></a>使用 golang 实现跳跃表</h3><p>node 节点</p>
+<figure class="highlight golang hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> jumptable</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Node <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	key                   <span class="hljs-keyword">int</span></span><br><span class="line">	value                 <span class="hljs-keyword">interface</span>&#123;&#125;</span><br><span class="line">	up, down, left, right *Node</span><br><span class="line">	level                 <span class="hljs-keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">newNode</span><span class="hljs-params">(k <span class="hljs-keyword">int</span>, v <span class="hljs-keyword">interface</span>&#123;&#125;)</span> *<span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;Node&#123;</span><br><span class="line">		key:   k,</span><br><span class="line">		value: v,</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(n *Node)</span> <span class="hljs-title">equals</span><span class="hljs-params">(node *Node)</span> <span class="hljs-title">bool</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> node == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> n.key != node.key &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> n.value != node.value &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> n.level != node.level &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>跳跃表</p>
+<figure class="highlight golang hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> jumptable</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"math/rand"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> jumpTable <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	header *Node</span><br><span class="line"></span><br><span class="line">	r *rand.Rand</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">()</span> *<span class="hljs-title">jumpTable</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;jumpTable&#123;</span><br><span class="line">		r:      rand.New(rand.NewSource(time.Now().UnixNano())),</span><br><span class="line">		header: newNode(-<span class="hljs-keyword">int</span>(^<span class="hljs-keyword">uint</span>(<span class="hljs-number">0</span>) &gt;&gt; <span class="hljs-number">1</span>), <span class="hljs-literal">nil</span>),</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(jt *jumpTable)</span> <span class="hljs-title">Search</span><span class="hljs-params">(k <span class="hljs-keyword">int</span>)</span> *<span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	<span class="hljs-built_in">println</span>(<span class="hljs-string">"walkPreviousNode"</span>)</span><br><span class="line">	node, count := walkPreviousNode(jt.header, k)</span><br><span class="line">	<span class="hljs-built_in">println</span>(<span class="hljs-string">"共需要"</span>, count, <span class="hljs-string">"步"</span>)</span><br><span class="line">	<span class="hljs-keyword">return</span> node</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(jt *jumpTable)</span> <span class="hljs-title">Insert</span><span class="hljs-params">(k <span class="hljs-keyword">int</span>, v <span class="hljs-keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">	sn := jt.header</span><br><span class="line">	newN := newNode(k, v)</span><br><span class="line">	node, _ := walkPreviousNode(sn, k)</span><br><span class="line">	<span class="hljs-keyword">if</span> node.key == k &#123;</span><br><span class="line">		node.value = v</span><br><span class="line">		<span class="hljs-keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	currentLevel := <span class="hljs-number">0</span></span><br><span class="line">	newN.level = currentLevel</span><br><span class="line">	jt.setNode(newN, node)</span><br><span class="line">	lowNode := newN</span><br><span class="line">	<span class="hljs-keyword">for</span> jt.isPromotion() &#123;</span><br><span class="line">		<span class="hljs-built_in">println</span>(<span class="hljs-string">"isPromotion"</span>)</span><br><span class="line">		currentLevel++</span><br><span class="line">		upNewN := setUpNewDownNode(currentLevel, k, v, newN)</span><br><span class="line">		<span class="hljs-keyword">if</span> jt.header.level &lt; currentLevel &#123;</span><br><span class="line">			updateHeader(jt, upNewN)</span><br><span class="line">		&#125;</span><br><span class="line">		leftUpNode := findLeftUpNode(lowNode, upNewN)</span><br><span class="line">		<span class="hljs-keyword">if</span> leftUpNode != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			jt.setNode(upNewN, leftUpNode)</span><br><span class="line">		&#125;</span><br><span class="line">		newN = upNewN</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">updateHeader</span><span class="hljs-params">(jt *jumpTable, upNew *Node)</span></span> &#123;</span><br><span class="line">	jt.header = upNew</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">setUpNewDownNode</span><span class="hljs-params">(level <span class="hljs-keyword">int</span>, k <span class="hljs-keyword">int</span>, v <span class="hljs-keyword">interface</span>&#123;&#125;, newN *Node)</span> *<span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	upNew := newNode(k, v)</span><br><span class="line">	upNew.level = level</span><br><span class="line">	newN.up = upNew</span><br><span class="line">	upNew.down = newN</span><br><span class="line">	<span class="hljs-keyword">return</span> upNew</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">findLeftUpNode</span><span class="hljs-params">(newN *Node, upNew *Node)</span> *<span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> leftUpNode *Node</span><br><span class="line">	leftNewNode := newN.left</span><br><span class="line">leftBreak:</span><br><span class="line">	<span class="hljs-keyword">for</span> leftNewNode != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		leftNewUpNode := leftNewNode.up</span><br><span class="line">		<span class="hljs-keyword">for</span> leftNewUpNode != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> leftNewUpNode.level == upNew.level &#123;</span><br><span class="line">				leftUpNode = leftNewUpNode</span><br><span class="line">				<span class="hljs-keyword">break</span> leftBreak</span><br><span class="line">			&#125;</span><br><span class="line">			leftNewUpNode = leftNewUpNode.up</span><br><span class="line">		&#125;</span><br><span class="line">		leftNewNode = leftNewNode.left</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> leftUpNode</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// new 后面插入cur</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(jt *jumpTable)</span> <span class="hljs-title">setNode</span><span class="hljs-params">(q *Node, p *Node)</span></span> &#123;</span><br><span class="line">	q.left = p</span><br><span class="line">	<span class="hljs-keyword">if</span> p.right != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		q.right = p.right</span><br><span class="line">		p.right.left = q</span><br><span class="line">	&#125;</span><br><span class="line">	p.right = q</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">walkPreviousNode</span><span class="hljs-params">(curNode *Node, k <span class="hljs-keyword">int</span>)</span> <span class="hljs-params">(*Node, <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line">	<span class="hljs-built_in">println</span>(<span class="hljs-string">"k:"</span>, k, <span class="hljs-string">" level"</span>, curNode.level)</span><br><span class="line">	count := <span class="hljs-number">0</span></span><br><span class="line">	<span class="hljs-keyword">for</span> curNode.key &lt; k &#123;</span><br><span class="line">		count++</span><br><span class="line">		<span class="hljs-keyword">if</span> curNode.right == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-built_in">println</span>(<span class="hljs-string">"curNode.key &lt; k "</span>, curNode.key, <span class="hljs-string">"--&gt;"</span>, curNode.right.key)</span><br><span class="line">		curNode = curNode.right</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">for</span> curNode.key &gt; k &#123;</span><br><span class="line">		count++</span><br><span class="line">		<span class="hljs-keyword">if</span> curNode.left == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-built_in">println</span>(<span class="hljs-string">"curNode.key &gt; k "</span>, curNode.key, <span class="hljs-string">"--&gt;"</span>, curNode.left.key)</span><br><span class="line">		curNode = curNode.left</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> curNode.down != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">var</span> newCount <span class="hljs-keyword">int</span></span><br><span class="line">		<span class="hljs-built_in">println</span>(<span class="hljs-string">"curNode.down "</span>, curNode.key, <span class="hljs-string">"--&gt;"</span>, curNode.down.key)</span><br><span class="line">		curNode, newCount = walkPreviousNode(curNode.down, k)</span><br><span class="line">		count += newCount</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> curNode, count</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(jt *jumpTable)</span> <span class="hljs-title">isPromotion</span><span class="hljs-params">()</span> <span class="hljs-title">bool</span></span> &#123;</span><br><span class="line">	n := jt.r.Intn(<span class="hljs-number">2</span>)</span><br><span class="line">	<span class="hljs-keyword">if</span> n == <span class="hljs-number">0</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>进行测试</p>
+<figure class="highlight golang hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> jumptable</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"math/rand"</span></span><br><span class="line">	<span class="hljs-string">"testing"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">TestJumpTable_Insert</span><span class="hljs-params">(t *testing.T)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> i:=<span class="hljs-number">0</span> ;i &lt;<span class="hljs-number">1</span>;i++ &#123;</span><br><span class="line">		table := New()</span><br><span class="line">		r := rand.New(rand.NewSource(time.Now().UnixNano()))</span><br><span class="line">		table.Insert(<span class="hljs-number">13</span>, <span class="hljs-literal">nil</span>)</span><br><span class="line">		<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">1000</span>; i++ &#123;</span><br><span class="line">			table.Insert(r.Intn(<span class="hljs-number">100000</span>), <span class="hljs-literal">nil</span>)</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		node := table.Search(<span class="hljs-number">13</span>)</span><br><span class="line">		<span class="hljs-keyword">if</span> node.key != <span class="hljs-number">13</span>&#123;</span><br><span class="line">			<span class="hljs-built_in">panic</span>(<span class="hljs-string">""</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-built_in">println</span>(node.key)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>walkPreviousNode
+k: 13  level 12
+curNode.down  18542 --&gt; 18542
+k: 13  level 11
+curNode.down  18542 --&gt; 18542
+k: 13  level 10
+curNode.down  18542 --&gt; 18542
+k: 13  level 9
+curNode.down  18542 --&gt; 18542
+k: 13  level 8
+curNode.key &gt; k  18542 --&gt; 2659
+curNode.down  2659 --&gt; 2659
+k: 13  level 7
+curNode.down  2659 --&gt; 2659
+k: 13  level 6
+curNode.down  2659 --&gt; 2659
+k: 13  level 5
+curNode.down  2659 --&gt; 2659
+k: 13  level 4
+curNode.down  2659 --&gt; 2659
+k: 13  level 3
+curNode.key &gt; k  2659 --&gt; 1626
+curNode.down  1626 --&gt; 1626
+k: 13  level 2
+curNode.down  1626 --&gt; 1626
+k: 13  level 1
+curNode.key &gt; k  1626 --&gt; 1436
+curNode.down  1436 --&gt; 1436
+k: 13  level 0
+curNode.key &gt; k  1436 --&gt; 1270
+curNode.key &gt; k  1270 --&gt; 996
+curNode.key &gt; k  996 --&gt; 964
+curNode.key &gt; k  964 --&gt; 957
+curNode.key &gt; k  957 --&gt; 848
+curNode.key &gt; k  848 --&gt; 792
+curNode.key &gt; k  792 --&gt; 759
+curNode.key &gt; k  759 --&gt; 671
+curNode.key &gt; k  671 --&gt; 513
+curNode.key &gt; k  513 --&gt; 413
+curNode.key &gt; k  413 --&gt; 99
+curNode.key &gt; k  99 --&gt; 28
+curNode.key &gt; k  28 --&gt; 13
+共需要 28 步
+13
+</code></pre><p> 可以看见差不多时间复杂度是O(log n)</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p> 作为一种简单的数据结构,在大多数应用中Skip lists能够代替平衡树。Skiplists算法非常容易实现、扩展和修改。Skip lists和进行过优化的平衡树有着同样高的性能,Skip lists的性能远远超过未经优化的平衡二叉树。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="tag">数据结构</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/06/Network/Epoll,Select,Poll%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E4%B9%8B%E9%97%B4%E7%9A%84%E5%AE%9E%E9%99%85%E5%B7%AE%E5%BC%82(%E8%AF%91%E6%96%87)/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Epoll,Select,Poll系统架构之间的实际差异</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/05/31/Go/Golang%E8%AF%91%E6%96%87/%E7%BC%96%E5%86%99%E5%8F%AF%E7%BB%B4%E6%8A%A4Go%E8%AF%AD%E8%A8%80%E4%BB%A3%E7%A0%81%E5%BB%BA%E8%AE%AE/">
+                <span class="level-item">(译) 编写可维护 Go 语言代码建议</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'df7821201e5a8e9a96ad7e9b05d7313c',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#白话跳跃表">
+        <span class="has-mr-6">1.1</span>
+        <span>白话跳跃表</span>
+        </a></li><li>
+        <a class="is-flex" href="#跳跃表和平衡树的区别">
+        <span class="has-mr-6">1.2</span>
+        <span>跳跃表和平衡树的区别</span>
+        </a></li><li>
+        <a class="is-flex" href="#跳跃表实现原理">
+        <span class="has-mr-6">1.3</span>
+        <span>跳跃表实现原理</span>
+        </a></li><li>
+        <a class="is-flex" href="#代码实现">
+        <span class="has-mr-6">1.4</span>
+        <span>代码实现</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#伪代码如下">
+        <span class="has-mr-6">1.4.1</span>
+        <span>伪代码如下</span>
+        </a></li><li>
+        <a class="is-flex" href="#使用-golang-实现跳跃表">
+        <span class="has-mr-6">1.4.2</span>
+        <span>使用 golang 实现跳跃表</span>
+        </a></li></ul></li></ul><li>
+        <a class="is-flex" href="#总结">
+        <span class="has-mr-6">2</span>
+        <span>总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="跳跃表实现" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

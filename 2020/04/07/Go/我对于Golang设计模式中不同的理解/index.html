@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>我对于 Golang 设计模式中不同的理解 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="设计模式,自打我开始学习编程起,这就是一个津津乐道的话题。怎么编写好味道的代码,如何写出合适的设计代码帮助项目更容易理解,代码更简洁,这是我在项目中常常思考的问题。在golang 中有和其他语言不同的区别。例如函数作为一等公民,goroutine , chan 等特性,对于这些特性我思考如何能够编写适用于 golang 中的设计模式,而不是一味的套用着老思想的设计模式,以下是针对开源项目 go-p">
+<meta property="og:type" content="article">
+<meta property="og:title" content="我对于 Golang 设计模式中不同的理解">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/07/Go/%E6%88%91%E5%AF%B9%E4%BA%8EGolang%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E4%B8%AD%E4%B8%8D%E5%90%8C%E7%9A%84%E7%90%86%E8%A7%A3/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="设计模式,自打我开始学习编程起,这就是一个津津乐道的话题。怎么编写好味道的代码,如何写出合适的设计代码帮助项目更容易理解,代码更简洁,这是我在项目中常常思考的问题。在golang 中有和其他语言不同的区别。例如函数作为一等公民,goroutine , chan 等特性,对于这些特性我思考如何能够编写适用于 golang 中的设计模式,而不是一味的套用着老思想的设计模式,以下是针对开源项目 go-p">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/b0/73/b0074be5ca9bdc6592f5124d9d3b3873.jpg?x-oss-process=image/crop,x_67,y_113,w_1852,h_1040/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-04-07T01:55:00.000Z">
+<meta property="article:modified_time" content="2020-04-07T01:55:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="设计模式">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/b0/73/b0074be5ca9bdc6592f5124d9d3b3873.jpg?x-oss-process=image/crop,x_67,y_113,w_1852,h_1040/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="我对于 Golang 设计模式中不同的理解" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/b0/73/b0074be5ca9bdc6592f5124d9d3b3873.jpg?x-oss-process=image/crop,x_67,y_113,w_1852,h_1040/resize,w_1280,h_847" alt="我对于 Golang 设计模式中不同的理解">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-07T01:55:00.000Z">2020-04-07</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    37 分钟 读完 (大约 5488 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                我对于 Golang 设计模式中不同的理解
+            
+        </h1>
+        <div class="content">
+            <p>设计模式,自打我开始学习编程起,这就是一个津津乐道的话题。怎么编写好味道的代码,如何写出合适的设计代码帮助项目更容易理解,代码更简洁,这是我在项目中常常思考的问题。在golang 中有和其他语言不同的区别。例如函数作为一等公民,goroutine , chan 等特性,对于这些特性我思考如何能够编写适用于 golang 中的设计模式,而不是一味的套用着老思想的设计模式,以下是针对开源项目 <a href="https://github.com/tmrts/go-patterns" target="_blank" rel="noopener">go-patterns</a> 的理解。</p>
+<a id="more"></a>
+<h2 id="习惯型"><a href="#习惯型" class="headerlink" title="习惯型"></a><strong>习惯型</strong></h2><h4 id="1-函数可选项"><a href="#1-函数可选项" class="headerlink" title="1. 函数可选项"></a><strong>1. 函数可选项</strong></h4><blockquote>
+<p>允许使用默认设置和惯用替代创建干净的API</p>
+</blockquote>
+<p>选项</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Options <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	UID         <span class="hljs-keyword">int</span></span><br><span class="line">	GID         <span class="hljs-keyword">int</span></span><br><span class="line">	Flags       <span class="hljs-keyword">int</span></span><br><span class="line">	Contents    <span class="hljs-keyword">string</span></span><br><span class="line">	Permissions os.FileMode</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Option <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(*Options)</span></span></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">UID</span><span class="hljs-params">(userID <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">Option</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(args *Options)</span></span> &#123;</span><br><span class="line">		args.UID = userID</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">GID</span><span class="hljs-params">(groupID <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">Option</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(args *Options)</span></span> &#123;</span><br><span class="line">		args.GID = groupID</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Contents</span><span class="hljs-params">(c <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">Option</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(args *Options)</span></span> &#123;</span><br><span class="line">		args.Contents = c</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Permissions</span><span class="hljs-params">(perms os.FileMode)</span> <span class="hljs-title">Option</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(args *Options)</span></span> &#123;</span><br><span class="line">		args.Permissions = perms</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>构造器</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(filepath <span class="hljs-keyword">string</span>, setters ...Option)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Default Options</span></span><br><span class="line">	args := &amp;Options&#123;</span><br><span class="line">		UID:         os.Getuid(),</span><br><span class="line">		GID:         os.Getgid(),</span><br><span class="line">		Contents:    <span class="hljs-string">""</span>,</span><br><span class="line">		Permissions: <span class="hljs-number">0666</span>,</span><br><span class="line">		Flags:       os.O_CREATE | os.O_EXCL | os.O_WRONLY,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> _, setter := <span class="hljs-keyword">range</span> setters &#123;</span><br><span class="line">		setter(args)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	f, err := os.OpenFile(filepath, args.Flags, args.Permissions)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">defer</span> f.Close()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> _, err := f.WriteString(args.Contents); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> f.Chown(args.UID, args.GID)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用一下：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">emptyFile, err := file.New(<span class="hljs-string">"/tmp/empty.txt"</span>)</span><br><span class="line"><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">    <span class="hljs-built_in">panic</span>(err)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">fillerFile, err := file.New(<span class="hljs-string">"/tmp/file.txt"</span>, file.UID(<span class="hljs-number">1000</span>), file.Contents(<span class="hljs-string">"Lorem Ipsum Dolor Amet"</span>))</span><br><span class="line"><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">    <span class="hljs-built_in">panic</span>(err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面给出了一个关于函数选项模式的例子,这样做有什么好处呢？使程序看起来更加简洁,假如我们不按照这样的方式写,会是什么情况?</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(filepath <span class="hljs-keyword">string</span>,uid,filepath,Flags <span class="hljs-keyword">string</span> ........... )</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Default Options</span></span><br><span class="line">	args := &amp;Options&#123;</span><br><span class="line">		UID:         os.Getuid(),</span><br><span class="line">		GID:         os.Getgid(),</span><br><span class="line">		Contents:    <span class="hljs-string">""</span>,</span><br><span class="line">		Permissions: <span class="hljs-number">0666</span>,</span><br><span class="line">		Flags:       os.O_CREATE | os.O_EXCL | os.O_WRONLY,</span><br><span class="line">	&#125;</span><br><span class="line">	f, err := os.OpenFile(filepath, args.Flags, args.Permissions)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">defer</span> f.Close()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> _, err := f.WriteString(args.Contents); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> f.Chown(args.UID, args.GID)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看出来,函数可选项模式,使调用函数的参数列表更加简洁,并且参数列表的设置顺序不再是按照函数的形参列表的顺序,传入选项的顺序与函数已经无关了。并且通过选项形式,我们不用再去一一对应我们这个地方需要放什么参数,我门只需要调用可选项里面的函数即可,函数名轻而易举的就可以告诉我们这个参数是什么作用。</p>
+<blockquote>
+<p>使用场景：对配置进行初始化的时候(当我们认为需要配置的参数特别多的时候,我认为这种模式应该会非常有帮助)</p>
+</blockquote>
+<h2 id="行为型"><a href="#行为型" class="headerlink" title="行为型"></a><strong>行为型</strong></h2><h4 id="2-策略模式"><a href="#2-策略模式" class="headerlink" title="2. 策略模式"></a><strong>2. 策略模式</strong></h4><blockquote>
+<p>通过策略行为设计模式,可以在运行时选择算法的行为。</p>
+</blockquote>
+<p>下面是一个例子对整数进行操作的可互换运算符对象的实现</p>
+<p>操作符接口</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Operator <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Apply(<span class="hljs-keyword">int</span>, <span class="hljs-keyword">int</span>) <span class="hljs-keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Operation <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	Operator Operator</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(o *Operation)</span> <span class="hljs-title">Operate</span><span class="hljs-params">(leftValue, rightValue <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> o.Operator.Apply(leftValue, rightValue)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>加法运算符</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Addition <span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(Addition)</span> <span class="hljs-title">Apply</span><span class="hljs-params">(lval, rval <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> lval + rval</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">add := Operation&#123;Addition&#123;&#125;&#125;</span><br><span class="line">add.Operate(<span class="hljs-number">3</span>, <span class="hljs-number">5</span>) <span class="hljs-comment">// 8</span></span><br></pre></td></tr></table></figure>
+<p>乘法运算符</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Multiplication <span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(Multiplication)</span> <span class="hljs-title">Apply</span><span class="hljs-params">(lval, rval <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> lval * rval</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mult := Operation&#123;Multiplication&#123;&#125;&#125;</span><br><span class="line"></span><br><span class="line">mult.Operate(<span class="hljs-number">3</span>, <span class="hljs-number">5</span>) <span class="hljs-comment">// 15</span></span><br></pre></td></tr></table></figure>
+<p>调用的过程应该就是向一个<code>Operation</code>类传入一个实现了<code>Operator</code>接口的类,然后调用<code>Operation</code>对象的方法,<code>Operation</code>类 本身也实现<code>Operator</code>接口,相当于采用委托的方式对子类进行动态选择。</p>
+<p>策略模式与模板模式相似,但粒度不同,策略模式的变化是在类级别,模版方法是在方法级别。</p>
+<blockquote>
+<p>使用场景：在程序运行过程中可以动态的选择执行的类。</p>
+</blockquote>
+<h4 id="3-观察者模式"><a href="#3-观察者模式" class="headerlink" title="3. 观察者模式"></a><strong>3. 观察者模式</strong></h4><blockquote>
+<p>提供特定以通知事件/数据更改</p>
+</blockquote>
+<p>事件本身,观察者,通知者</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> (</span><br><span class="line">	<span class="hljs-comment">// Event defines an indication of a point-in-time occurrence.</span></span><br><span class="line">	Event <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// Data in this case is a simple int, but the actual</span></span><br><span class="line">		<span class="hljs-comment">// implementation would depend on the application.</span></span><br><span class="line">		Data <span class="hljs-keyword">int64</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Observer defines a standard interface for instances that wish to list for</span></span><br><span class="line">	<span class="hljs-comment">// the occurrence of a specific event.</span></span><br><span class="line">	Observer <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// OnNotify allows an event to be "published" to interface implementations.</span></span><br><span class="line">		<span class="hljs-comment">// In the "real world", error handling would likely be implemented.</span></span><br><span class="line">		OnNotify(Event)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Notifier is the instance being observed. Publisher is perhaps another decent</span></span><br><span class="line">	<span class="hljs-comment">// name, but naming things is hard.</span></span><br><span class="line">	Notifier <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// Register allows an instance to register itself to listen/observe</span></span><br><span class="line">		<span class="hljs-comment">// events.</span></span><br><span class="line">		Register(Observer)</span><br><span class="line">		<span class="hljs-comment">// Deregister allows an instance to remove itself from the collection</span></span><br><span class="line">		<span class="hljs-comment">// of observers/listeners.</span></span><br><span class="line">		Deregister(Observer)</span><br><span class="line">		<span class="hljs-comment">// Notify publishes new events to listeners. The method is not</span></span><br><span class="line">		<span class="hljs-comment">// absolutely necessary, as each implementation could define this itself</span></span><br><span class="line">		<span class="hljs-comment">// without losing functionality.</span></span><br><span class="line">		Notify(Event)</span><br><span class="line">	&#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>事件观察者的的实现,事件通知者的实现</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> (</span><br><span class="line">	eventObserver <span class="hljs-keyword">struct</span>&#123;</span><br><span class="line">		id <span class="hljs-keyword">int</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	eventNotifier <span class="hljs-keyword">struct</span>&#123;</span><br><span class="line">		<span class="hljs-comment">// Using a map with an empty struct allows us to keep the observers</span></span><br><span class="line">		<span class="hljs-comment">// unique while still keeping memory usage relatively low.</span></span><br><span class="line">		observers <span class="hljs-keyword">map</span>[Observer]<span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line">	&#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(o *eventObserver)</span> <span class="hljs-title">OnNotify</span><span class="hljs-params">(e Event)</span></span> &#123;</span><br><span class="line">	fmt.Printf(<span class="hljs-string">"*** Observer %d received: %d\n"</span>, o.id, e.Data)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(o *eventNotifier)</span> <span class="hljs-title">Register</span><span class="hljs-params">(l Observer)</span></span> &#123;</span><br><span class="line">	o.observers[l] = <span class="hljs-keyword">struct</span>&#123;&#125;&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(o *eventNotifier)</span> <span class="hljs-title">Deregister</span><span class="hljs-params">(l Observer)</span></span> &#123;</span><br><span class="line">	<span class="hljs-built_in">delete</span>(o.observers, l)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(p *eventNotifier)</span> <span class="hljs-title">Notify</span><span class="hljs-params">(e Event)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> o := <span class="hljs-keyword">range</span> p.observers &#123;</span><br><span class="line">		o.OnNotify(e)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>观察者应该具有一定的结构,逻辑,将观察者注册到其所对应到通知者对象上,采用遍历到方式,对观察者者进行遍历,观察者被通知到后调用自身的业务逻辑方法。</p>
+<p>使用如下</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Initialize a new Notifier.</span></span><br><span class="line">	n := eventNotifier&#123;</span><br><span class="line">		observers: <span class="hljs-keyword">map</span>[Observer]<span class="hljs-keyword">struct</span>&#123;&#125;&#123;&#125;,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Register a couple of observers.</span></span><br><span class="line">	n.Register(&amp;eventObserver&#123;id: <span class="hljs-number">1</span>&#125;)</span><br><span class="line">	n.Register(&amp;eventObserver&#123;id: <span class="hljs-number">2</span>&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// A simple loop publishing the current Unix timestamp to observers.</span></span><br><span class="line">	stop := time.NewTimer(<span class="hljs-number">10</span> * time.Second).C</span><br><span class="line">	tick := time.NewTicker(time.Second).C</span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;- stop:</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		<span class="hljs-keyword">case</span> t := &lt;-tick:</span><br><span class="line">			n.Notify(Event&#123;Data: t.UnixNano()&#125;)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将观察者全部都注册到通知者上,使用<code>for select</code>语句对所有所有已经被注册到通知者对象上进行通知消息。</p>
+<blockquote>
+<p>应用场景:通知者会在符合某种条件下去通知观察者,观察者根据消息产生一些系列的逻辑。</p>
+</blockquote>
+<h2 id="并发型"><a href="#并发型" class="headerlink" title="并发型"></a><strong>并发型</strong></h2><h4 id="4-生成器模式"><a href="#4-生成器模式" class="headerlink" title="4. 生成器模式"></a><strong>4. 生成器模式</strong></h4><blockquote>
+<p>一次产生一个值序列</p>
+</blockquote>
+<p>生成器</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Count</span><span class="hljs-params">(start <span class="hljs-keyword">int</span>, end <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">chan</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">    ch := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(ch <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line">        <span class="hljs-keyword">for</span> i := start; i &lt;= end ; i++ &#123;</span><br><span class="line">            <span class="hljs-comment">// Blocks on the operation</span></span><br><span class="line">            ch &lt;- i</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-built_in">close</span>(ch)</span><br><span class="line">	&#125;(ch)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> ch</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过 一个<code>goroutine</code>异步创建好需要的对象,减少创建过程中带来的性能损耗</p>
+<p>使用</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">fmt.Println(<span class="hljs-string">"No bottles of beer on the wall"</span>)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">for</span> i := <span class="hljs-keyword">range</span> Count(<span class="hljs-number">1</span>, <span class="hljs-number">99</span>) &#123;</span><br><span class="line">    fmt.Println(<span class="hljs-string">"Pass it around, put one up,"</span>, i, <span class="hljs-string">"bottles of beer on the wall"</span>)</span><br><span class="line">    <span class="hljs-comment">// Pass it around, put one up, 1 bottles of beer on the wall</span></span><br><span class="line">    <span class="hljs-comment">// Pass it around, put one up, 2 bottles of beer on the wall</span></span><br><span class="line">    <span class="hljs-comment">// ...</span></span><br><span class="line">    <span class="hljs-comment">// Pass it around, put one up, 99 bottles of beer on the wall</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">fmt.Println(<span class="hljs-number">100</span>, <span class="hljs-string">"bottles of beer on the wall"</span>)</span><br></pre></td></tr></table></figure>
+<p>打印 1-99 的数。</p>
+<blockquote>
+<p>应用场景：创建对象需要耗费大量资源,或者解耦创建过程与调用过程,开发者不需要关心创建了什么,只需要做创建过程。</p>
+</blockquote>
+<h4 id="5-并发模式"><a href="#5-并发模式" class="headerlink" title="5. 并发模式"></a><strong>5. 并发模式</strong></h4><blockquote>
+<p>并发完成大量独立任务</p>
+</blockquote>
+<p>信息结果</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// A md5Result is the product of reading and summing a file using MD5.</span></span><br><span class="line"><span class="hljs-keyword">type</span> md5Result <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	path <span class="hljs-keyword">string</span></span><br><span class="line">	sum  [md5.Size]<span class="hljs-keyword">byte</span></span><br><span class="line">	err  error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>并发</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// sumFiles starts goroutines to walk the directory tree at root and digest each</span></span><br><span class="line"><span class="hljs-comment">// regular file.  These goroutines send the results of the digests on the md5Result</span></span><br><span class="line"><span class="hljs-comment">// channel and send the md5Result of the walk on the error channel.  If done is</span></span><br><span class="line"><span class="hljs-comment">// closed, sumFiles abandons its work.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">sumFiles</span><span class="hljs-params">(done &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;, root <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">(&lt;-<span class="hljs-keyword">chan</span> md5Result, &lt;-<span class="hljs-keyword">chan</span> error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// For each regular file, start a goroutine that sums the file and sends</span></span><br><span class="line">	<span class="hljs-comment">// the md5Result on c.  Send the md5Result of the walk on errc.</span></span><br><span class="line">	c := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> md5Result)</span><br><span class="line">	errc := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> error, <span class="hljs-number">1</span>)</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-comment">// HL</span></span><br><span class="line">		<span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line">		err := filepath.Walk(root, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(path <span class="hljs-keyword">string</span>, info os.FileInfo, err error)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span> err</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> !info.Mode().IsRegular() &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">			wg.Add(<span class="hljs-number">1</span>)</span><br><span class="line">			<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-comment">// HL</span></span><br><span class="line">				data, err := ioutil.ReadFile(path)</span><br><span class="line">				<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">case</span> c &lt;- md5Result&#123;path, md5.Sum(data), err&#125;: <span class="hljs-comment">// HL</span></span><br><span class="line">				<span class="hljs-keyword">case</span> &lt;-done: <span class="hljs-comment">// HL</span></span><br><span class="line">				&#125;</span><br><span class="line">				wg.Done()</span><br><span class="line">			&#125;()</span><br><span class="line">			<span class="hljs-comment">// Abort the walk if done is closed.</span></span><br><span class="line">			<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">case</span> &lt;-done: <span class="hljs-comment">// HL</span></span><br><span class="line">				<span class="hljs-keyword">return</span> errors.New(<span class="hljs-string">"walk canceled"</span>)</span><br><span class="line">			<span class="hljs-keyword">default</span>:</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;)</span><br><span class="line">		<span class="hljs-comment">// Walk has returned, so all calls to wg.Add are done.  Start a</span></span><br><span class="line">		<span class="hljs-comment">// goroutine to close c once all the sends are done.</span></span><br><span class="line">		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-comment">// HL</span></span><br><span class="line">			wg.Wait()</span><br><span class="line">			<span class="hljs-built_in">close</span>(c) <span class="hljs-comment">// HL</span></span><br><span class="line">		&#125;()</span><br><span class="line">		<span class="hljs-comment">// No select needed here, since errc is buffered.</span></span><br><span class="line">		errc &lt;- err <span class="hljs-comment">// HL</span></span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="hljs-keyword">return</span> c, errc</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>并发模式的关键要素就是使用<code>chan</code>和<code>goroutine</code>  配合使用,创建一个<code>goroutine</code>运行需要执行的作业内容,遍历作业,对其每个耗时较长的任务进行异步处理,并判断是否接收到了中断信息,如果有中断信息就直接返回错误,并将错误传入到<code>errc</code>管道中, 这样作业内容就可以停止。对作业内容结果进行处理填入到<code>chan</code>中,并用<code>WaitGroup</code>记录其作业状态,当作业内容全部执行了,就关闭<code>chan</code>,不允许可写。</p>
+<p>针对上面代码进行简化操作的逻辑就是:</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Walk</span><span class="hljs-params">(jobs Job,walkFn WalkFunc)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> job <span class="hljs-keyword">range</span> jobs &#123;</span><br><span class="line">		err = walkFn(job)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span>&#123;</span><br><span class="line">			<span class="hljs-keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> err</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">work</span><span class="hljs-params">(done &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;,jobs Job)</span> <span class="hljs-params">(&lt;-<span class="hljs-keyword">chan</span> result, &lt;-<span class="hljs-keyword">chan</span> error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// For each regular file, start a goroutine that sums the file and sends</span></span><br><span class="line">	<span class="hljs-comment">// the md5Result on c.  Send the md5Result of the walk on errc.</span></span><br><span class="line">	c := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> result)</span><br><span class="line">	errc := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> error, <span class="hljs-number">1</span>)</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-comment">// HL</span></span><br><span class="line">		<span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line">		<span class="hljs-keyword">for</span> job <span class="hljs-keyword">range</span> jobs </span><br><span class="line">		err := Walk(jobs,<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span> err</span><br><span class="line">			&#125;</span><br><span class="line">			wg.Add(<span class="hljs-number">1</span>)</span><br><span class="line">			<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-comment">// HL</span></span><br><span class="line">				data, err := doJob()</span><br><span class="line">				<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">case</span> c &lt;- data <span class="hljs-comment">// HL</span></span><br><span class="line">					<span class="hljs-comment">//case &lt;-done: // HL</span></span><br><span class="line">				&#125;</span><br><span class="line">				wg.Done()</span><br><span class="line">			&#125;()</span><br><span class="line">			<span class="hljs-comment">// Abort the walk if done is closed.</span></span><br><span class="line">			<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">case</span> &lt;-done: <span class="hljs-comment">// HL</span></span><br><span class="line">				<span class="hljs-keyword">return</span> errors.New(<span class="hljs-string">"walk canceled"</span>)</span><br><span class="line">			<span class="hljs-keyword">default</span>:</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;)</span><br><span class="line">		<span class="hljs-comment">// Walk has returned, so all calls to wg.Add are done.  Start a</span></span><br><span class="line">		<span class="hljs-comment">// goroutine to close c once all the sends are done.</span></span><br><span class="line">		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-comment">// HL</span></span><br><span class="line">			wg.Wait()</span><br><span class="line">			<span class="hljs-built_in">close</span>(c) <span class="hljs-comment">// HL</span></span><br><span class="line">		&#125;()</span><br><span class="line">		<span class="hljs-comment">// No select needed here, since errc is buffered.</span></span><br><span class="line">		errc &lt;- err <span class="hljs-comment">// HL</span></span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="hljs-keyword">return</span> c, errc</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>抽出一个通用逻辑来,应该就是这样的,适用于各种场景。</p>
+<blockquote>
+<p>应用场景: io操作,网络操作 等等耗时事件长的任务。</p>
+</blockquote>
+<h4 id="6-固定并发模式"><a href="#6-固定并发模式" class="headerlink" title="6. 固定并发模式"></a><strong>6. 固定并发模式</strong></h4><blockquote>
+<p>在资源有限的情况下完成大量独立任务</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// walkFiles starts a goroutine to walk the directory tree at root and send the</span></span><br><span class="line"><span class="hljs-comment">// path of each regular file on the string channel.  It sends the result of the</span></span><br><span class="line"><span class="hljs-comment">// walk on the error channel.  If done is closed, walkFiles abandons its work.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">walkFiles</span><span class="hljs-params">(done &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;, root <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">(&lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">string</span>, &lt;-<span class="hljs-keyword">chan</span> error)</span></span> &#123;</span><br><span class="line">	paths := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">string</span>)</span><br><span class="line">	errc := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> error, <span class="hljs-number">1</span>)</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-comment">// HL</span></span><br><span class="line">		<span class="hljs-comment">// Close the paths channel after Walk returns.</span></span><br><span class="line">		<span class="hljs-keyword">defer</span> <span class="hljs-built_in">close</span>(paths) <span class="hljs-comment">// HL</span></span><br><span class="line">		<span class="hljs-comment">// No select needed for this send, since errc is buffered.</span></span><br><span class="line">		errc &lt;- filepath.Walk(root, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(path <span class="hljs-keyword">string</span>, info os.FileInfo, err error)</span> <span class="hljs-title">error</span></span> &#123; <span class="hljs-comment">// HL</span></span><br><span class="line">			<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span> err</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> !info.Mode().IsRegular() &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">case</span> paths &lt;- path: <span class="hljs-comment">// HL</span></span><br><span class="line">			<span class="hljs-keyword">case</span> &lt;-done: <span class="hljs-comment">// HL</span></span><br><span class="line">				<span class="hljs-keyword">return</span> errors.New(<span class="hljs-string">"walk canceled"</span>)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="hljs-keyword">return</span> paths, errc</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// A result is the product of reading and summing a file using MD5.</span></span><br><span class="line"><span class="hljs-keyword">type</span> result <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	path <span class="hljs-keyword">string</span></span><br><span class="line">	sum  [md5.Size]<span class="hljs-keyword">byte</span></span><br><span class="line">	err  error</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// digester reads path names from paths and sends digests of the corresponding</span></span><br><span class="line"><span class="hljs-comment">// files on c until either paths or done is closed.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">digester</span><span class="hljs-params">(done &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;, paths &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">string</span>, c <span class="hljs-keyword">chan</span>&lt;- result)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> path := <span class="hljs-keyword">range</span> paths &#123; <span class="hljs-comment">// HLpaths</span></span><br><span class="line">		data, err := ioutil.ReadFile(path)</span><br><span class="line">		<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">case</span> c &lt;- result&#123;path, md5.Sum(data), err&#125;:</span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;-done:</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// MD5All reads all the files in the file tree rooted at root and returns a map</span></span><br><span class="line"><span class="hljs-comment">// from file path to the MD5 sum of the file's contents.  If the directory walk</span></span><br><span class="line"><span class="hljs-comment">// fails or any read operation fails, MD5All returns an error.  In that case,</span></span><br><span class="line"><span class="hljs-comment">// MD5All does not wait for inflight read operations to complete.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">MD5All</span><span class="hljs-params">(root <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">(<span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>][md5.Size]<span class="hljs-keyword">byte</span>, error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// MD5All closes the done channel when it returns; it may do so before</span></span><br><span class="line">	<span class="hljs-comment">// receiving all the values from c and errc.</span></span><br><span class="line">	done := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;)</span><br><span class="line">	<span class="hljs-keyword">defer</span> <span class="hljs-built_in">close</span>(done)</span><br><span class="line"></span><br><span class="line">	paths, errc := walkFiles(done, root)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start a fixed number of goroutines to read and digest files.</span></span><br><span class="line">	c := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> result) <span class="hljs-comment">// HLc</span></span><br><span class="line">	<span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line">	<span class="hljs-keyword">const</span> numDigesters = <span class="hljs-number">20</span></span><br><span class="line">	wg.Add(numDigesters)</span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; numDigesters; i++ &#123;</span><br><span class="line">		<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">			digester(done, paths, c) <span class="hljs-comment">// HLc</span></span><br><span class="line">			wg.Done()</span><br><span class="line">		&#125;()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		wg.Wait()</span><br><span class="line">		<span class="hljs-built_in">close</span>(c) <span class="hljs-comment">// HLc</span></span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="hljs-comment">// End of pipeline. OMIT</span></span><br><span class="line"></span><br><span class="line">	m := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>][md5.Size]<span class="hljs-keyword">byte</span>)</span><br><span class="line">	<span class="hljs-keyword">for</span> r := <span class="hljs-keyword">range</span> c &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> r.err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, r.err</span><br><span class="line">		&#125;</span><br><span class="line">		m[r.path] = r.sum</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Check whether the Walk failed.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> err := &lt;-errc; err != <span class="hljs-literal">nil</span> &#123; <span class="hljs-comment">// HLerrc</span></span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> m, <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>和上面并发模式有点像,区别是固定量并发数量</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> paths = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">string</span>)</span><br><span class="line">paths = getJobs()</span><br><span class="line"><span class="hljs-keyword">const</span> numDigesters = <span class="hljs-number">20</span></span><br><span class="line">wg.Add(numDigesters)</span><br><span class="line"><span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; numDigesters; i++ &#123;</span><br><span class="line">    <span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">        digester(done, paths, c) <span class="hljs-comment">// HLc</span></span><br><span class="line">        wg.Done()</span><br><span class="line">    &#125;()</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">    wg.Wait()</span><br><span class="line">    <span class="hljs-built_in">close</span>(c) <span class="hljs-comment">// HLc</span></span><br><span class="line">&#125;()</span><br></pre></td></tr></table></figure>
+<p>抽出主要逻辑,清晰的可以看出来其用途为固定量并发 goroutine 数为 20 个。</p>
+<blockquote>
+<p>应用场景: cpu 操作,io操作,网络操作 等等耗时事件长的任务,以及为了防止任务吞掉系统全部资源,限制并发量。</p>
+</blockquote>
+<h2 id="创造型"><a href="#创造型" class="headerlink" title="创造型"></a><strong>创造型</strong></h2><h4 id="7-建造者模式"><a href="#7-建造者模式" class="headerlink" title="7 .建造者模式"></a><strong>7 .建造者模式</strong></h4><blockquote>
+<p>使用简单对象构建复杂对象</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> car</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Speed <span class="hljs-keyword">float64</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">const</span> (</span><br><span class="line">    MPH Speed = <span class="hljs-number">1</span></span><br><span class="line">    KPH       = <span class="hljs-number">1.60934</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Color <span class="hljs-keyword">string</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">const</span> (</span><br><span class="line">    BlueColor  Color = <span class="hljs-string">"blue"</span></span><br><span class="line">    GreenColor       = <span class="hljs-string">"green"</span></span><br><span class="line">    RedColor         = <span class="hljs-string">"red"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Wheels <span class="hljs-keyword">string</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">const</span> (</span><br><span class="line">    SportsWheels Wheels = <span class="hljs-string">"sports"</span></span><br><span class="line">    SteelWheels         = <span class="hljs-string">"steel"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Builder <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">    Color(Color) Builder</span><br><span class="line">    Wheels(Wheels) Builder</span><br><span class="line">    TopSpeed(Speed) Builder</span><br><span class="line">    Build() Car</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Car <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">    Drive() error</span><br><span class="line">    Stop() error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">assembly := car.NewBuilder().Paint(car.RedColor)</span><br><span class="line"></span><br><span class="line">familyCar := assembly.Wheels(car.SportsWheels).TopSpeed(<span class="hljs-number">50</span> * car.MPH).Build()</span><br><span class="line">familyCar.Drive()</span><br><span class="line"></span><br><span class="line">sportsCar := assembly.Wheels(car.SteelWheels).TopSpeed(<span class="hljs-number">150</span> * car.MPH).Build()</span><br><span class="line">sportsCar.Drive()</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>应用场景: 构建复杂对象。</p>
+</blockquote>
+<h4 id="7-工厂模式"><a href="#7-工厂模式" class="headerlink" title="7. 工厂模式"></a><strong>7. 工厂模式</strong></h4><blockquote>
+<p>将对象的实例化推迟到用于创建实例的专用功能</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> data</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> StorageType <span class="hljs-keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">const</span> (</span><br><span class="line">    DiskStorage StorageType = <span class="hljs-number">1</span> &lt;&lt; <span class="hljs-literal">iota</span></span><br><span class="line">    TempStorage</span><br><span class="line">    MemoryStorage</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewStore</span><span class="hljs-params">(t StorageType)</span> <span class="hljs-title">Store</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">switch</span> t &#123;</span><br><span class="line">    <span class="hljs-keyword">case</span> MemoryStorage:</span><br><span class="line">        <span class="hljs-keyword">return</span> newMemoryStorage( <span class="hljs-comment">/*...*/</span> )</span><br><span class="line">    <span class="hljs-keyword">case</span> DiskStorage:</span><br><span class="line">        <span class="hljs-keyword">return</span> newDiskStorage( <span class="hljs-comment">/*...*/</span> )</span><br><span class="line">    <span class="hljs-keyword">default</span>:</span><br><span class="line">        <span class="hljs-keyword">return</span> newTempStorage( <span class="hljs-comment">/*...*/</span> )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">s, _ := data.NewStore(data.MemoryStorage)</span><br><span class="line">f, _ := s.Open(<span class="hljs-string">"file"</span>)</span><br><span class="line"></span><br><span class="line">n, _ := f.Write([]<span class="hljs-keyword">byte</span>(<span class="hljs-string">"data"</span>))</span><br><span class="line"><span class="hljs-keyword">defer</span> f.Close()</span><br></pre></td></tr></table></figure>
+<p>使用工厂方法,用户可以指定所需的存储类型。工厂模式就是对开闭原则的一个最好诠释,只增加工厂类,不修改原类。</p>
+<blockquote>
+<p>使用场景:对一类问题产生变化的可能性,有多种变化,选择。</p>
+</blockquote>
+<h4 id="7-对象池模式"><a href="#7-对象池模式" class="headerlink" title="7. 对象池模式"></a><strong>7. 对象池模式</strong></h4><blockquote>
+<p>例化并维护一组相同类型的对象实例</p>
+</blockquote>
+<p>对象池</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> pool</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Pool <span class="hljs-keyword">chan</span> *Object</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(total <span class="hljs-keyword">int</span>)</span> *<span class="hljs-title">Pool</span></span> &#123;</span><br><span class="line">	p := <span class="hljs-built_in">make</span>(Pool, total)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; total; i++ &#123;</span><br><span class="line">		p &lt;- <span class="hljs-built_in">new</span>(Object)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;p</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">p := pool.New(<span class="hljs-number">2</span>)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">select</span> &#123;</span><br><span class="line"><span class="hljs-keyword">case</span> obj := &lt;-p:</span><br><span class="line">	obj.Do( <span class="hljs-comment">/*...*/</span> )</span><br><span class="line"></span><br><span class="line">	p &lt;- obj</span><br><span class="line"><span class="hljs-keyword">default</span>:</span><br><span class="line">	<span class="hljs-comment">// No more objects left — retry later or fail</span></span><br><span class="line">	<span class="hljs-keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再 Golang 中已经有专门的<code>sync.Pool</code>封装好了 ,不需要自己单独写。</p>
+<blockquote>
+<p>应用场景:对象初始化很多的情况下,由于对象已预先初始化,因此可以对象不需要再进行初始化,对耗时较长的创建对象是一个好的选择。,如果需要性能,而不是节省资源,维护对象池,不是一个好的选择。</p>
+</blockquote>
+<h4 id="8-单利模式"><a href="#8-单利模式" class="headerlink" title="8. 单利模式"></a><strong>8. 单利模式</strong></h4><blockquote>
+<p>将类型的实例化限制为一个对象</p>
+</blockquote>
+<p>单利模式</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> singleton</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> singleton <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]<span class="hljs-keyword">string</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> (</span><br><span class="line">    once sync.Once</span><br><span class="line"></span><br><span class="line">    instance singleton</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">()</span> <span class="hljs-title">singleton</span></span> &#123;</span><br><span class="line">	once.Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		instance = <span class="hljs-built_in">make</span>(singleton)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> instance</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">s := singleton.New()</span><br><span class="line"></span><br><span class="line">s[<span class="hljs-string">"this"</span>] = <span class="hljs-string">"that"</span></span><br><span class="line"></span><br><span class="line">s2 := singleton.New()</span><br><span class="line"></span><br><span class="line">fmt.Println(<span class="hljs-string">"This is "</span>, s2[<span class="hljs-string">"this"</span>])</span><br><span class="line"><span class="hljs-comment">// This is that</span></span><br></pre></td></tr></table></figure>
+<p>使用<code>once</code>语义可以保证内容只被一次,从而保证对象是单利的。</p>
+<blockquote>
+<p>应用场景:单利类在初始创建后,就不应该被再操作,所以我认为单利类只是一堆包含数据的结构体,初始后状态不可变,可以被重复使用,而不用产生大量的对象,减少 GC 压力。</p>
+</blockquote>
+<h2 id="建造模式"><a href="#建造模式" class="headerlink" title="建造模式"></a><strong>建造模式</strong></h2><h4 id="8-装饰器模式"><a href="#8-装饰器模式" class="headerlink" title="8. 装饰器模式"></a><strong>8. 装饰器模式</strong></h4><p>静态地或动态地向对象添加行为</p>
+<p>装饰</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Object <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(<span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">LogDecorate</span><span class="hljs-params">(fn Object)</span> <span class="hljs-title">Object</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(n <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"Starting the execution with the integer"</span>, n)</span><br><span class="line"></span><br><span class="line">		result := fn(n)</span><br><span class="line"></span><br><span class="line">		log.Println(<span class="hljs-string">"Execution is completed with the result"</span>, result)</span><br><span class="line"></span><br><span class="line">        <span class="hljs-keyword">return</span> result</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Double</span><span class="hljs-params">(n <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> n * <span class="hljs-number">2</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">f := LogDecorate(Double)</span><br><span class="line"></span><br><span class="line">f(<span class="hljs-number">5</span>)</span><br></pre></td></tr></table></figure>
+<p><code>Double</code>这个函数作为被装饰对象,使用<code>LogDecorate</code>装饰要被装饰的函数,老实说,我看着这个函数有点像 Spring 里面的 AOP 代理模式,感觉和代理模式也很像,但是是函数级别,并且处理结果可以再被处理,所以说是装饰模式也可以。</p>
+<blockquote>
+<p>应用场景：拓展一个方法原有的功能</p>
+</blockquote>
+<h4 id="8-代理模式"><a href="#8-代理模式" class="headerlink" title="8. 代理模式"></a><strong>8. 代理模式</strong></h4><p>提供对象的代理对象以控制其动作</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// To use proxy and to object they must implement same methods</span></span><br><span class="line"><span class="hljs-keyword">type</span> IObject <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">    ObjDo(action <span class="hljs-keyword">string</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Object represents real objects which proxy will delegate data</span></span><br><span class="line"><span class="hljs-keyword">type</span> Object <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    action <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ObjDo implements IObject interface and handel's all logic</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(obj *Object)</span> <span class="hljs-title">ObjDo</span><span class="hljs-params">(action <span class="hljs-keyword">string</span>)</span></span> &#123;</span><br><span class="line">    <span class="hljs-comment">// Action behavior</span></span><br><span class="line">    fmt.Printf(<span class="hljs-string">"I can, %s"</span>, action)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ProxyObject represents proxy object with intercepts actions</span></span><br><span class="line"><span class="hljs-keyword">type</span> ProxyObject <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    object *Object</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ObjDo are implemented IObject and intercept action before send in real Object</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(p *ProxyObject)</span> <span class="hljs-title">ObjDo</span><span class="hljs-params">(action <span class="hljs-keyword">string</span>)</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">if</span> p.object == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">        p.object = <span class="hljs-built_in">new</span>(Object)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">if</span> action == <span class="hljs-string">"Run"</span> &#123;</span><br><span class="line">        p.object.ObjDo(action) <span class="hljs-comment">// Prints: I can, Run</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>简单的用一句话来说就是将被代理对象传入代理对象,然后执行被代理对象的方法,并且执行代理对象自身的一些操作。</p>
+<h2 id="同步模式"><a href="#同步模式" class="headerlink" title="同步模式"></a><strong>同步模式</strong></h2><h4 id="9-信号量模式"><a href="#9-信号量模式" class="headerlink" title="9. 信号量模式"></a><strong>9. 信号量模式</strong></h4><p>允许控制对公共资源的访问</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> semaphore</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> (</span><br><span class="line">	ErrNoTickets      = errors.New(<span class="hljs-string">"semaphore: could not aquire semaphore"</span>)</span><br><span class="line">	ErrIllegalRelease = errors.New(<span class="hljs-string">"semaphore: can't release the semaphore without acquiring it first"</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Interface contains the behavior of a semaphore that can be acquired and/or released.</span></span><br><span class="line"><span class="hljs-keyword">type</span> Interface <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Acquire() error</span><br><span class="line">	Release() error</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> implementation <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	sem     <span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line">	timeout time.Duration</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *implementation)</span> <span class="hljs-title">Acquire</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> s.sem &lt;- <span class="hljs-keyword">struct</span>&#123;&#125;&#123;&#125;:</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	<span class="hljs-keyword">case</span> &lt;-time.After(s.timeout):</span><br><span class="line">		<span class="hljs-keyword">return</span> ErrNoTickets</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *implementation)</span> <span class="hljs-title">Release</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> _ = &lt;-s.sem:</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	<span class="hljs-keyword">case</span> &lt;-time.After(s.timeout):</span><br><span class="line">		<span class="hljs-keyword">return</span> ErrIllegalRelease</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">New</span><span class="hljs-params">(tickets <span class="hljs-keyword">int</span>, timeout time.Duration)</span> <span class="hljs-title">Interface</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;implementation&#123;</span><br><span class="line">		sem:     <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;, tickets),</span><br><span class="line">		timeout: timeout,</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>信号量模式也好理解,就是同一时刻只有一个任务可以被执行,所以<code>chan</code>是一个阻塞<code>chan</code>, 当任务结束就是释放<code>chan</code>里面的元素,保持活跃,可以接受的状态。</p>
+<blockquote>
+<p>应用场景:在该模式下,接收请求和执行下游依赖在同一个线程内完成,不存在线程上下文切换所带来的性能开销。</p>
+</blockquote>
+<h2 id="性能分析型"><a href="#性能分析型" class="headerlink" title="性能分析型"></a><strong>性能分析型</strong></h2><h4 id="10-记时模式"><a href="#10-记时模式" class="headerlink" title="10. 记时模式"></a><strong>10. 记时模式</strong></h4><p>包装函数并记录执行</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> profile</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">    <span class="hljs-string">"time"</span></span><br><span class="line">    <span class="hljs-string">"log"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Duration</span><span class="hljs-params">(invocation time.Time, name <span class="hljs-keyword">string</span>)</span></span> &#123;</span><br><span class="line">    elapsed := time.Since(invocation)</span><br><span class="line"></span><br><span class="line">    log.Printf(<span class="hljs-string">"%s lasted %s"</span>, name, elapsed)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">BigIntFactorial</span><span class="hljs-params">(x big.Int)</span> *<span class="hljs-title">big</span>.<span class="hljs-title">Int</span></span> &#123;</span><br><span class="line">    <span class="hljs-comment">// Arguments to a defer statement is immediately evaluated and stored.</span></span><br><span class="line">    <span class="hljs-comment">// The deferred function receives the pre-evaluated values when its invoked.</span></span><br><span class="line">    <span class="hljs-keyword">defer</span> profile.Duration(time.Now(), <span class="hljs-string">"IntFactorial"</span>)</span><br><span class="line"></span><br><span class="line">    y := big.NewInt(<span class="hljs-number">1</span>)</span><br><span class="line">    <span class="hljs-keyword">for</span> one := big.NewInt(<span class="hljs-number">1</span>); x.Sign() &gt; <span class="hljs-number">0</span>; x.Sub(x, one) &#123;</span><br><span class="line">        y.Mul(y, x)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">return</span> x.Set(y)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过<code>defer</code>的妙用,将当前函数的开始时间可以记住,然后通过<code>defer</code>在函数执行完后才会调用<code>defer</code>函数。这样就达成了记时的作用,可以统计这段函数花费了多长时间,感觉很妙。</p>
+<blockquote>
+<p>应用场景:进行基准测试的时候可以使用。</p>
+</blockquote>
+<h2 id="消息型"><a href="#消息型" class="headerlink" title="消息型"></a><strong>消息型</strong></h2><h4 id="11-扇入消息传递模式"><a href="#11-扇入消息传递模式" class="headerlink" title="11. 扇入消息传递模式"></a><strong>11. 扇入消息传递模式</strong></h4><blockquote>
+<p>扇入是一种消息传递模式,用于为工作（客户端：源,服务器：目标）之间的工作创建漏斗。</p>
+</blockquote>
+<p>我们可以使用Go channel 对扇入进行建模。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Merge different channels in one channel</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Merge</span><span class="hljs-params">(cs ...&lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span> &lt;-<span class="hljs-title">chan</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> wg sync.WaitGroup</span><br><span class="line"></span><br><span class="line">	out := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start an send goroutine for each input channel in cs. send</span></span><br><span class="line">	<span class="hljs-comment">// copies values from c to out until c is closed, then calls wg.Done.</span></span><br><span class="line">	send := <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(c &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">for</span> n := <span class="hljs-keyword">range</span> c &#123;</span><br><span class="line">			out &lt;- n</span><br><span class="line">		&#125;</span><br><span class="line">		wg.Done()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	wg.Add(<span class="hljs-built_in">len</span>(cs))</span><br><span class="line">	<span class="hljs-keyword">for</span> _, c := <span class="hljs-keyword">range</span> cs &#123;</span><br><span class="line">		<span class="hljs-keyword">go</span> send(c)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start a goroutine to close out once all the send goroutines are</span></span><br><span class="line">	<span class="hljs-comment">// done.  This must start after the wg.Add call.</span></span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		wg.Wait()</span><br><span class="line">		<span class="hljs-built_in">close</span>(out)</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="hljs-keyword">return</span> out</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>简单的说就是用多个<code>goroutine</code>异步写入多个<code>chan</code>里面的消息到另一个<code>chan</code>,所以叫<code>Merge</code>过程。</p>
+<blockquote>
+<p>应用场景:对数据进行整合。</p>
+</blockquote>
+<h4 id="12-扇入消息传递模式"><a href="#12-扇入消息传递模式" class="headerlink" title="12. 扇入消息传递模式"></a><strong>12. 扇入消息传递模式</strong></h4><blockquote>
+<p>扇出是一种消息传递模式,用于在工（生产者：源,消费者：目的地）之间分配工作。</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Split a channel into n channels that receive messages in a round-robin fashion.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Split</span><span class="hljs-params">(ch &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, n <span class="hljs-keyword">int</span>)</span> []&lt;-<span class="hljs-title">chan</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	cs := <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>)</span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; n; i++ &#123;</span><br><span class="line">		cs = <span class="hljs-built_in">append</span>(cs, <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>))</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Distributes the work in a round robin fashion among the stated number</span></span><br><span class="line">	<span class="hljs-comment">// of channels until the main channel has been closed. In that case, close</span></span><br><span class="line">	<span class="hljs-comment">// all channels and return.</span></span><br><span class="line">	distributeToChannels := <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(ch &lt;-<span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span>, cs []<span class="hljs-keyword">chan</span>&lt;- <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line">		<span class="hljs-comment">// Close every channel when the execution ends.</span></span><br><span class="line">		<span class="hljs-keyword">defer</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(cs []<span class="hljs-keyword">chan</span>&lt;- <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line">			<span class="hljs-keyword">for</span> _, c := <span class="hljs-keyword">range</span> cs &#123;</span><br><span class="line">				<span class="hljs-built_in">close</span>(c)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;(cs)</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">for</span> _, c := <span class="hljs-keyword">range</span> cs &#123;</span><br><span class="line">				<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">case</span> val, ok := &lt;-ch:</span><br><span class="line">					<span class="hljs-keyword">if</span> !ok &#123;</span><br><span class="line">						<span class="hljs-keyword">return</span></span><br><span class="line">					&#125;</span><br><span class="line"></span><br><span class="line">					c &lt;- val</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">go</span> distributeToChannels(ch, cs)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> cs</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将一个<code>chan</code>的内容拆分到多个<code>chan</code>里面 （通过 goroutine 并发模式）</p>
+<blockquote>
+<p>应用场景:拆分一堆任务成多个任务。</p>
+</blockquote>
+<h4 id="13-发布和订阅消息传递模式"><a href="#13-发布和订阅消息传递模式" class="headerlink" title="13. 发布和订阅消息传递模式"></a><strong>13. 发布和订阅消息传递模式</strong></h4><blockquote>
+<p>发布-订阅是一种消息传递模式,用于在消息之间进行消息传递不同的组件,而这些组件不了解彼此的身份。</p>
+</blockquote>
+<p>消息,发布者</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Message <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    <span class="hljs-comment">// Contents</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Subscription <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	ch <span class="hljs-keyword">chan</span>&lt;- Message</span><br><span class="line"></span><br><span class="line">	Inbox <span class="hljs-keyword">chan</span> Message</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *Subscription)</span> <span class="hljs-title">Publish</span><span class="hljs-params">(msg Message)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> _, ok := &lt;-s.ch; !ok &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> errors.New(<span class="hljs-string">"Topic has been closed"</span>)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	s.ch &lt;- msg</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>订阅者</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Topic <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	Subscribers    []Session</span><br><span class="line">	MessageHistory []Message</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Topic)</span> <span class="hljs-title">Subscribe</span><span class="hljs-params">(uid <span class="hljs-keyword">uint64</span>)</span> <span class="hljs-params">(Subscription, error)</span></span> &#123;</span><br><span class="line">    <span class="hljs-comment">// Get session and create one if it's the first</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">// Add session to the Topic &amp; MessageHistory</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">// Create a subscription</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Topic)</span> <span class="hljs-title">Unsubscribe</span><span class="hljs-params">(Subscription)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Implementation</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Topic)</span> <span class="hljs-title">Delete</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Implementation</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> User <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    ID <span class="hljs-keyword">uint64</span></span><br><span class="line">    Name <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Session <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    User User</span><br><span class="line">    Timestamp time.Time</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>观察者和发布订阅模式的区别是,观察者模式的通知对象只有一个,而发布订阅模式,一个订阅着可以订阅多个发布者对象。发布订阅模式需要进行手动消费,而观察者模式则自动触发操作。</p>
+<blockquote>
+<p>应用场景:发布订阅者模式更适合多对多消息变化的应用场景。</p>
+</blockquote>
+<h2 id="稳定模式"><a href="#稳定模式" class="headerlink" title="稳定模式"></a><strong>稳定模式</strong></h2><h4 id="14-熔断器模式"><a href="#14-熔断器模式" class="headerlink" title="14. 熔断器模式"></a><strong>14. 熔断器模式</strong></h4><blockquote>
+<p>类似于电熔丝,可防止在连接电路电流过大时引发火灾,这导致电线加热并燃烧,断路器的设计模式是“故障优先”关闭电路,请求/响应关系或机制的机制在软件开发的情况下提供服务,以防止更大的失败。</p>
+</blockquote>
+<p>操作计数器</p>
+<p><code>circuit.Counter</code>是一个简单的计数器,用于记录成功或失败的状态电路和时间戳,并计算连续的失败。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> circuit</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> State <span class="hljs-keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">const</span> (</span><br><span class="line">	UnknownState State = <span class="hljs-literal">iota</span></span><br><span class="line">	FailureState</span><br><span class="line">	SuccessState</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Counter <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Count(State)</span><br><span class="line">	ConsecutiveFailures() <span class="hljs-keyword">uint32</span></span><br><span class="line">	LastActivity() time.Time</span><br><span class="line">	Reset()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> circuit</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> State <span class="hljs-keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">const</span> (</span><br><span class="line">	UnknownState State = <span class="hljs-literal">iota</span></span><br><span class="line">	FailureState</span><br><span class="line">	SuccessState</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Counter <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Count(State)</span><br><span class="line">	ConsecutiveFailures() <span class="hljs-keyword">uint32</span></span><br><span class="line">	LastActivity() time.Time</span><br><span class="line">	Reset()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用`circuit.Breaker’闭包来包装Circuit,该闭包保留内部操作计数器。如果电路连续故障超过指定阈值,它将返回快速错误。一段时间后,它重试该请求并记录下来。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> circuit</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"context"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Circuit <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(context.Context)</span> <span class="hljs-title">error</span></span></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Breaker</span><span class="hljs-params">(c Circuit, failureThreshold <span class="hljs-keyword">uint32</span>)</span> <span class="hljs-title">Circuit</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 一个计数器</span></span><br><span class="line">	cnt := NewCounter()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(ctx context)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">		<span class="hljs-comment">// 计数器超过阀值</span></span><br><span class="line">		<span class="hljs-keyword">if</span> cnt.ConsecutiveFailures() &gt;= failureThreshold &#123;</span><br><span class="line">			<span class="hljs-comment">// 判断是否可以重试的条件</span></span><br><span class="line">			canRetry := <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(cnt Counter)</span></span> &#123;</span><br><span class="line">				backoffLevel := Cnt.ConsecutiveFailures() - failureThreshold</span><br><span class="line"></span><br><span class="line">				<span class="hljs-comment">// Calculates when should the circuit breaker resume propagating requests</span></span><br><span class="line">				<span class="hljs-comment">// to the service</span></span><br><span class="line">				shouldRetryAt := cnt.LastActivity().Add(time.Seconds * <span class="hljs-number">2</span> &lt;&lt; backoffLevel)</span><br><span class="line"></span><br><span class="line">				<span class="hljs-keyword">return</span> time.Now().After(shouldRetryAt)</span><br><span class="line">			&#125;</span><br><span class="line">			</span><br><span class="line">			<span class="hljs-comment">// 不返回错误,继续执行。</span></span><br><span class="line">			<span class="hljs-keyword">if</span> !canRetry(cnt) &#123;</span><br><span class="line">				<span class="hljs-comment">// Fails fast instead of propagating requests to the circuit since</span></span><br><span class="line">				<span class="hljs-comment">// not enough time has passed since the last failure to retry</span></span><br><span class="line">				<span class="hljs-keyword">return</span> ErrServiceUnavailable</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">// Unless the failure threshold is exceeded the wrapped service mimics the</span></span><br><span class="line">		<span class="hljs-comment">// old behavior and the difference in behavior is seen after consecutive failures</span></span><br><span class="line">		<span class="hljs-keyword">if</span> err := c(ctx); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			cnt.Count(FailureState)</span><br><span class="line">			<span class="hljs-keyword">return</span> err</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		cnt.Count(SuccessState)</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面这个例子太简单了,概括为熔断器超过阀值时（可提供一定的尝试次数）,不直接执行方法,直接返回错误,防止更大的破坏,等过一段时间后自动恢复。</p>
+<blockquote>
+<p>应用场景:微服务之间的调用,为了下游服务阻塞上游服务卡住,直接将下游服务断开,快速失败,避免其他服务也不能正常使用。</p>
+</blockquote>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/09/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E4%BA%8C%E5%8F%89%E6%A0%91%E7%A5%9E%E7%BA%A7%E9%81%8D%E5%8E%86%E6%96%B9%E6%B3%95/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">二叉树神级遍历方法</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/04/05/Go/Golang%E8%AF%91%E6%96%87/Uber-Go-%E9%A3%8E%E6%A0%BC%E6%8C%87%E5%8D%97/">
+                <span class="level-item">(译) Uber Go 风格指南</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '3b60377828c9b621ad0ddb28a23343ce',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#习惯型">
+        <span class="has-mr-6">1</span>
+        <span>习惯型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-函数可选项">
+        <span class="has-mr-6">1.1</span>
+        <span>1. 函数可选项</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#行为型">
+        <span class="has-mr-6">2</span>
+        <span>行为型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#2-策略模式">
+        <span class="has-mr-6">2.1</span>
+        <span>2. 策略模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-观察者模式">
+        <span class="has-mr-6">2.2</span>
+        <span>3. 观察者模式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#并发型">
+        <span class="has-mr-6">3</span>
+        <span>并发型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#4-生成器模式">
+        <span class="has-mr-6">3.1</span>
+        <span>4. 生成器模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#5-并发模式">
+        <span class="has-mr-6">3.2</span>
+        <span>5. 并发模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#6-固定并发模式">
+        <span class="has-mr-6">3.3</span>
+        <span>6. 固定并发模式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#创造型">
+        <span class="has-mr-6">4</span>
+        <span>创造型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#7-建造者模式">
+        <span class="has-mr-6">4.1</span>
+        <span>7 .建造者模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-工厂模式">
+        <span class="has-mr-6">4.2</span>
+        <span>7. 工厂模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-对象池模式">
+        <span class="has-mr-6">4.3</span>
+        <span>7. 对象池模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#8-单利模式">
+        <span class="has-mr-6">4.4</span>
+        <span>8. 单利模式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#建造模式">
+        <span class="has-mr-6">5</span>
+        <span>建造模式</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#8-装饰器模式">
+        <span class="has-mr-6">5.1</span>
+        <span>8. 装饰器模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#8-代理模式">
+        <span class="has-mr-6">5.2</span>
+        <span>8. 代理模式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#同步模式">
+        <span class="has-mr-6">6</span>
+        <span>同步模式</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#9-信号量模式">
+        <span class="has-mr-6">6.1</span>
+        <span>9. 信号量模式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#性能分析型">
+        <span class="has-mr-6">7</span>
+        <span>性能分析型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#10-记时模式">
+        <span class="has-mr-6">7.1</span>
+        <span>10. 记时模式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#消息型">
+        <span class="has-mr-6">8</span>
+        <span>消息型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#11-扇入消息传递模式">
+        <span class="has-mr-6">8.1</span>
+        <span>11. 扇入消息传递模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#12-扇入消息传递模式">
+        <span class="has-mr-6">8.2</span>
+        <span>12. 扇入消息传递模式</span>
+        </a></li><li>
+        <a class="is-flex" href="#13-发布和订阅消息传递模式">
+        <span class="has-mr-6">8.3</span>
+        <span>13. 发布和订阅消息传递模式</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#稳定模式">
+        <span class="has-mr-6">9</span>
+        <span>稳定模式</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#14-熔断器模式">
+        <span class="has-mr-6">9.1</span>
+        <span>14. 熔断器模式</span>
+        </a></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="我对于 Golang 设计模式中不同的理解" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

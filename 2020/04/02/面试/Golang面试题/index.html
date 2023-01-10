@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Golang 面试题 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="整理了一些面试题,关于go语言面试会考的东西,顺便整理自己的知识体系。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang 面试题">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/02/%E9%9D%A2%E8%AF%95/Golang%E9%9D%A2%E8%AF%95%E9%A2%98/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="整理了一些面试题,关于go语言面试会考的东西,顺便整理自己的知识体系。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/1c/ac/1c06d1b00c69b78b2fb2bb2a419140ac.jpg">
+<meta property="article:published_time" content="2020-04-02T04:15:00.000Z">
+<meta property="article:modified_time" content="2020-04-02T04:15:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go">
+<meta property="article:tag" content="面试">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/1c/ac/1c06d1b00c69b78b2fb2bb2a419140ac.jpg">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Golang 面试题" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/1c/ac/1c06d1b00c69b78b2fb2bb2a419140ac.jpg" alt="Golang 面试题">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-02T04:15:00.000Z">2020-04-02</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E9%9D%A2%E8%AF%95/">面试</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    10 分钟 读完 (大约 1563 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Golang 面试题
+            
+        </h1>
+        <div class="content">
+            <p>整理了一些面试题,关于go语言面试会考的东西,顺便整理自己的知识体系。</p>
+<a id="more"></a>
+<h2 id="一、语言机制"><a href="#一、语言机制" class="headerlink" title="一、语言机制"></a>一、语言机制</h2><ol>
+<li><code>select</code>是随机的还是顺序的？</li>
+</ol>
+<blockquote>
+<p>先说答案,<code>select</code>会随机选择一个可用通道做收发操作。为什么呢？在源码中每一个<code>select</code>对应一个<code>hselect</code>结构,每个<code>hselect</code>结构下面都有个<code>scase</code>的数组记录每个<code>case</code>,在<code>scase</code>中记录着<code>ch chan</code>的结构也就是<code>channel</code>的结构<code>pollorder</code>将元素从新排列,<code>scase</code>就被乱序了。</p>
+</blockquote>
+<p>2.Go语言局部变量分配在栈还是堆？</p>
+<blockquote>
+<p>视<strong>逃逸分析</strong>结果而定,Go语言编译器会自动决定把一个变量放在栈还是放在堆,编译器会做逃逸分析,当发现变量的作用域没有跑出函数范围,就可以在栈上,反之则必须分配在堆。</p>
+</blockquote>
+<p><strong>参考资料 :</strong> <a href="https://studygolang.com/articles/21788" target="_blank" rel="noopener">GO语言变量逃逸分析</a></p>
+<p>3.Go语言逃逸分析有那集中场景?</p>
+<blockquote>
+<ol>
+<li>指针逃逸 : 典型的逃逸case,函数返回局部变量的指针。</li>
+<li>间接赋值 : 对某个引用类对象中的引用类成员进行赋值。Go 语言中的引用类数据类型有 func, interface, slice, map, chan, *Type(指针)。</li>
+<li>栈空间不足逃逸 : 当对象大小超过的栈帧大小时（详见go内存分配）,变量对象发生逃逸被分配到堆上。</li>
+<li>闭包引用逃逸 : 外部函数引用内部函数变量,发生逃逸,分配到堆上。</li>
+<li>动态类型逃逸 : 当对象不确定大小或者被作为不确定大小的参数时发生逃逸。</li>
+<li>切片或map赋值 : 在给切片或者map赋值对象指针（与对象共享内存地址时）,对象会逃逸到堆上。但赋值对象值或者返回对象值切片是不会发生逃逸的。</li>
+</ol>
+</blockquote>
+<p>不要盲目使用变量的指针作为函数参数,虽然它会减少复制操作。但其实当参数为变量自身的时候,复制是在栈上完成的操作,开销远比变量逃逸后动态地在堆上分配内存少的多。</p>
+<p>4.简述一下你对Go垃圾回收机制的理解？</p>
+<blockquote>
+<p>v1.1 STW<br>v1.3 Mark STW, Sweep 并行<br>v1.5 三色标记法<br>v1.8 hybrid write barrier(混合写屏障：优化STW)</p>
+</blockquote>
+<p><strong>参考资料 :</strong> <a href="https://www.ulovecode.com/2019/08/06/Go/Golang%E8%AF%91%E6%96%87/Go%E5%AE%9E%E6%97%B6GC%E2%80%94%E2%80%94%E4%B8%89%E8%89%B2%E7%AE%97%E6%B3%95%E7%90%86%E8%AE%BA%E4%B8%8E%E5%AE%9E%E8%B7%B5%20/#more">Go实时GC——三色算法理论与实践</a>, <a href="http://legendtkl.com/2017/04/28/golang-gc/" target="_blank" rel="noopener">Golang 垃圾回收剖析
+</a></p>
+<p>5.简述一下golang的协程调度原理?</p>
+<blockquote>
+<p>M(machine): 关联了一个内核线程。<br>P(processor): 代表了M所需的上下文环境,也是处理用户级代码逻辑的处理器。<br>G(goroutine): 调度系统的最基本单位goroutine,存储了goroutine的执行stack信息、goroutine状态以及goroutine的任务函数等。</p>
+</blockquote>
+<p><strong>参考资料 :</strong> <a href="https://i6448038.github.io/2017/12/04/golang-concurrency-principle/" target="_blank" rel="noopener">Go并发原理</a></p>
+<p>6.简单介绍下 golang 中 make 和 new 的区别？</p>
+<blockquote>
+<ul>
+<li><code>new(T)</code>是为一个 T 类型的新值分配空间, 并将此空间初始化为 T 的零值, 并返回这块内存空间的地址, 也就是 T 类型的指针 *T, 该指针指向 T 类型值占用的那块内存.</li>
+<li><code>make(T)</code>返回的是初始化之后的 T (引用类型本身), 且只能用于 slice, map, channel 三种类型. make(T, args) 返回初始化之后 T 类型的值, 且此新值并不是 T 类型的零值, 也不是 T 类型的指针 *T, 而是 T 类型值经过初始化之后的引用.</li>
+</ul>
+</blockquote>
+<p><strong>参考资料 :</strong> <a href="https://www.flysnow.org/2017/10/23/go-new-vs-make.html" target="_blank" rel="noopener">Go语言中new和make的区别</a></p>
+<p>7.介绍下你平时都是怎么调试 golang 的 bug 以及性能问题的?</p>
+<blockquote>
+<ol>
+<li>panic 调用栈</li>
+<li>pprof</li>
+<li>火焰图(配合压测)</li>
+<li>使用<code>go run -race</code>或者<code>go build -race</code>来进行竞争检测</li>
+<li>查看系统 磁盘IO/网络IO/内存占用/CPU 占用(配合压测)</li>
+</ol>
+</blockquote>
+<p>8.如何获取 go 程序运行时的协程数量, gc 时间, 对象数, 堆栈信息?</p>
+<blockquote>
+<p>调用接口<code>runtime.ReadMemStats</code>可以获取以上所有信息, 注意: 调用此接口会触发 STW(Stop The World)</p>
+</blockquote>
+<p>9.介绍下 golang 的 runtime 机制?</p>
+<blockquote>
+<p>runtime 负责管理任务调度,垃圾收集,以及运行环境。go提供了一些高级的功能,如goroutine, channel, 以及Garbage collection。这些高级功能需要一个runtime的支持. runtime和用户编译后的代码被linker静态链接起来,形成一个可执行文件。这个文件从操作系统角度来说是一个user space的独立的可执行文件。 从运行的角度来说,这个文件由2部分组成,一部分是用户的代码,另一部分就是runtime。runtime通过接口函数调用来管理goroutine, channel及其他一些高级的功能。从用户代码发起的调用操作系统API的调用都会被runtime拦截并处理。</p>
+<p>Go runtime的一个重要的组成部分是goroutine scheduler。他负责追踪,调度每个goroutine运行,实际上是从应用程序的process所属的thread pool中分配一个thread来执行这个goroutine。因此,和java虚拟机中的Java thread和OS thread映射概念类似,每个goroutine只有分配到一个OS thread才能运行。</p>
+</blockquote>
+<p>10.goroutine池是否像其他语言中的线程池一样有意义？</p>
+<blockquote>
+<p>视情况而定,调度程序中的状态成本可以忽略不计,但是goroutine保持的状态重新创建的成本可能很高。后一点可用作将goroutine保留在池中的理由。但是,另一方面,在大多数情况下,将执行类似任务的goroutine的资源组池化（而不是goroutine本身）更容易。</p>
+</blockquote>
+<p><strong>参考资料 :</strong> <a href="https://stackoverflow.com/questions/48659334/does-a-goroutine-pool-make-sense-like-thread-pools-in-other-languages" target="_blank" rel="noopener">Does a goroutine pool make sense like thread pools in other languages?</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go/" rel="tag">Go</a>, <a class="has-link-grey -link" href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag">面试</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/03/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%AE%8C%E5%85%A8%E5%BC%84%E6%87%82KMP%E7%AE%97%E6%B3%95/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">完全弄懂 KMP 算法</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/03/02/Go/%E5%BE%97%E5%88%B0Golang%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%B1%87%E7%BC%96%E4%BB%A3%E7%A0%81%E7%9A%84%E6%96%B9%E6%B3%95%20/">
+                <span class="level-item">得到 Golang 程序的汇编代码的方法</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '46f74993cf2f79f6395f1b8b15f2ba4c',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、语言机制">
+        <span class="has-mr-6">1</span>
+        <span>一、语言机制</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Golang 面试题" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

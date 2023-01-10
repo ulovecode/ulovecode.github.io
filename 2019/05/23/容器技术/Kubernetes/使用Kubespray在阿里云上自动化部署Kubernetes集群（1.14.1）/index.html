@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>使用Kubespray在国内自动化部署Kubernetes集群（1.14.1） - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="最近刚刚学习k8s,部署k8s的操作过于麻烦,因此想要寻找到一种自动化部署方式,Kubespray是现在最好的自动化部署方式,拥有支持多平台 、相对简单 、适用于生产环境的特点。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用Kubespray在国内自动化部署Kubernetes集群（1.14.1）">
+<meta property="og:url" content="https://www.ulovecode.com/2019/05/23/%E5%AE%B9%E5%99%A8%E6%8A%80%E6%9C%AF/Kubernetes/%E4%BD%BF%E7%94%A8Kubespray%E5%9C%A8%E9%98%BF%E9%87%8C%E4%BA%91%E4%B8%8A%E8%87%AA%E5%8A%A8%E5%8C%96%E9%83%A8%E7%BD%B2Kubernetes%E9%9B%86%E7%BE%A4%EF%BC%881.14.1%EF%BC%89/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="最近刚刚学习k8s,部署k8s的操作过于麻烦,因此想要寻找到一种自动化部署方式,Kubespray是现在最好的自动化部署方式,拥有支持多平台 、相对简单 、适用于生产环境的特点。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://md.ulovecode.com/static/images/posts/1200px-GoogleCloudKubernetes.jpg">
+<meta property="article:published_time" content="2019-05-23T08:13:00.000Z">
+<meta property="article:modified_time" content="2019-05-23T08:13:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="K8s">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://md.ulovecode.com/static/images/posts/1200px-GoogleCloudKubernetes.jpg">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="使用Kubespray在国内自动化部署Kubernetes集群（1.14.1）" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//md.ulovecode.com/static/images/posts/1200px-GoogleCloudKubernetes.jpg" alt="使用Kubespray在国内自动化部署Kubernetes集群（1.14.1）">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-05-23T08:13:00.000Z">2019-05-23</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E5%AE%B9%E5%99%A8%E6%8A%80%E6%9C%AF/">容器技术</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    8 分钟 读完 (大约 1270 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                使用Kubespray在国内自动化部署Kubernetes集群（1.14.1）
+            
+        </h1>
+        <div class="content">
+            <p>最近刚刚学习k8s,部署k8s的操作过于麻烦,因此想要寻找到一种自动化部署方式,Kubespray是现在最好的自动化部署方式,拥有支持多平台 、相对简单 、适用于生产环境的特点。</p>
+<a id="more"></a>
+<h1 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h1><p>每一台linux机器都需要特殊单独配置一下,才能使用于搭建k8s的环境,我使用的是centos7系统,现在开始搭建k8s准备环境的第一步</p>
+<h2 id="1-更新内核驱动"><a href="#1-更新内核驱动" class="headerlink" title="(1)更新内核驱动"></a>(1)更新内核驱动</h2><p>为了更好的使用 docker 和 k8s ,更新一下内核驱动, centos7 默认是3.3的版本<br><figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="hljs-comment"># 导入 Key</span></span><br><span class="line"></span><br><span class="line">rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment"># 安装 Yum 源</span></span><br><span class="line"></span><br><span class="line">rpm -Uvh http://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment"># 更新 kernel</span></span><br><span class="line"></span><br><span class="line">yum --enablerepo=elrepo-kernel install -y kernel<span class="hljs-_">-lt</span> kernel<span class="hljs-_">-lt</span>-devel</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment"># 配置 内核优先</span></span><br><span class="line"></span><br><span class="line">grub2-set-default 0</span><br></pre></td></tr></table></figure></p>
+<h2 id="2-关闭防火墙"><a href="#2-关闭防火墙" class="headerlink" title="(2)关闭防火墙"></a>(2)关闭防火墙</h2><p>关闭防火墙为了防止部署时,防止各个节点因为防火墙的原因,不能通信</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">#关闭防火墙。</span></span><br><span class="line">systemctl stop firewalld.service</span><br><span class="line">systemctl <span class="hljs-built_in">disable</span> firewalld.service</span><br></pre></td></tr></table></figure>
+<h2 id="3-关闭linux安全控制"><a href="#3-关闭linux安全控制" class="headerlink" title="(3)关闭linux安全控制"></a>(3)关闭linux安全控制</h2><p>Security Context的目的是限制不可信容器的行为,保护系统和其他容器不受其影响。我们先关闭。</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">#关闭SELinux</span></span><br><span class="line">sed -i <span class="hljs-string">'s#SELINUX=enforcing#SELINUX=disabled#g'</span> /etc/selinux/config</span><br><span class="line">setenforce 0</span><br></pre></td></tr></table></figure>
+<h2 id="4-关闭交换分区"><a href="#4-关闭交换分区" class="headerlink" title="(4)关闭交换分区"></a>(4)关闭交换分区</h2><p>从 k8s 1.8版本就要求不能开启交换分区</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">swapoff -a</span><br><span class="line">sed -i <span class="hljs-string">'s/.*swap.*/#&amp;/'</span> /etc/fstab</span><br></pre></td></tr></table></figure>
+<p>做完上面这些操作就可以<strong>重启</strong>一下机器,准备环境的工作就已经完成了</p>
+<h1 id="二、准备安装k8s"><a href="#二、准备安装k8s" class="headerlink" title="二、准备安装k8s"></a>二、准备安装k8s</h1><p>Kubespray 是基于 ansible 上构建的一套自动化部署工具,所以我们需要先安装 ansible</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="hljs-comment"># 安装 centos 额外的yum源</span></span><br><span class="line">rpm -ivh https://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-11.noarch.rpm</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment"># make 缓存</span></span><br><span class="line">yum clean all &amp;&amp; yum makecache</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment"># ansible 必须 &gt;= 2.7</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment"># 安装 软件</span></span><br><span class="line">yum install -y python-pip python34 python-netaddr python34-pip ansible</span><br></pre></td></tr></table></figure>
+<p>安装好之后我们就可以先把 Kubespray 的源码从git上拉取下来</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https:&#x2F;&#x2F;github.com&#x2F;kubernetes-sigs&#x2F;kubespray</span><br></pre></td></tr></table></figure>
+<p>拉去下来后还不能直接使用,为什么呢？因为谷歌嘛,大家懂的。不能直接下载,需要走代理,或者使用其他镜像,我选择将源码中所有镜像都替换一遍才可以。<br>我使用的是七牛云,亚马逊的镜像源具体的替换过程为：</p>
+<p><code>quay.io</code>替换为<code>quay-mirror.qiniu.com</code><br><code>gcr.io/google-containers</code>替换为<code>gcr.azk8s.cn/google-containers</code></p>
+<p>试过中科大的镜像,但是体验不太好,老是失败。阿里云镜像则是有部分镜像没有,只有亚马逊的镜像是最全的。这个花了很长时间,因为网络原因试了很多次。</p>
+<h1 id="三、安装k8s"><a href="#三、安装k8s" class="headerlink" title="三、安装k8s"></a>三、安装k8s</h1><p>首先进入 kubespray 的 git 目录下初始化 kubespray 脚本</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">pip install -r requirements.txt</span><br><span class="line"></span><br><span class="line">cp -rfp inventory/sample inventory/mycluster</span><br></pre></td></tr></table></figure>
+<p>编写 hosts.ini , 配置那些机器需要作为k8s的一部分<br><figure class="highlight ini hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-section">[all]</span></span><br><span class="line"></span><br><span class="line">k8s ansible_host=106.14.162.10</span><br><span class="line">node1  ansible_host=106.14.163.10</span><br><span class="line"></span><br><span class="line"><span class="hljs-section">[kube-master]</span></span><br><span class="line"></span><br><span class="line">k8s</span><br><span class="line"></span><br><span class="line"><span class="hljs-section">[etcd]</span></span><br><span class="line"></span><br><span class="line">k8s</span><br><span class="line"></span><br><span class="line"><span class="hljs-section">[kube-node]</span></span><br><span class="line"></span><br><span class="line">k8s</span><br><span class="line">node1</span><br><span class="line"></span><br><span class="line"><span class="hljs-section">[k8s-cluster:children]</span></span><br><span class="line"></span><br><span class="line">kube-master</span><br><span class="line"></span><br><span class="line">kube-node</span><br><span class="line"></span><br><span class="line"><span class="hljs-section">[calico-rr]</span></span><br></pre></td></tr></table></figure></p>
+<p>看上面编写的 host.ini 应该很容易理解：</p>
+<p>1.[all] 下面所有的机器节点,第一个为 机器hostname,第二个为机器的ip地址。</p>
+<p>2.[etcd] 分布式存储运行在那些机器上</p>
+<p>3.[kube-node] k8s 的 node节点有那些,用hostname 标示</p>
+<p>4.[k8s-cluster:children] 表示集群有哪些把 kube-master 和 kube-node 填上就可以了,代表所有的机器</p>
+<p>你可以根据自己的配置来进行修改</p>
+<p>然后可以启动脚本了,脚本如下：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">ansible-playbook -i inventory/mycluster/hosts.ini cluster.yml -b -v -k</span><br></pre></td></tr></table></figure>
+<p>启动脚本之后会让你输入ssh密码,只要输入密码就可以,中间可能出现一些问题,在访问到<code>storage.googleapis.com</code><br>这个域名的时候可能会出现下载失败,因为有的ip不能访问,多试几次就好了。</p>
+<p>静静等待大概10分钟左右的样子应该就可以安装好了～</p>
+<p>上面镜像和脚本的配置我已经编写好了,大家可以参考我写的,只需要修改<code>inventory/mycluster/hosts.ini</code>文件就可以了</p>
+<figure class="highlight plain hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone -b prod  https:&#x2F;&#x2F;github.com&#x2F;ulovecode&#x2F;kubespray</span><br></pre></td></tr></table></figure>
+<p>运行脚本分别为<code>build-step1.sh</code>,<code>build-step2.sh</code>,<code>build.sh</code>,按照顺序运行就可以了</p>
+<h1 id="四、总结"><a href="#四、总结" class="headerlink" title="四、总结"></a>四、总结</h1><p>这次学 kubespray 搭建集群还是遇到许多问题,首先是网络问题,如果没有网络问题的原因可能只需一个小时的事情,但是因为网络原因,弄了一两天,因为每个镜像源总有或多或少的一些问题,不能够直接使用。另外搭建过程除了更换镜像原因,文章的内容还是很浅显的,但是考虑到只是搭建的步骤,应该还是能接受,后续会继续更新使用Kubespray在阿里云上自动化部署Kubernetes集群（1.14.1) 这篇文章的后续操作,有任何问题都可以在下面和我交流～</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/K8s/" rel="tag">K8s</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/05/31/Go/Golang%E8%AF%91%E6%96%87/%E7%BC%96%E5%86%99%E5%8F%AF%E7%BB%B4%E6%8A%A4Go%E8%AF%AD%E8%A8%80%E4%BB%A3%E7%A0%81%E5%BB%BA%E8%AE%AE/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) 编写可维护 Go 语言代码建议</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/03/09/Jvm/Java/ReentrantLock%E4%B8%8ESynchronized%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90/">
+                <span class="level-item">ReentrantLock 与 Synchronized 原理分析</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'fa0c7ff93aa31b879e5c8c49708db1ae',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、准备工作">
+        <span class="has-mr-6">1</span>
+        <span>一、准备工作</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-更新内核驱动">
+        <span class="has-mr-6">1.1</span>
+        <span>(1)更新内核驱动</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-关闭防火墙">
+        <span class="has-mr-6">1.2</span>
+        <span>(2)关闭防火墙</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-关闭linux安全控制">
+        <span class="has-mr-6">1.3</span>
+        <span>(3)关闭linux安全控制</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-关闭交换分区">
+        <span class="has-mr-6">1.4</span>
+        <span>(4)关闭交换分区</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#二、准备安装k8s">
+        <span class="has-mr-6">2</span>
+        <span>二、准备安装k8s</span>
+        </a></li><li>
+        <a class="is-flex" href="#三、安装k8s">
+        <span class="has-mr-6">3</span>
+        <span>三、安装k8s</span>
+        </a></li><li>
+        <a class="is-flex" href="#四、总结">
+        <span class="has-mr-6">4</span>
+        <span>四、总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="使用Kubespray在国内自动化部署Kubernetes集群（1.14.1）" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

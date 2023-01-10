@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) Epoll,Select,Poll系统架构之间的实际差异 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="在设计具有非阻塞套接字I &#x2F; O的高性能网络应用程序时,架构师需要决定使用哪种轮询方法来监视这些套接字生成的事件。有几种这样的方法,每种方法的用例都不同。选择正确的方法对于满足应用需求可能至关重要。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) Epoll,Select,Poll系统架构之间的实际差异">
+<meta property="og:url" content="https://www.ulovecode.com/2019/08/06/Network/Epoll,Select,Poll%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E4%B9%8B%E9%97%B4%E7%9A%84%E5%AE%9E%E9%99%85%E5%B7%AE%E5%BC%82(%E8%AF%91%E6%96%87)/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="在设计具有非阻塞套接字I &#x2F; O的高性能网络应用程序时,架构师需要决定使用哪种轮询方法来监视这些套接字生成的事件。有几种这样的方法,每种方法的用例都不同。选择正确的方法对于满足应用需求可能至关重要。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/b4/f9/b48663baa6127255f090ebbb2dda22f9.jpg">
+<meta property="article:published_time" content="2019-08-05T16:16:00.000Z">
+<meta property="article:modified_time" content="2019-08-05T16:16:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Network">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/b4/f9/b48663baa6127255f090ebbb2dda22f9.jpg">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Epoll,Select,Poll系统架构之间的实际差异" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//static001.infoq.cn/resource/image/b4/f9/b48663baa6127255f090ebbb2dda22f9.jpg" alt="(译) Epoll,Select,Poll系统架构之间的实际差异">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-05T16:16:00.000Z">2019-08-06</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Network/">Network</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    34 分钟 读完 (大约 5082 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) Epoll,Select,Poll系统架构之间的实际差异
+            
+        </h1>
+        <div class="content">
+            <p>在设计具有非阻塞套接字I / O的高性能网络应用程序时,架构师需要决定使用哪种轮询方法来监视这些套接字生成的事件。有几种这样的方法,每种方法的用例都不同。选择正确的方法对于满足应用需求可能至关重要。</p>
+<a id="more"></a>
+<p>本文重点介绍了轮询方法之间的差异,并提供了使用的建议。</p>
+<h1 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h1><ol>
+<li><a href="#使用select轮询">使用select进行轮询</a></li>
+<li><a href="#使用poll进行轮询">使用poll进行轮询</a></li>
+<li><a href="#使用epoll进行轮询">使用epoll进行轮询</a></li>
+<li><a href="#使用libevent进行轮询">使用libevent进行轮询</a></li>
+</ol>
+<h2 id="使用select轮询"><a href="#使用select轮询" class="headerlink" title="使用select轮询"></a>使用select轮询</h2><p>从套接字仍被称为伯克利套接字的时代起,老的,值得信赖的劳动力。它并没有成为第一个规范,因为当时没有非阻塞I / O的概念,但它确实使它大约八十年代,并且在它的界面中没有任何改变。</p>
+<p>要使用select,开发人员需要使用描述符和要监视的事件初始化并填充几个fd_set结构,然后调用select （）。典型的工作流程如下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">fd_set fd_in, fd_out;</span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">timeval</span> <span class="hljs-title">tv</span>;</span></span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Reset the sets</span></span><br><span class="line">FD_ZERO( &amp;fd_in );</span><br><span class="line">FD_ZERO( &amp;fd_out );</span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Monitor sock1 for input events</span></span><br><span class="line">FD_SET( sock1, &amp;fd_in );</span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Monitor sock2 for output events</span></span><br><span class="line">FD_SET( sock2, &amp;fd_out );</span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Find out which socket has the largest numeric value as select requires it</span></span><br><span class="line"><span class="hljs-keyword">int</span> largest_sock = sock1 &gt; sock2 ? sock1 : sock2;</span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Wait up to 10 seconds</span></span><br><span class="line">tv.tv_sec = <span class="hljs-number">10</span>;</span><br><span class="line">tv.tv_usec = <span class="hljs-number">0</span>;</span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Call the select</span></span><br><span class="line"><span class="hljs-keyword">int</span> ret = select( largest_sock + <span class="hljs-number">1</span>, &amp;fd_in, &amp;fd_out, <span class="hljs-literal">NULL</span>, &amp;tv );</span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Check if select actually succeed</span></span><br><span class="line"><span class="hljs-keyword">if</span> ( ret == <span class="hljs-number">-1</span> )</span><br><span class="line">    <span class="hljs-comment">// report error and abort</span></span><br><span class="line"><span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> ( ret == <span class="hljs-number">0</span> )</span><br><span class="line">    <span class="hljs-comment">// timeout; no event detected</span></span><br><span class="line"><span class="hljs-keyword">else</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="hljs-keyword">if</span> ( FD_ISSET( sock1, &amp;fd_in ) )</span><br><span class="line">        <span class="hljs-comment">// input event on sock1</span></span><br><span class="line"> </span><br><span class="line">    <span class="hljs-keyword">if</span> ( FD_ISSET( sock2, &amp;fd_out ) )</span><br><span class="line">        <span class="hljs-comment">// output event on sock2</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当设计和开发选择界面时,没有人可能期望会有多线程应用程序服务于数千个连接。因此,select带来了相当多的设计缺陷,这使得它不适合作为现代网络应用中的轮询机制。主要缺点包括：</p>
+<ul>
+<li>select修改传递的fd_sets,这样就不能重用它们。即使您不需要更改任何内容 - 例如,如果其中一个描述符接收到数据并需要接收更多数据 - 整个集合必须重新创建（argh！）或通过FD_COPY从备份副本恢复。每次调用select时都必须这样做。</li>
+<li>要找出引发事件的描述符,您必须手动迭代集合中的所有描述符,并在每个描述符上调用FD_ISSET。如果你有2,000个这样的描述符,并且只有其中一个是活动的 - 而且可能是最后一个 - 你每次等待都会浪费CPU周期。</li>
+<li>我刚刚提到了2000个描述符吗？好吧,选择不能支持那么多。至少在Linux上。支持的描述符的最大数量由FD_SETSIZE常量定义,Linux很高兴地将其定义为1024.虽然某些操作系统允许您通过在包含sys / select.h之前重新定义FD_SETSIZE来破解此限制,但这不是可移植的。实际上,Linux会忽略这种黑客攻击并且限制将保持不变。</li>
+<li>在等待时,您无法从其他线程修改描述符集。假设一个线程正在执行上面的代码。现在假设你有一个管家线程,它决定了sock1等待输入数据的时间太长了,现在是时候切断电源线了。由于此套接字可以重用于另一个付费工作客户端,因此管家线程想要关闭套接字。但是套接字位于fd_set中,select正在等待。</li>
+<li>现在当这个套接字关闭时会发生什么？男人选择有答案,你不会喜欢它。答案是,“如果select（）监视的文件描述符在另一个线程中关闭,则结果未指定”。</li>
+<li>如果另一个线程突然决定通过sock1发送内容,则会出现同样的问题。在select返回之前,无法开始监视输出事件的套接字。</li>
+<li>等待的事件的选择是有限的; 例如,要检测远程套接字是否已关闭,您必须a）监视它以进行输入; b）实际尝试从套接字读取数据以检测闭包（读取将返回0）。如果你想从这个套接字读取,这很好,但是如果你现在发送一个文件并且不关心任何输入怎么办？</li>
+<li>当填充描述符列表以计算最大描述符编号并将其作为函数参数提供时,select会给您带来额外负担。</li>
+</ul>
+<p>当然,操作系统开发人员在设计poll方法时会认识到这些缺点并解决了大部分问题。因此您可能会问,是否有任何理由使用select？为什么不把它存放在计算机科学博物馆的架子上？然后你可能会高兴地知道是的,有两个原因,对你来说可能非常重要或根本不重要。</p>
+<p>第一个原因是便携性。select已经存在很长时间了,你可以确定每个具有网络支持和非阻塞套接字的平台都有一个工作选择实现,而它可能根本没有轮询。不幸的是,我不是在谈论管和ENIAC; poll仅适用于Windows Vista及更高版本,其中包括Windows XP - 尽管有微软的压力,截至2013年9月仍有34％的用户使用此版本。另一个选择是仍然在这些平台上使用poll并使用select模拟它 那些没有它的人; 您是否认为合理的投资取决于您自己。</p>
+<p>第二个原因是更具异国情调,并且与选择可以 - 理论上 - 以1纳秒的精度处理超时的事实有关,而poll和epoll都只能处理1毫秒的精度。这可能不是桌面或服务器系统的问题,时钟甚至不能以如此精确的速度运行,但在与某些硬件组件交互时可能需要在实时嵌入式平台上运行。如降低控制棒关闭核反应堆 - 在这种情况下,请使用选择,以确保我们都安全！</p>
+<p>上面的情况可能是你必须使用select而不能使用其他任何东西的唯一情况。但是,如果您正在编写一个永远不必处理多个套接字（例如200）的应用程序,则使用poll和select之间的区别不是基于性能,而是基于个人偏好或其他因素。</p>
+<h2 id="使用poll进行轮询"><a href="#使用poll进行轮询" class="headerlink" title="使用poll进行轮询"></a>使用poll进行轮询</h2><p>poll是一种较新的轮询方法,可能是在有人真正尝试编写高性能网络服务器之后立即创建的。它的设计要好得多,并且不会遇到大多数选择的问题。在绝大多数情况下,您将在poll和epoll / libevent之间进行选择。</p>
+<p>要使用poll,开发人员需要初始化struct pollfd的成员具有要监视的描述符和事件的结构,并调用轮询（）。典型的工作流程如下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// The structure for two events</span></span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">pollfd</span> <span class="hljs-title">fds</span>[2];</span></span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Monitor sock1 for input</span></span><br><span class="line">fds[<span class="hljs-number">0</span>].fd = sock1;</span><br><span class="line">fds[<span class="hljs-number">0</span>].events = POLLIN;</span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Monitor sock2 for output</span></span><br><span class="line">fds[<span class="hljs-number">1</span>].fd = sock2;</span><br><span class="line">fds[<span class="hljs-number">1</span>].events = POLLOUT;</span><br><span class="line"> </span><br><span class="line"><span class="hljs-comment">// Wait 10 seconds</span></span><br><span class="line"><span class="hljs-keyword">int</span> ret = poll( &amp;fds, <span class="hljs-number">2</span>, <span class="hljs-number">10000</span> );</span><br><span class="line"><span class="hljs-comment">//检查轮询是否实际成功</span></span><br><span class="line"><span class="hljs-keyword">if</span>（ret == <span class="hljs-number">-1</span>）</span><br><span class="line">    <span class="hljs-comment">//报告错误并中止</span></span><br><span class="line"><span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>（ret == <span class="hljs-number">0</span>）</span><br><span class="line">    <span class="hljs-comment">// timeout; 任何情况下,检测到的</span></span><br><span class="line"><span class="hljs-keyword">else</span></span><br><span class="line">&#123; </span><br><span class="line">    <span class="hljs-comment">//如果我们检测的情况下,零出来,所以我们可以重用该结构</span></span><br><span class="line">    <span class="hljs-keyword">if</span>（PFD [<span class="hljs-number">0</span>] .revents＆POLLIN）</span><br><span class="line">        PFD [<span class="hljs-number">0</span>] .revents = <span class="hljs-number">0</span>; </span><br><span class="line">        <span class="hljs-comment">//在sock1上输入事件</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-keyword">if</span>（pfd [<span class="hljs-number">1</span>] .revents＆POLLOUT）</span><br><span class="line">        pfd [<span class="hljs-number">1</span>] .revents = <span class="hljs-number">0</span>; </span><br><span class="line">        <span class="hljs-comment">//上sock2输出事件</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>poll主要用于修复select has has的挂起问题,因此它具有以下优点：</p>
+<ul>
+<li>poll可以监视的描述符数量没有硬性限制,因此1024的限制不适用于此处。</li>
+<li>它不会修改struct pollfd数据中传递的数据。因此,只要将生成事件的描述符的revents成员设置为零,就可以在poll（）调用之间重用它。 IEEE规范声明“在每个pollfd结构中,poll（）应清除revents成员,除了应用程序通过设置上面列出的事件之一请求报告条件,poll（）应设置相应的位如果请求的条件为真,则在revents中“。但是根据我的经验,至少有一个平台没有遵循这个建议,并且Linux上的man 2 poll也没有做出这样的保证（尽管 man 3 ppoll）。</li>
+<li>与select相比,它允许更精细的事件控制。例如,它可以检测远程对等关闭,而无需监视读取事件。</li>
+</ul>
+<p>还存在一些缺点,这些缺点在选择部分的末尾已经提到过。值得注意的是,早于Vista的Microsoft Windows上不存在poll;在Vista及以上它被称为WSAPoll虽然原型是相同的,它可以简单地定义为：<br><figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-meta">#<span class="hljs-meta-keyword">if</span> defined (WIN32)</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">inline</span> <span class="hljs-keyword">int</span> <span class="hljs-title">poll</span><span class="hljs-params">( struct pollfd *pfd, <span class="hljs-keyword">int</span> nfds, <span class="hljs-keyword">int</span> timeout)</span> </span>&#123; <span class="hljs-keyword">return</span> WSAPoll ( pfd, nfds, timeout ); &#125;</span><br><span class="line"><span class="hljs-meta">#<span class="hljs-meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure></p>
+<p>并且,如上所述,轮询超时具有1ms的精度,这在大多数情况下也不太可能成为问题。然而,poll仍有一些问题需要牢记：</p>
+<ul>
+<li>与select一样,仍然无法找出哪些描述符触发了事件而没有遍历整个列表并检查revents。更糟糕的是,内核空间也是如此,因为内核必须遍历文件描述符列表以找出受监视的套接字,并再次遍历整个列表以设置事件。</li>
+<li>与select类似,无法动态修改集合或关闭正在轮询的套接字（参见上文）。</li>
+</ul>
+<p>但请记住,对于大多数客户端网络应用程序而言,这些问题可能被认为是不重要的 - 唯一的例外是P2P等客户端软件,可能需要处理数千个打开的连接。即使对于某些服务器应用程序,这些问题也许并不重要因此,除非您有上述具体原因,否则poll应该是您的默认选择。更多,如果以下情况属实,poll应该是您首选的方法,即使是epoll：</p>
+<ul>
+<li>您需要支持的不仅仅是Linux,并且不想使用像libevent这样的epoll包装器（epoll仅适用于Linux）;</li>
+<li>您的应用程序需要一次监控少于1000个套接字（您不太可能看到使用epoll的任何好处）;</li>
+<li>您的应用程序需要一次监视超过1000个套接字,但连接非常短暂（这是一个接近的情况,但很可能在这种情况下,您不太可能看到使用epoll的任何好处,因为加速将这些新描述符添加到集合中会浪费事件等待 - 见下文</li>
+<li>您的应用程序的设计方式不是在另一个线程等待它们时更改事件（即您没有使用kqueue或IO完成端口移植应用程序）。</li>
+</ul>
+<h2 id="使用epoll进行轮询"><a href="#使用epoll进行轮询" class="headerlink" title="使用epoll进行轮询"></a>使用epoll进行轮询</h2><p>epoll是Linux（也是Linux）中最新,最好,最新的轮询方法。好吧,它实际上是在2002年添加到内核中的,所以它并不是那么新。它与poll和select不同,它保留了内核中当前监视的描述符和相关事件的信息,并导出API以添加/删除/修改它们。</p>
+<p>要使用epoll,需要做更多的准备工作。开发人员需要：</p>
+<ul>
+<li>通过调用epoll_create创建epoll描述符;<br>使用所需事件和上下文数据指针初始化struct epoll结构。上下文可以是任何东西,epoll将此值直接传递给返回的事件结构。我们在那里存储了一个指向Connection类的指针。</li>
+<li>调用epoll_ctl（… EPOLL_CTL_ADD）将描述符添加到监视集中</li>
+<li>调用epoll_wait（）等待我们保留存储空间的20个事件。与以前的方法不同,此调用接收空结构,并仅使用触发事件填充它。例如,如果有200个描述符,其中5个具有待处理的事件,则epoll_wait将返回5,并且仅初始化pevents结构的前五个成员。如果50个描述符有待处理的事件,则前20个将被复制,30个将被留在队列中,它们不会丢失。</li>
+<li>迭代返回的项目。这将是一个短暂的迭代,因为返回的唯一事件是被触发的事件。</li>
+</ul>
+<p>典型的工作流程如下：</p>
+<figure class="highlight c hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">//创建epoll描述符。每个应用程序只需要一个,并用于监视所有套接字。</span></span><br><span class="line"><span class="hljs-comment">//函数参数被忽略（它不是之前,但现在它是）,所以把你最喜欢的数字放在</span></span><br><span class="line"><span class="hljs-keyword">int</span> pollingfd = epoll_create（<span class="hljs-number">0xCAFE</span>）; </span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">if</span>（pollingfd &lt;<span class="hljs-number">0</span>）</span><br><span class="line"> <span class="hljs-comment">//报告错误</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">//初始化epoll结构以防将来添加更多成员</span></span><br><span class="line">epoll_event ev = &#123;<span class="hljs-number">0</span>&#125;; </span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">//将连接类实例与事件相关联。你可以关联任何</span></span><br><span class="line">你想要的东西,epoll不会使用这些信息。我们存储一个连接类指针,pConnection1 </span><br><span class="line">ev.data.ptr = pConnection1; </span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">//监视输入,并且在事件发生后不自动重新设置描述符</span></span><br><span class="line">ev.events = EPOLLIN | EPOLLONESHOT;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">//将描述符添加到监视列表中。我们可以做到这一点,即使另一个线程</span></span><br><span class="line"><span class="hljs-comment">//在epoll_wait中等待 - 将正确添加描述符</span></span><br><span class="line"><span class="hljs-keyword">if</span> ( epoll_ctl( epollfd, EPOLL_CTL_ADD, pConnection1-&gt;<span class="hljs-built_in">getSocket</span>(), &amp;ev ) != <span class="hljs-number">0</span> )</span><br><span class="line">    <span class="hljs-comment">//报告错误</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">//等等,将正确添加描述符最多20个事件（假设我们之前可能已经添加了200个套接字）</span></span><br><span class="line"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">epoll_event</span> <span class="hljs-title">pevents</span> [20];</span> </span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">//等待10秒</span></span><br><span class="line"><span class="hljs-keyword">int</span> <span class="hljs-built_in">ready</span> = epoll_wait（pollingfd,pevents,<span class="hljs-number">20</span>,<span class="hljs-number">10000</span>）;</span><br><span class="line"><span class="hljs-comment">//检查epoll是否实际成功</span></span><br><span class="line"><span class="hljs-keyword">if</span>（ret == <span class="hljs-number">-1</span>）</span><br><span class="line">    <span class="hljs-comment">//报告错误并中止</span></span><br><span class="line"><span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span>（ret == <span class="hljs-number">0</span>）</span><br><span class="line">    <span class="hljs-comment">// timeout; 没有检测到事件</span></span><br><span class="line"><span class="hljs-keyword">else</span> </span><br><span class="line">&#123; </span><br><span class="line">    <span class="hljs-comment">//检查是否检测到任何事件</span></span><br><span class="line">    <span class="hljs-keyword">for</span> （<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt;ret; i ++）</span><br><span class="line">    &#123; </span><br><span class="line">        <span class="hljs-keyword">if</span>（pevents [i] .events＆EPOLLIN）</span><br><span class="line">        &#123; </span><br><span class="line">            <span class="hljs-comment">//取回我们的连接指针</span></span><br><span class="line">            Connection * c =（连接*）pevents [i] .data.ptr; </span><br><span class="line">            C-&gt; handleReadEvent（）; </span><br><span class="line">         &#125; </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>仅仅看一下实施就应该给你一个epoll的缺点,我们将提到第一个。使用起来比较复杂,并且需要编写更多代码,与其他轮询方法相比,它需要更多的库调用。</p>
+<p>然而,epoll在性能和功能方面比select / poll有一些明显的优势：</p>
+<ul>
+<li>epoll仅返回触发事件的描述符列表。无需再遍历10,000个描述符来找到触发事件的描述符！<br>您可以将有意义的上下文附加到受监视的事件而不是套接字文件描述符。在我们的示例中,我们附加了可以直接调用的类指针,从而节省了另一个查找。</li>
+<li>即使epoll_wait函数中有另一个线程,您也可以随时添加套接字或将其从监视中删除。您甚至可以修改描述符事件。一切都会正常工作,这种行为得到支持和记录。这为您提供了更大的实施灵活性。</li>
+<li>由于内核知道所有监视描述符,因此即使没有人调用epoll_wait,它也可以注册发生在它们上的事件。这允许实现诸如边缘触发之类的有趣特征,这将在单独的文章中描述。</li>
+<li>使用epoll_wait（）可以让多个线程在同一个epoll队列上等待,这是select / poll无法做到的。实际上,不仅可以使用epoll,而且可以使用边缘触发模式中的推荐方法。</li>
+</ul>
+<p>但是你需要记住epoll不是一个“更好的poll”,与poll相比它也有缺点：</p>
+<ul>
+<li>更改事件标志（即从READ到WRITE）需要epoll_ctl系统调用,而在使用poll时,这是一个完全在用户空间完成的简单位掩码操作。使用epoll将5,000个套接字从读取切换到写入将需要5,000个系统调用,因此需要上下文切换（截至2014年调用epoll_ctl仍然无法进行批处理,并且每个描述符必须单独更改）,而在轮询中则需要单个循环pollfd结构。</li>
+<li>每个accept（）ed套接字都需要添加到集合中,与上面相同,epoll必须通过调用epoll_ctl来完成- 这意味着每个新连接套接字有两个必需的系统调用,而不是一个用于轮询。如果您的服务器有许多短期连接可以发送或接收很少的流量,则epoll可能需要比轮询更长的时间才能为其提供服务。</li>
+<li>epoll完全是Linux域,虽然其他平台有类似的机制,但它们并不完全相同 - 例如,边缘触发非常独特（FreeBSD的kqueue也支持它）。</li>
+<li>高性能处理逻辑更复杂,因此更难以调试,特别是对于边缘触发,如果错过额外的读/写,则容易出现死锁。</li>
+</ul>
+<p>因此,如果满足以下条件,则只应使用epoll：</p>
+<ul>
+<li>您的应用程序运行线程轮询,通过少数线程处理许多网络连接。您将在单线程应用程序中失去大部分epoll权益,并且很可能不会超过poll。</li>
+<li>你希望有相当数量的插座来监控（至少1000个）; 使用较少数量的epoll不太可能比poll具有任何性能优势,实际上可能会使性能更差;</li>
+<li>你的关系相对长寿; 如上所述,在新连接发送几个字节的数据并且由于将描述符添加到epoll集所需的额外系统调用而立即断开连接的情况下,epoll将比轮询慢。</li>
+<li>您的应用程序依赖于其他特定于Linux的功能（因此,如果突然弹出可移植性问题,epoll将不是唯一的障碍）,或者您可以为其他受支持的系统提供包装器。在最后一种情况下,你应该强烈考虑解放。</li>
+</ul>
+<p>如果上述所有项目均不正确,则应使用poll来更好地为您服务。</p>
+<h2 id="使用libevent进行轮询"><a href="#使用libevent进行轮询" class="headerlink" title="使用libevent进行轮询"></a>使用libevent进行轮询</h2><p>libebent是一个库,它将本文（以及其他一些）中列出的轮询方法包装在统一的API中。它的主要优点是它允许您编写一次代码并在许多操作系统上编译和运行它而无需更改代码。重要的是要理解libevent它只是一个构建在现有轮询方法之上的包装器,因此它继承了轮询方法所具有的问题。它不会使Linux上的选择支持超过1024个套接字,或者允许epoll在没有系统调用/上下文切换的情况下修改轮询事件。因此,了解每种方法的优缺点仍然很重要。</p>
+<p>必须提供对截然不同的方法的功能的访问,libevent有一个相当复杂的API,比poll或甚至epoll更难使用。然而,如果你需要支持FreeBSD（epoll和kqueue）,那么使用libevent比编写两个单独的后端更容易。因此,如果符合以下条件,则应考虑使用它</p>
+<ul>
+<li>您的申请要求表明您必须使用epoll,仅使用  poll是不够的（如果poll能够满足您的需求,那么libevent极不可能为您提供任何好处）</li>
+<li>您需要支持除Linux之外的其他操作系统,或者可能期望将来出现这种需求。同样,这取决于您的应用程序的其他功能 - 如果它与许多其他特定于Linux的东西捆绑在一起,那么使用libevent而不是epoll将无法实现任何功能。</li>
+</ul>
+<p>原文 <a href="https://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/#Polling_with_select" target="_blank" rel="noopener">Select / poll / epoll: practical difference for system architects</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Network/" rel="tag">Network</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/06/Go/Golang%E8%AF%91%E6%96%87/Go%E5%AE%9E%E6%97%B6GC%E2%80%94%E2%80%94%E4%B8%89%E8%89%B2%E7%AE%97%E6%B3%95%E7%90%86%E8%AE%BA%E4%B8%8E%E5%AE%9E%E8%B7%B5%20/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Go实时GC——三色算法理论与实践</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/06/02/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E8%B7%B3%E8%B7%83%E8%A1%A8%E5%AE%9E%E7%8E%B0/">
+                <span class="level-item">跳跃表实现</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '14fc0b4ac2c40271ffdf5006ebb223f7',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#目录">
+        <span class="has-mr-6">1</span>
+        <span>目录</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#使用select轮询">
+        <span class="has-mr-6">1.1</span>
+        <span>使用select轮询</span>
+        </a></li><li>
+        <a class="is-flex" href="#使用poll进行轮询">
+        <span class="has-mr-6">1.2</span>
+        <span>使用poll进行轮询</span>
+        </a></li><li>
+        <a class="is-flex" href="#使用epoll进行轮询">
+        <span class="has-mr-6">1.3</span>
+        <span>使用epoll进行轮询</span>
+        </a></li><li>
+        <a class="is-flex" href="#使用libevent进行轮询">
+        <span class="has-mr-6">1.4</span>
+        <span>使用libevent进行轮询</span>
+        </a></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Epoll,Select,Poll系统架构之间的实际差异" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

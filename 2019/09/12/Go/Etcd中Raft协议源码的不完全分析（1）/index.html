@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Etcd 中 Raft 协议源码的不完全分析（1） - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="etcd 是 CoreOS 团队于2013年6月发起的开源项目,它的目标是构建一个高可用的分布式键值(key-value)数据库。etcd 内部采用 raft 协议作为一致性, 现在就来看看 raft 在 etcd 中是如何实现的。必须先阅读 raft 协议的论文,再对协议论文有深刻理解的情况下,理解实现会更加轻松。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Etcd 中 Raft 协议源码的不完全分析（1）">
+<meta property="og:url" content="https://www.ulovecode.com/2019/09/12/Go/Etcd%E4%B8%ADRaft%E5%8D%8F%E8%AE%AE%E6%BA%90%E7%A0%81%E7%9A%84%E4%B8%8D%E5%AE%8C%E5%85%A8%E5%88%86%E6%9E%90%EF%BC%881%EF%BC%89/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="etcd 是 CoreOS 团队于2013年6月发起的开源项目,它的目标是构建一个高可用的分布式键值(key-value)数据库。etcd 内部采用 raft 协议作为一致性, 现在就来看看 raft 在 etcd 中是如何实现的。必须先阅读 raft 协议的论文,再对协议论文有深刻理解的情况下,理解实现会更加轻松。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/1f/36/1fd3274b622d6cd986342a0f2ce84236.jpg?x-oss-process=image/crop,y_1,w_1915,h_1076/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-09-12T02:32:00.000Z">
+<meta property="article:modified_time" content="2019-09-12T02:32:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Algorithm">
+<meta property="article:tag" content="Etcd">
+<meta property="article:tag" content="Raft">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/1f/36/1fd3274b622d6cd986342a0f2ce84236.jpg?x-oss-process=image/crop,y_1,w_1915,h_1076/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Etcd 中 Raft 协议源码的不完全分析（1）" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/1f/36/1fd3274b622d6cd986342a0f2ce84236.jpg?x-oss-process=image/crop,y_1,w_1915,h_1076/resize,w_1280,h_847" alt="Etcd 中 Raft 协议源码的不完全分析（1）">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-09-12T02:32:00.000Z">2019-09-12</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    2 小时 读完 (大约 14847 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Etcd 中 Raft 协议源码的不完全分析（1）
+            
+        </h1>
+        <div class="content">
+            <p>etcd 是 CoreOS 团队于2013年6月发起的开源项目,它的目标是构建一个高可用的分布式键值(key-value)数据库。etcd 内部采用 raft 协议作为一致性, 现在就来看看 raft 在 etcd 中是如何实现的。必须先阅读 raft 协议的论文,再对协议论文有深刻理解的情况下,理解实现会更加轻松。</p>
+<a id="more"></a>
+<h1 id="一、分析流程"><a href="#一、分析流程" class="headerlink" title="一、分析流程"></a>一、分析流程</h1><p><strong>阅读readMe.md文件</strong></p>
+<h3 id="运行单节点raftexample"><a href="#运行单节点raftexample" class="headerlink" title="运行单节点raftexample"></a>运行单节点raftexample</h3><p>首先启动一个raftexample的单成员集群：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">raftexample --id 1 --cluster http://127.0.0.1:12379 --port 12380</span><br></pre></td></tr></table></figure>
+<p>每个raftexample进程都维护一个raft实例和一个键值服务器。<br>进程的逗号分隔对等体（–cluster）列表,其对等列表（–id）的raft ID索引和http键值服务器端口（–port）通过命令行传递。</p>
+<p>接下来,将值（“hello”）存储到键（“my-key”）：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -L http://127.0.0.1:12380/my-key -XPUT -d hello</span><br></pre></td></tr></table></figure>
+<p>最后,检索存储的密钥：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -L http://127.0.0.1:12380/my-key</span><br></pre></td></tr></table></figure>
+<h3 id="运行本地群集"><a href="#运行本地群集" class="headerlink" title="运行本地群集"></a>运行本地群集</h3><p>首先安装[goreman]（<a href="https://github.com/mattn/goreman）,它管理基于Procfile的应用程序。" target="_blank" rel="noopener">https://github.com/mattn/goreman）,它管理基于Procfile的应用程序。</a></p>
+<p>[Procfile脚本]（./ Procfile）将设置本地示例集群。从以下开始：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">goreman start</span><br></pre></td></tr></table></figure>
+<p>这将带来三个raftexample实例。</p>
+<p>现在可以将键值对写入集群的任何成员,并同样从任何成员中检索它。</p>
+<h3 id="容错"><a href="#容错" class="headerlink" title="容错"></a>容错</h3><p>要测试群集恢复,首先启动群集并写入值“foo”：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">goreman start</span><br><span class="line">curl -L http://127.0.0.1:12380/my-key -XPUT -d foo</span><br></pre></td></tr></table></figure>
+<p>接下来,删除节点并将值替换为“bar”以检查群集可用性：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">goreman run stop raftexample2</span><br><span class="line">curl -L http://127.0.0.1:12380/my-key -XPUT -d bar</span><br><span class="line">curl -L http://127.0.0.1:32380/my-key</span><br></pre></td></tr></table></figure>
+<p>最后,重新启动节点并使用更新后的值“bar”验证它是否恢复：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">goreman run start raftexample2</span><br><span class="line">curl -L http://127.0.0.1:22380/my-key</span><br></pre></td></tr></table></figure>
+<h3 id="动态集群重新配置"><a href="#动态集群重新配置" class="headerlink" title="动态集群重新配置"></a>动态集群重新配置</h3><p>可以使用对REST API的请求将节点添加到正在运行的集群中或从中删除节点。</p>
+<p>例如,假设我们有一个使用命令启动的3节点集群：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">raftexample --id 1 --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --port 12380</span><br><span class="line">raftexample --id 2 --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --port 22380</span><br><span class="line">raftexample --id 3 --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --port 32380</span><br></pre></td></tr></table></figure>
+<p>可以通过发出POST来添加ID为4的第四个节点：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -L http://127.0.0.1:12380/4 -XPOST -d http://127.0.0.1:42379</span><br></pre></td></tr></table></figure>
+<p>然后使用–join选项可以像其他节点一样启动新节点：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">raftexample --id 4 --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379,http://127.0.0.1:42379 --port 42380 --join</span><br></pre></td></tr></table></figure>
+<p>新节点应加入群集,并能够为密钥/值请求提供服务。</p>
+<p>我们可以使用DELETE请求删除节点：</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -L http://127.0.0.1:12380/3 -XDELETE</span><br></pre></td></tr></table></figure>
+<p>一旦集群处理了此请求,节点3就应该自行关闭。</p>
+<h3 id="设计"><a href="#设计" class="headerlink" title="设计"></a>设计</h3><p>raftexample由三个组件组成：一个由raft支持的键值存储,一个REST API服务器和一个基于etcd的raft实现的raft共识服务器。</p>
+<p>支持raft的键值存储是一个键值映射,它包含所有已提交的键值。该存储桥接了raft服务器和REST服务器之间的通信。键值更新通过存储发送到raft服务器。一旦raft报告提交更新,存储就会更新其地图。</p>
+<p>REST服务器通过访问raft支持的键值存储来公开当前的raft共识。GET命令在存储中查找键并返回值（如果有）。键值PUT命令向存储发出更新提议。</p>
+<p>raft服务器与其集群对等方达成共识。当REST服务器提交提议时,raft服务器将提议发送给其对等方。当raft达成共识时,服务器通过提交通道发布所有已提交的更新。对于raftexample,此提交通道由键值存储使用。</p>
+<h1 id="二、介绍raft库代码结构及核心数据结构"><a href="#二、介绍raft库代码结构及核心数据结构" class="headerlink" title="二、介绍raft库代码结构及核心数据结构"></a>二、介绍raft库代码结构及核心数据结构</h1><p>为什么要首先介绍核心数据结构,如果不介绍核心数据结构就可能看不懂后面我的分析,每一个Msg具体代表什么含义,所以先看核心数据结构,这里只需要大概浏览一遍就可以了,忘记了可以在这里看。</p>
+<h3 id="MsgHup消息"><a href="#MsgHup消息" class="headerlink" title="MsgHup消息"></a>MsgHup消息</h3><table>
+<thead>
+<tr>
+<th>成员</th>
+<th>类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>MsgHup</td>
+<td>不用于节点间通信,仅用于发送给本节点让本节点进行选举</td>
+</tr>
+<tr>
+<td>to</td>
+<td>uint64</td>
+<td>消息接收者的节点ID</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64</td>
+<td>本节点ID</td>
+</tr>
+</tbody>
+</table>
+<h3 id="MsgBeat消息"><a href="#MsgBeat消息" class="headerlink" title="MsgBeat消息"></a>MsgBeat消息</h3><table>
+<thead>
+<tr>
+<th>成员</th>
+<th>类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>MsgBeat</td>
+<td>不用于节点间通信 ,仅用于leader节点在heartbeat定时器到期时向集群中其他节点发送心跳消息</td>
+</tr>
+<tr>
+<td>to</td>
+<td>uint64</td>
+<td>消息接收者的节点ID</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64</td>
+<td>本节点ID</td>
+</tr>
+</tbody>
+</table>
+<h3 id="MsgProp消息"><a href="#MsgProp消息" class="headerlink" title="MsgProp消息"></a>MsgProp消息</h3><table>
+<thead>
+<tr>
+<th>成员</th>
+<th>类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>MsgProp</td>
+<td>raft库使用者提议（propose）数据</td>
+</tr>
+<tr>
+<td>to</td>
+<td>uint64</td>
+<td>消息接收者的节点ID</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64</td>
+<td>本节点ID</td>
+</tr>
+<tr>
+<td>entries</td>
+<td>Entry</td>
+<td>日志条目数组</td>
+</tr>
+</tbody>
+</table>
+<h3 id="MsgApp-MsgSnap消息"><a href="#MsgApp-MsgSnap消息" class="headerlink" title="MsgApp/MsgSnap消息"></a>MsgApp/MsgSnap消息</h3><h3 id="MsgApp消息"><a href="#MsgApp消息" class="headerlink" title="MsgApp消息"></a>MsgApp消息</h3><table>
+<thead>
+<tr>
+<th>成员</th>
+<th>类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>MsgApp</td>
+<td>用于leader向集群中其他节点同步数据的消息</td>
+</tr>
+<tr>
+<td>to</td>
+<td>uint64</td>
+<td>消息接收者的节点ID</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64</td>
+<td>本节点ID</td>
+</tr>
+<tr>
+<td>entries</td>
+<td>Entry     日志条目数组 </td>
+</tr>
+<tr>
+<td>logTerm</td>
+<td>uint64     日志所处的任期ID </td>
+</tr>
+<tr>
+<td>index</td>
+<td>uint64     索引ID </td>
+</tr>
+</tbody>
+</table>
+<h3 id="MsgSnap消息"><a href="#MsgSnap消息" class="headerlink" title="MsgSnap消息"></a>MsgSnap消息</h3><table>
+<thead>
+<tr>
+<th>成员    类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>MsgSnap    用于leader向follower同步数据用的快照消息</td>
+</tr>
+<tr>
+<td>to    uint64</td>
+<td>消息接收者的节点ID</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64    本节点ID</td>
+</tr>
+<tr>
+<td>snapshot</td>
+<td>Snapshot    快照数据</td>
+</tr>
+</tbody>
+</table>
+<h3 id="MsgAppResp消息"><a href="#MsgAppResp消息" class="headerlink" title="MsgAppResp消息"></a>MsgAppResp消息</h3><table>
+<thead>
+<tr>
+<th>成员</th>
+<th>类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>MsgAppResp</td>
+<td>集群中其他节点针对leader的MsgApp/MsgSnap消息的应答消息</td>
+</tr>
+<tr>
+<td>to</td>
+<td>uint64</td>
+<td>消息接收者的节点ID</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64</td>
+<td>本节点ID</td>
+</tr>
+<tr>
+<td>index</td>
+<td>uint64</td>
+<td>日志索引ID,用于节点向leader汇报自己已经commit的日志数据ID</td>
+</tr>
+<tr>
+<td>reject</td>
+<td>bool</td>
+<td>是否拒绝同步日志的请求</td>
+</tr>
+<tr>
+<td>rejectHint</td>
+<td>uint64</td>
+<td>拒绝同步日志请求时返回的当前节点日志ID,用于被拒绝方快速定位到下一次合适的同步日志位置</td>
+</tr>
+</tbody>
+</table>
+<h3 id="MsgVote-MsgPreVote消息"><a href="#MsgVote-MsgPreVote消息" class="headerlink" title="MsgVote/MsgPreVote消息"></a>MsgVote/MsgPreVote消息</h3><table>
+<thead>
+<tr>
+<th>成员</th>
+<th>类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>MsgVote/MsgPreVote</td>
+<td>节点投票给自己以进行新一轮的选举</td>
+</tr>
+<tr>
+<td>to</td>
+<td>uint64</td>
+<td>消息接收者的节点ID</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64</td>
+<td>本节点ID</td>
+</tr>
+<tr>
+<td>term</td>
+<td>uint64</td>
+<td>任期ID</td>
+</tr>
+<tr>
+<td>index</td>
+<td>uint64</td>
+<td>日志索引ID,用于节点向leader汇报自己已经commit的日志数据ID</td>
+</tr>
+<tr>
+<td>logTerm</td>
+<td>uint64</td>
+<td>日志所处的任期ID</td>
+</tr>
+<tr>
+<td>context</td>
+<td>bytes</td>
+<td>上下文数据</td>
+</tr>
+</tbody>
+</table>
+<h3 id="MsgVoteResp-MsgPreVoteResp消息"><a href="#MsgVoteResp-MsgPreVoteResp消息" class="headerlink" title="MsgVoteResp/MsgPreVoteResp消息"></a>MsgVoteResp/MsgPreVoteResp消息</h3><table>
+<thead>
+<tr>
+<th>成员</th>
+<th>类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>MsgVoteResp/MsgPreVoteResp</td>
+<td>投票应答消息</td>
+</tr>
+<tr>
+<td>to</td>
+<td>uint64</td>
+<td>消息接收者的节点ID</td>
+</tr>
+<tr>
+<td>from</td>
+<td>uint64</td>
+<td>本节点ID</td>
+</tr>
+<tr>
+<td>reject</td>
+<td>bool</td>
+<td>是否拒绝</td>
+</tr>
+</tbody>
+</table>
+<h1 id="三、分析源码"><a href="#三、分析源码" class="headerlink" title="三、分析源码"></a>三、分析源码</h1><p>按照上面README.md文档开始分析,首先把单个实例跑起来。然后根据源码的顺序一个一个的看。</p>
+<h3 id="main"><a href="#main" class="headerlink" title="main"></a>main</h3><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 用于节点之间通信</span></span><br><span class="line">	cluster := flag.String(<span class="hljs-string">"cluster"</span>, <span class="hljs-string">"http://127.0.0.1:9021"</span>, <span class="hljs-string">"comma separated cluster peers"</span>)</span><br><span class="line">	id := flag.Int(<span class="hljs-string">"id"</span>, <span class="hljs-number">1</span>, <span class="hljs-string">"node ID"</span>)</span><br><span class="line">	<span class="hljs-comment">// 用于 key value</span></span><br><span class="line">	kvport := flag.Int(<span class="hljs-string">"port"</span>, <span class="hljs-number">9121</span>, <span class="hljs-string">"key-value server port"</span>)</span><br><span class="line">	join := flag.Bool(<span class="hljs-string">"join"</span>, <span class="hljs-literal">false</span>, <span class="hljs-string">"join an existing cluster"</span>)</span><br><span class="line">	flag.Parse()</span><br><span class="line"></span><br><span class="line">	proposeC := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">string</span>)</span><br><span class="line">	<span class="hljs-keyword">defer</span> <span class="hljs-built_in">close</span>(proposeC)</span><br><span class="line">	confChangeC := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> raftpb.ConfChange)</span><br><span class="line">	<span class="hljs-keyword">defer</span> <span class="hljs-built_in">close</span>(confChangeC)</span><br><span class="line">	<span class="hljs-keyword">var</span> kvs *kvstore</span><br><span class="line">	getSnapshot := <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span> <span class="hljs-params">([]<span class="hljs-keyword">byte</span>, error)</span></span> &#123; <span class="hljs-keyword">return</span> kvs.getSnapshot() &#125;</span><br><span class="line">	commitC, errorC, snapshotterReady := newRaftNode(*id, strings.Split(*cluster, <span class="hljs-string">","</span>), *join, getSnapshot, proposeC, confChangeC)</span><br><span class="line">	kvs = newKVStore(&lt;-snapshotterReady, proposeC, commitC, errorC)</span><br><span class="line">	serveHttpKVAPI(kvs, *kvport, confChangeC, errorC)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>proposeC</code>创建一个提议channel,用于提议请求的通信</li>
+<li><code>confChangeC</code>创建一个配置更改的channel,用于配置更改的通信</li>
+<li><code>newRaftNode</code>创建raft协议的node节点,然后返回一个提交的channel,和一个错误通知的channel</li>
+<li><code>snapshotterReady</code>用于等待快照创建完毕,然后执行<code>newKVStore</code>方法创建一个key存储容器</li>
+<li><code>serveHttpKVAPI</code>创建一个http服务</li>
+</ol>
+<h3 id="main-newKVStore"><a href="#main-newKVStore" class="headerlink" title="main.newKVStore"></a>main.newKVStore</h3><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">newKVStore</span><span class="hljs-params">(snapshotter *snap.Snapshotter, proposeC <span class="hljs-keyword">chan</span>&lt;- <span class="hljs-keyword">string</span>, commitC &lt;-<span class="hljs-keyword">chan</span> *<span class="hljs-keyword">string</span>, errorC &lt;-<span class="hljs-keyword">chan</span> error)</span> *<span class="hljs-title">kvstore</span></span> &#123;</span><br><span class="line">	s := &amp;kvstore&#123;proposeC: proposeC, kvStore: <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]<span class="hljs-keyword">string</span>), snapshotter: snapshotter&#125;</span><br><span class="line">	<span class="hljs-comment">// 回应日志进入到key value map</span></span><br><span class="line">	s.readCommits(commitC, errorC)</span><br><span class="line">	<span class="hljs-comment">//从raft读取提交到kvStore映射直到错误</span></span><br><span class="line">	<span class="hljs-keyword">go</span> s.readCommits(commitC, errorC)</span><br><span class="line">	<span class="hljs-keyword">return</span> s</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>创建一个KV存储对象,读取提交信息到kv存储容器中</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> kvstore <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	proposeC    <span class="hljs-keyword">chan</span>&lt;- <span class="hljs-keyword">string</span> <span class="hljs-comment">// channel for proposing updates</span></span><br><span class="line">	mu          sync.RWMutex</span><br><span class="line">	kvStore     <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]<span class="hljs-keyword">string</span> <span class="hljs-comment">// current committed key-value pairs</span></span><br><span class="line">	snapshotter *snap.Snapshotter</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>proposeC</code>是一个提议channel,<code>sync.RWMutex</code>因为是在多个 go 协程中运行的,所以需要加锁,存储实际上就是一个<code>map</code>类型</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Snapshotter <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	lg  *zap.Logger</span><br><span class="line">	dir <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Snapshotter</code>类型则是一个zap类型的日志,会持久化到磁盘中</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *kvstore)</span> <span class="hljs-title">readCommits</span><span class="hljs-params">(commitC &lt;-<span class="hljs-keyword">chan</span> *<span class="hljs-keyword">string</span>, errorC &lt;-<span class="hljs-keyword">chan</span> error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> data := <span class="hljs-keyword">range</span> commitC &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> data == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			snapshot, err := s.snapshotter.Load()</span><br><span class="line">			<span class="hljs-keyword">if</span> err == snap.ErrNoSnapshot &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				log.Panic(err)</span><br><span class="line">			&#125;</span><br><span class="line">			log.Printf(<span class="hljs-string">"loading snapshot at term %d and index %d"</span>, snapshot.Metadata.Term, snapshot.Metadata.Index)</span><br><span class="line">			<span class="hljs-keyword">if</span> err := s.recoverFromSnapshot(snapshot.Data); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				log.Panic(err)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">var</span> dataKv kv</span><br><span class="line">		dec := gob.NewDecoder(bytes.NewBufferString(*data))</span><br><span class="line">		<span class="hljs-keyword">if</span> err := dec.Decode(&amp;dataKv); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Fatalf(<span class="hljs-string">"raftexample: could not decode message (%v)"</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">		s.mu.Lock()</span><br><span class="line">		s.kvStore[dataKv.Key] = dataKv.Val</span><br><span class="line">		s.mu.Unlock()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> err, ok := &lt;-errorC; ok &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>根据提交然后加载快照中的信息,从快照中的信息恢复到kv存储容器中,然后再从commit日志中恢复信息</p>
+<h3 id="main-serveHttpKVAPI"><a href="#main-serveHttpKVAPI" class="headerlink" title="main.serveHttpKVAPI"></a>main.serveHttpKVAPI</h3><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// serveHttpKVAPI starts a key-value server with a GET/PUT API and listens.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">serveHttpKVAPI</span><span class="hljs-params">(kv *kvstore, port <span class="hljs-keyword">int</span>, confChangeC <span class="hljs-keyword">chan</span>&lt;- raftpb.ConfChange, errorC &lt;-<span class="hljs-keyword">chan</span> error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// httpKAPi 因为实现了serverhttp方法所以可以传入作为handler</span></span><br><span class="line">	srv := http.Server&#123;</span><br><span class="line">		Addr: <span class="hljs-string">":"</span> + strconv.Itoa(port),</span><br><span class="line">		<span class="hljs-comment">// 只需要关心httpKVAPI的实现就可以了</span></span><br><span class="line">		Handler: &amp;httpKVAPI&#123;</span><br><span class="line">			store:       kv,</span><br><span class="line">			confChangeC: confChangeC,</span><br><span class="line">		&#125;,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-comment">// 打开监听端口</span></span><br><span class="line">		<span class="hljs-keyword">if</span> err := srv.ListenAndServe(); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Fatal(err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="hljs-comment">// exit when raft goes down</span></span><br><span class="line">	<span class="hljs-keyword">if</span> err, ok := &lt;-errorC; ok &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>开启http服务</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(h *httpKVAPI)</span> <span class="hljs-title">ServeHTTP</span><span class="hljs-params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">	key := r.RequestURI</span><br><span class="line">	<span class="hljs-keyword">defer</span> r.Body.Close()</span><br><span class="line">	<span class="hljs-comment">//HttpServer主循环:</span></span><br><span class="line">	<span class="hljs-comment">//接收用户提交的数据：</span></span><br><span class="line">	<span class="hljs-comment">//如果是PUT请求：</span></span><br><span class="line">	<span class="hljs-comment">//将数据写入到proposeC中</span></span><br><span class="line">	<span class="hljs-comment">//如果是POST请求：</span></span><br><span class="line">	<span class="hljs-comment">//将配置变更数据写入到confChangeC中</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">switch</span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 如果方式put方法  更新某个key</span></span><br><span class="line">	<span class="hljs-keyword">case</span> r.Method == <span class="hljs-string">"PUT"</span>:</span><br><span class="line">		v, err := ioutil.ReadAll(r.Body)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Printf(<span class="hljs-string">"Failed to read on PUT (%v)\n"</span>, err)</span><br><span class="line">			http.Error(w, <span class="hljs-string">"Failed on PUT"</span>, http.StatusBadRequest)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// 建议 != 事实</span></span><br><span class="line">		<span class="hljs-comment">// 在这里调用了key value 的更新建议</span></span><br><span class="line">		h.store.Propose(key, <span class="hljs-keyword">string</span>(v))</span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">//乐观的无需等Raft的确认。值尚未提交,因此键上的后续GET可能返回旧值</span></span><br><span class="line">		w.WriteHeader(http.StatusNoContent)</span><br><span class="line">	<span class="hljs-comment">// 如果方式get方法  查找某个key</span></span><br><span class="line">	<span class="hljs-keyword">case</span> r.Method == <span class="hljs-string">"GET"</span>:</span><br><span class="line">		<span class="hljs-keyword">if</span> v, ok := h.store.Lookup(key); ok &#123;</span><br><span class="line">			<span class="hljs-comment">// 查看某一个key的配置</span></span><br><span class="line">			w.Write([]<span class="hljs-keyword">byte</span>(v))</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			http.Error(w, <span class="hljs-string">"Failed to GET"</span>, http.StatusNotFound)</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="hljs-keyword">case</span> r.Method == <span class="hljs-string">"POST"</span>:</span><br><span class="line">		url, err := ioutil.ReadAll(r.Body)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Printf(<span class="hljs-string">"Failed to read on POST (%v)\n"</span>, err)</span><br><span class="line">			http.Error(w, <span class="hljs-string">"Failed on POST"</span>, http.StatusBadRequest)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		nodeId, err := strconv.ParseUint(key[<span class="hljs-number">1</span>:], <span class="hljs-number">0</span>, <span class="hljs-number">64</span>)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Printf(<span class="hljs-string">"Failed to convert ID for conf change (%v)\n"</span>, err)</span><br><span class="line">			http.Error(w, <span class="hljs-string">"Failed on POST"</span>, http.StatusBadRequest)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		cc := raftpb.ConfChange&#123;</span><br><span class="line">			<span class="hljs-comment">// 删除传入的添加</span></span><br><span class="line">			Type:    raftpb.ConfChangeAddNode,</span><br><span class="line">			NodeID:  nodeId,</span><br><span class="line">			Context: url,</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// 更新配置</span></span><br><span class="line">		h.confChangeC &lt;- cc</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">//如上所述,乐观地认为raft会应用变化</span></span><br><span class="line">		w.WriteHeader(http.StatusNoContent)</span><br><span class="line">	<span class="hljs-keyword">case</span> r.Method == <span class="hljs-string">"DELETE"</span>:</span><br><span class="line">		nodeId, err := strconv.ParseUint(key[<span class="hljs-number">1</span>:], <span class="hljs-number">0</span>, <span class="hljs-number">64</span>)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Printf(<span class="hljs-string">"Failed to convert ID for conf change (%v)\n"</span>, err)</span><br><span class="line">			http.Error(w, <span class="hljs-string">"Failed on DELETE"</span>, http.StatusBadRequest)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		cc := raftpb.ConfChange&#123;</span><br><span class="line">			<span class="hljs-comment">// 删除传入的nodeid</span></span><br><span class="line">			Type:   raftpb.ConfChangeRemoveNode,</span><br><span class="line">			NodeID: nodeId,</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">// 删除配置</span></span><br><span class="line">		h.confChangeC &lt;- cc</span><br><span class="line"></span><br><span class="line">        <span class="hljs-comment">//如上,乐观地认为筏将应用conf更改		</span></span><br><span class="line">        w.WriteHeader(http.StatusNoContent)</span><br><span class="line">	<span class="hljs-keyword">default</span>:</span><br><span class="line">		w.Header().Set(<span class="hljs-string">"Allow"</span>, <span class="hljs-string">"PUT"</span>)</span><br><span class="line">		w.Header().Add(<span class="hljs-string">"Allow"</span>, <span class="hljs-string">"GET"</span>)</span><br><span class="line">		w.Header().Add(<span class="hljs-string">"Allow"</span>, <span class="hljs-string">"POST"</span>)</span><br><span class="line">		w.Header().Add(<span class="hljs-string">"Allow"</span>, <span class="hljs-string">"DELETE"</span>)</span><br><span class="line">		http.Error(w, <span class="hljs-string">"Method not allowed"</span>, http.StatusMethodNotAllowed)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以分为两类,一类是属性信息,第二类是节点配置的信息</p>
+<ul>
+<li>1.属性信息<ul>
+<li><code>PUT</code>通过<code>h.store.Propose(key, string(v))</code>该方法往<code>s.proposeC</code>中提交建议</li>
+<li><code>GET</code>通过<code>h.store.Lookup(key)</code>在<code>v, ok := s.kvStore[key]</code>集合中查找数据,然后返回</li>
+</ul>
+</li>
+<li>2.节点配置的信息<ul>
+<li><code>POST</code>  因为设置的<code>Type:  raftpb.ConfChangeAddNode</code>信息为添加类型,再由<code>h.confChangeC &lt;- cc</code>传输到配置更改的channel,实现添加节点</li>
+<li><code>DELTE</code>因为设置的<code>Type:   raftpb.ConfChangeRemoveNode</code>信息为添加类型,再由<code>h.confChangeC &lt;- cc</code>传输到配置更改的channel,实现删除节点</li>
+</ul>
+</li>
+</ul>
+<h3 id="main-newRaftNode"><a href="#main-newRaftNode" class="headerlink" title="main.newRaftNode"></a>main.newRaftNode</h3><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">newRaftNode</span><span class="hljs-params">(id <span class="hljs-keyword">int</span>, peers []<span class="hljs-keyword">string</span>, join <span class="hljs-keyword">bool</span>, getSnapshot <span class="hljs-keyword">func</span>()</span> <span class="hljs-params">([]<span class="hljs-keyword">byte</span>, error)</span>, <span class="hljs-title">proposeC</span> &lt;-<span class="hljs-title">chan</span> <span class="hljs-title">string</span>,</span></span><br><span class="line">	confChangeC &lt;-<span class="hljs-keyword">chan</span> raftpb.ConfChange) (&lt;-<span class="hljs-keyword">chan</span> *<span class="hljs-keyword">string</span>, &lt;-<span class="hljs-keyword">chan</span> error, &lt;-<span class="hljs-keyword">chan</span> *snap.Snapshotter) &#123;</span><br><span class="line"></span><br><span class="line">	commitC := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> *<span class="hljs-keyword">string</span>)</span><br><span class="line">	errorC := <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> error)</span><br><span class="line"></span><br><span class="line">	rc := &amp;raftNode&#123;</span><br><span class="line">		proposeC:    proposeC,</span><br><span class="line">		confChangeC: confChangeC,</span><br><span class="line">		commitC:     commitC,</span><br><span class="line">		errorC:      errorC,</span><br><span class="line">		id:          id,</span><br><span class="line">		peers:       peers,</span><br><span class="line">		join:        join,</span><br><span class="line">		waldir:      fmt.Sprintf(<span class="hljs-string">"raftexample-%d"</span>, id),</span><br><span class="line">		snapdir:     fmt.Sprintf(<span class="hljs-string">"raftexample-%d-snap"</span>, id),</span><br><span class="line">		getSnapshot: getSnapshot,</span><br><span class="line">		snapCount:   defaultSnapshotCount,</span><br><span class="line">		stopc:       <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;),</span><br><span class="line">		httpstopc:   <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;),</span><br><span class="line">		httpdonec:   <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;),</span><br><span class="line"></span><br><span class="line">		snapshotterReady: <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> *snap.Snapshotter, <span class="hljs-number">1</span>),</span><br><span class="line">            <span class="hljs-comment">// WAL回应后填充的其余结构</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">go</span> rc.startRaft()</span><br><span class="line">	<span class="hljs-keyword">return</span> commitC, errorC, rc.snapshotterReady</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>创建一个raft的node节点,然后启用协程开启调用<code>startRaft()</code>,启动raft协议,后面的方法会等待<code>snapshotterReady</code>快照信息准备完毕</p>
+<h3 id="main-newRaftNode-startRaft"><a href="#main-newRaftNode-startRaft" class="headerlink" title="main.newRaftNode.startRaft"></a>main.newRaftNode.startRaft</h3><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(rc *raftNode)</span> <span class="hljs-title">startRaft</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 创建快照目录</span></span><br><span class="line">	<span class="hljs-keyword">if</span> !fileutil.Exist(rc.snapdir) &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> err := os.Mkdir(rc.snapdir, <span class="hljs-number">0750</span>); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			log.Fatalf(<span class="hljs-string">"raftexample: cannot create dir for snapshot (%v)"</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	rc.snapshotter = snap.New(zap.NewExample(), rc.snapdir)</span><br><span class="line">	rc.snapshotterReady &lt;- rc.snapshotter</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// 是否存在wal日志</span></span><br><span class="line">	oldwal := wal.Exist(rc.waldir)</span><br><span class="line">	rc.wal = rc.replayWAL()</span><br><span class="line"></span><br><span class="line">	rpeers := <span class="hljs-built_in">make</span>([]raft.Peer, <span class="hljs-built_in">len</span>(rc.peers))</span><br><span class="line">	<span class="hljs-comment">// 为遍历每一个peer节点都设置id  从1开始设置</span></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-keyword">range</span> rpeers &#123;</span><br><span class="line">		rpeers[i] = raft.Peer&#123;ID: <span class="hljs-keyword">uint64</span>(i + <span class="hljs-number">1</span>)&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// 创建配置文件 弹性时间戳为10  心跳为1  用内存都方式存储   节点之间最大消息大小为1024*1024字节   乐观复制中最大追加消息数为256条  未提交的最大条目数量</span></span><br><span class="line">	c := &amp;raft.Config&#123;</span><br><span class="line">		ID:                        <span class="hljs-keyword">uint64</span>(rc.id),</span><br><span class="line">		ElectionTick:              <span class="hljs-number">10</span>,</span><br><span class="line">		HeartbeatTick:             <span class="hljs-number">1</span>,</span><br><span class="line">		Storage:                   rc.raftStorage,</span><br><span class="line">		MaxSizePerMsg:             <span class="hljs-number">1024</span> * <span class="hljs-number">1024</span>,</span><br><span class="line">		MaxInflightMsgs:           <span class="hljs-number">256</span>,</span><br><span class="line">		MaxUncommittedEntriesSize: <span class="hljs-number">1</span> &lt;&lt; <span class="hljs-number">30</span>,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// 如果存在wal日志</span></span><br><span class="line">	<span class="hljs-keyword">if</span> oldwal &#123;</span><br><span class="line">		<span class="hljs-comment">// 就根据之前的配置来恢复这个节点</span></span><br><span class="line">		rc.node = raft.RestartNode(c)</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// 否则就启动node节点</span></span><br><span class="line">		startPeers := rpeers</span><br><span class="line">		<span class="hljs-comment">// 如果是参加节点,那么当前节点就不启动</span></span><br><span class="line">		<span class="hljs-keyword">if</span> rc.join &#123;</span><br><span class="line">			startPeers = <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// 启动node节点</span></span><br><span class="line">		rc.node = raft.StartNode(c, startPeers)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// raft传输</span></span><br><span class="line">	rc.transport = &amp;rafthttp.Transport&#123;</span><br><span class="line">		Logger:      zap.NewExample(),</span><br><span class="line">		ID:          types.ID(rc.id),</span><br><span class="line">		ClusterID:   <span class="hljs-number">0x1000</span>,</span><br><span class="line">		Raft:        rc,</span><br><span class="line">		ServerStats: stats.NewServerStats(<span class="hljs-string">""</span>, <span class="hljs-string">""</span>),</span><br><span class="line">		LeaderStats: stats.NewLeaderStats(strconv.Itoa(rc.id)),</span><br><span class="line">		ErrorC:      <span class="hljs-built_in">make</span>(<span class="hljs-keyword">chan</span> error),</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// 传输服务启动</span></span><br><span class="line">	rc.transport.Start()</span><br><span class="line">	<span class="hljs-comment">// 添加传输的对等节点,如果不是本身节点,就添加</span></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-keyword">range</span> rc.peers &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> i+<span class="hljs-number">1</span> != rc.id &#123;</span><br><span class="line">			rc.transport.AddPeer(types.ID(i+<span class="hljs-number">1</span>), []<span class="hljs-keyword">string</span>&#123;rc.peers[i]&#125;)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// 启动HTTP服务</span></span><br><span class="line">	<span class="hljs-keyword">go</span> rc.serveRaft()</span><br><span class="line">	<span class="hljs-comment">// 开始监听各个channel然后消费</span></span><br><span class="line">	<span class="hljs-keyword">go</span> rc.serveChannels()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>是否本地时候存在快照信息<ul>
+<li>如果有快照就读取之前快照信息</li>
+<li>否则就在本地初始化创建一个快照</li>
+</ul>
+</li>
+<li>是否本地存在wal日志,<ul>
+<li>如果存在wal日志,就根据之前的配置来恢复这个节点</li>
+<li>否则就创建node节点,启动node节点</li>
+</ul>
+</li>
+<li>启动传输服务启动,并将对等节点放入到要传入的服务中</li>
+<li>启动节点之间需要的tcp连接</li>
+<li>监听各个节点给他发送的消息</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Transport)</span> <span class="hljs-title">Start</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> err error</span><br><span class="line">	<span class="hljs-comment">// stream 流  一般是维护节点状态,以及心跳</span></span><br><span class="line">	t.streamRt, err = newStreamRoundTripper(t.TLSInfo, t.DialTimeout)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// pipeline流  通常传输较大到数据,例如快照</span></span><br><span class="line">	t.pipelineRt, err = NewRoundTripper(t.TLSInfo, t.DialTimeout)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	t.remotes = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[types.ID]*remote)</span><br><span class="line">	t.peers = <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[types.ID]Peer)</span><br><span class="line">	t.pipelineProber = probing.NewProber(t.pipelineRt)</span><br><span class="line">	t.streamProber = probing.NewProber(t.streamRt)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> t.DialRetryFrequency == <span class="hljs-number">0</span> &#123;</span><br><span class="line">		t.DialRetryFrequency = rate.Every(<span class="hljs-number">100</span> * time.Millisecond)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>创建一个传输服务,分为stream类型,和pipeline类型, 其中stream类型是一个长链接,而pipeline类型是一个短链接类型。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">streamRt   http.RoundTripper <span class="hljs-comment">// roundTripper used by streams</span></span><br><span class="line">pipelineRt http.RoundTripper <span class="hljs-comment">// roundTripper used by pipelines</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>stream类型<ul>
+<li>用来发送心跳和日志的信息</li>
+</ul>
+</li>
+<li>pipeline类型<ul>
+<li>用来传输快照</li>
+<li>用来发送心跳和日志的信息(仅当stream类型不可用是,才会使用)</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(rc *raftNode)</span> <span class="hljs-title">serveRaft</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 解析节点地址</span></span><br><span class="line">	url, err := url.Parse(rc.peers[rc.id<span class="hljs-number">-1</span>])</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Fatalf(<span class="hljs-string">"raftexample: Failed parsing URL (%v)"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// 打开可以停止的tcp连接</span></span><br><span class="line">	ln, err := newStoppableListener(url.Host, rc.httpstopc)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Fatalf(<span class="hljs-string">"raftexample: Failed to listen rafthttp (%v)"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">//transport.Handler方法放回一个实现来net.http包下的handler接口,调用其服务Serve接口</span></span><br><span class="line">	err = (&amp;http.Server&#123;Handler: rc.transport.Handler()&#125;).Serve(ln)</span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> &lt;-rc.httpstopc:</span><br><span class="line">	<span class="hljs-keyword">default</span>:</span><br><span class="line">		log.Fatalf(<span class="hljs-string">"raftexample: Failed to serve rafthttp (%v)"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-built_in">close</span>(rc.httpdonec)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>时间这个方法只是打开了一个tcp连接,然后将<code>rc.transport.Handler()</code>传入</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *Transport)</span> <span class="hljs-title">Handler</span><span class="hljs-params">()</span> <span class="hljs-title">http</span>.<span class="hljs-title">Handler</span></span> &#123;</span><br><span class="line">	pipelineHandler := newPipelineHandler(t, t.Raft, t.ClusterID)</span><br><span class="line">	streamHandler := newStreamHandler(t, t, t.Raft, t.ID, t.ClusterID)</span><br><span class="line">	snapHandler := newSnapshotHandler(t, t.Raft, t.Snapshotter, t.ClusterID)</span><br><span class="line">	mux := http.NewServeMux()</span><br><span class="line">	mux.Handle(RaftPrefix, pipelineHandler)</span><br><span class="line">	mux.Handle(RaftStreamPrefix+<span class="hljs-string">"/"</span>, streamHandler)</span><br><span class="line">	mux.Handle(RaftSnapshotPrefix, snapHandler)</span><br><span class="line">	mux.Handle(ProbingPrefix, probing.NewHandler())</span><br><span class="line">	<span class="hljs-keyword">return</span> mux</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>传入了四种handler,分别对应四种类型</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">RaftPrefix         = <span class="hljs-string">"/raft"</span></span><br><span class="line">  	ProbingPrefix      = path.Join(RaftPrefix, <span class="hljs-string">"probing"</span>)</span><br><span class="line">  	RaftStreamPrefix   = path.Join(RaftPrefix, <span class="hljs-string">"stream"</span>)</span><br><span class="line">  	RaftSnapshotPrefix = path.Join(RaftPrefix, <span class="hljs-string">"snapshot"</span>)</span><br></pre></td></tr></table></figure>
+<p>管道类型,探测类型,流类型,快照类型,至于每一个类型handler的httpServer实现,我这里就不讲了。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(rc *raftNode)</span> <span class="hljs-title">serveChannels</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 拿到快照</span></span><br><span class="line">	snap, err := rc.raftStorage.Snapshot()</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line">	rc.confState = snap.Metadata.ConfState</span><br><span class="line">	rc.snapshotIndex = snap.Metadata.Index</span><br><span class="line">	rc.appliedIndex = snap.Metadata.Index</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">defer</span> rc.wal.Close()</span><br><span class="line"></span><br><span class="line">	ticker := time.NewTicker(<span class="hljs-number">100</span> * time.Millisecond)</span><br><span class="line">	<span class="hljs-keyword">defer</span> ticker.Stop()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">//通过raft发送提案</span></span><br><span class="line">	<span class="hljs-keyword">go</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		confChangeCount := <span class="hljs-keyword">uint64</span>(<span class="hljs-number">0</span>)</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">for</span> rc.proposeC != <span class="hljs-literal">nil</span> &amp;&amp; rc.confChangeC != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">			<span class="hljs-comment">// 消费数据</span></span><br><span class="line">			<span class="hljs-keyword">case</span> prop, ok := &lt;-rc.proposeC:</span><br><span class="line">				<span class="hljs-keyword">if</span> !ok &#123;</span><br><span class="line">					rc.proposeC = <span class="hljs-literal">nil</span></span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					<span class="hljs-comment">//阻止直到被raft状态机接受</span></span><br><span class="line">					<span class="hljs-comment">// 调用node的建议操作</span></span><br><span class="line">					rc.node.Propose(context.TODO(), []<span class="hljs-keyword">byte</span>(prop))</span><br><span class="line">				&#125;</span><br><span class="line">			<span class="hljs-comment">// 配置变更</span></span><br><span class="line">			<span class="hljs-keyword">case</span> cc, ok := &lt;-rc.confChangeC:</span><br><span class="line">				<span class="hljs-keyword">if</span> !ok &#123;</span><br><span class="line">					rc.confChangeC = <span class="hljs-literal">nil</span></span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					confChangeCount++</span><br><span class="line">					cc.ID = confChangeCount</span><br><span class="line">					rc.node.ProposeConfChange(context.TODO(), cc)</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">//客户关闭渠道;如果还没有关掉raft</span></span><br><span class="line">		<span class="hljs-built_in">close</span>(rc.stopc)</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">//在raft状态机更新时的事件循环</span></span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;-ticker.C:</span><br><span class="line">			rc.node.Tick()</span><br><span class="line"></span><br><span class="line">			<span class="hljs-comment">//将raft条目存储到wal,然后通过提交通道发布</span></span><br><span class="line">		<span class="hljs-keyword">case</span> rd := &lt;-rc.node.Ready():</span><br><span class="line">			rc.wal.Save(rd.HardState, rd.Entries)</span><br><span class="line">			<span class="hljs-comment">// 如果快照不为空</span></span><br><span class="line">			<span class="hljs-keyword">if</span> !raft.IsEmptySnap(rd.Snapshot) &#123;</span><br><span class="line">				<span class="hljs-comment">// 保存快照状态</span></span><br><span class="line">				rc.saveSnap(rd.Snapshot)</span><br><span class="line">				<span class="hljs-comment">// 应用快照状态</span></span><br><span class="line">				rc.raftStorage.ApplySnapshot(rd.Snapshot)</span><br><span class="line">				<span class="hljs-comment">// 发布快照</span></span><br><span class="line">				rc.publishSnapshot(rd.Snapshot)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// 添加条目到本地存储</span></span><br><span class="line">			rc.raftStorage.Append(rd.Entries)</span><br><span class="line">			<span class="hljs-comment">// 发送消息</span></span><br><span class="line">			rc.transport.Send(rd.Messages)</span><br><span class="line">			<span class="hljs-comment">// 发布条目</span></span><br><span class="line">			<span class="hljs-keyword">if</span> ok := rc.publishEntries(rc.entriesToApply(rd.CommittedEntries)); !ok &#123;</span><br><span class="line">				<span class="hljs-comment">// 如果没有成功就停止节点</span></span><br><span class="line">				rc.stop()</span><br><span class="line">				<span class="hljs-keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">//可能触发快照</span></span><br><span class="line">			rc.maybeTriggerSnapshot()</span><br><span class="line">			<span class="hljs-comment">// 通知进行下一步</span></span><br><span class="line">			rc.node.Advance()</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">case</span> err := &lt;-rc.transport.ErrorC:</span><br><span class="line">			rc.writeError(err)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;-rc.stopc:</span><br><span class="line">			rc.stop()</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中有有两个 for 循环,一个是来接收提议和配置更改的信息 ,一个是类处理node节点之间的信息</p>
+<ol>
+<li>接收提议和配置更改的信息的for循环<ul>
+<li><code>case prop, ok := &lt;-rc.proposeC:</code>  然后调用<code>rc.node.Propose(context.TODO(), []byte(prop))</code>发送提议</li>
+<li><code>case cc, ok := &lt;-rc.confChangeC:</code>  然后调用<code>rc.node.ProposeConfChange(context.TODO(), cc)</code>发送配置更改</li>
+</ul>
+</li>
+<li>处理node节点之间的信息的 for 循环<ul>
+<li><code>case &lt;-ticker.C:</code>使用<code>rc.node.Tick()</code>用来处理超时和心跳的逻辑</li>
+<li><code>rd := &lt;-rc.node.Ready():</code>返回当前时间点状态的通道,将条目存储到wal,然后通过提交通道发布,然后调用<code>Advance</code>它准备节点返回下一个可用的Ready。</li>
+<li><code>case err := &lt;-rc.transport.ErrorC:</code>使用rc.writeError(err)产生错误就把错误写到通道里</li>
+<li><code>case &lt;-rc.stopc:</code>  停止该节点</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">RestartNode</span><span class="hljs-params">(c *Config)</span> <span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	r := newRaft(c)</span><br><span class="line"></span><br><span class="line">	n := newNode()</span><br><span class="line">	n.logger = c.Logger</span><br><span class="line">	<span class="hljs-keyword">go</span> n.run(r)</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;n</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果重启节点,就从配置中恢复节点的状态</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// StartNode 返回一个新的Node给定配置和一个raft对等列表。</span></span><br><span class="line"><span class="hljs-comment">//它将每个给定对等体的ConfChangeAddNode条目附加到初始日志。</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">StartNode</span><span class="hljs-params">(c *Config, peers []Peer)</span> <span class="hljs-title">Node</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 创建一个raft协议</span></span><br><span class="line">	r := newRaft(c)</span><br><span class="line">	<span class="hljs-comment">// 成为第1任期的追随者并应用第1任期的初始配置条目</span></span><br><span class="line">	r.becomeFollower(<span class="hljs-number">1</span>, None)</span><br><span class="line">	<span class="hljs-keyword">for</span> _, peer := <span class="hljs-keyword">range</span> peers &#123;</span><br><span class="line">		cc := pb.ConfChange&#123;Type: pb.ConfChangeAddNode, NodeID: peer.ID, Context: peer.Context&#125;</span><br><span class="line">		d, err := cc.Marshal()</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-built_in">panic</span>(<span class="hljs-string">"unexpected marshal error"</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		e := pb.Entry&#123;Type: pb.EntryConfChange, Term: <span class="hljs-number">1</span>, Index: r.raftLog.lastIndex() + <span class="hljs-number">1</span>, Data: d&#125;</span><br><span class="line">		r.raftLog.<span class="hljs-built_in">append</span>(e)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">//将这些初始条目标记为已提交。</span></span><br><span class="line">	<span class="hljs-comment">// TODO（bdarnell）：这些条目仍然不稳定;我们需要保留吗？</span></span><br><span class="line">	<span class="hljs-comment">//提交&lt;unstable的不变量？  持久化存储和非持久化存储,它们之间的分界线就是lastIndex</span></span><br><span class="line">	r.raftLog.committed = r.raftLog.lastIndex()</span><br><span class="line">	<span class="hljs-comment">//现在应用它们,主要是为了让应用程序可以调用Campaign</span></span><br><span class="line">	<span class="hljs-comment">//在测试中的StartNode之后立即执行。请注意,这些节点将</span></span><br><span class="line">	<span class="hljs-comment">//被添加到raft两次：此处和应用程序准备就绪</span></span><br><span class="line">	<span class="hljs-comment">//循环调用ApplyConfChange。必须追求对addNode的调用</span></span><br><span class="line">	<span class="hljs-comment">//所有对raftLog.append的调用都是在这些之后设置progress.next</span></span><br><span class="line">	<span class="hljs-comment">// bootstrapping条目（如果我们尝试附加这些条目,则会出错</span></span><br><span class="line">	<span class="hljs-comment">//条目,因为它们已经提交了）。</span></span><br><span class="line">	<span class="hljs-comment">//我们没有设置raftLog.applied,所以应用程序就可以了</span></span><br><span class="line">	<span class="hljs-comment">//通过Ready.CommittedEntries观察所有conf更改。</span></span><br><span class="line">	<span class="hljs-keyword">for</span> _, peer := <span class="hljs-keyword">range</span> peers &#123;</span><br><span class="line">		<span class="hljs-comment">// 添加节点</span></span><br><span class="line">		r.addNode(peer.ID)</span><br><span class="line">	&#125;</span><br><span class="line">	n := newNode()</span><br><span class="line">	n.logger = c.Logger</span><br><span class="line">	<span class="hljs-comment">// 运行raft协议</span></span><br><span class="line">	<span class="hljs-keyword">go</span> n.run(r)</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;n</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先创建一个raft协议,成为第1任期的追随者并应用第1任期的初始配置条目,将领导者设置为空</li>
+<li>并将条目添到wal中  </li>
+<li>添加对等节点</li>
+<li>运行<code>run</code>方法,调用处理过程</li>
+</ol>
+<h3 id="main-newRaftNode-startRaft-run"><a href="#main-newRaftNode-startRaft-run" class="headerlink" title="main.newRaftNode.startRaft.run"></a>main.newRaftNode.startRaft.run</h3><p>该方法是一个相当重要的方法</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(n *node)</span> <span class="hljs-title">run</span><span class="hljs-params">(r *raft)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> propc <span class="hljs-keyword">chan</span> msgWithResult</span><br><span class="line">	<span class="hljs-keyword">var</span> readyc <span class="hljs-keyword">chan</span> Ready</span><br><span class="line">	<span class="hljs-keyword">var</span> advancec <span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line">	<span class="hljs-keyword">var</span> prevLastUnstablei, prevLastUnstablet <span class="hljs-keyword">uint64</span></span><br><span class="line">	<span class="hljs-keyword">var</span> havePrevLastUnstablei <span class="hljs-keyword">bool</span></span><br><span class="line">	<span class="hljs-keyword">var</span> prevSnapi <span class="hljs-keyword">uint64</span></span><br><span class="line">	<span class="hljs-keyword">var</span> applyingToI <span class="hljs-keyword">uint64</span></span><br><span class="line">	<span class="hljs-keyword">var</span> rd Ready</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// None 是没有领导者时使用的占位符节点ID。</span></span><br><span class="line">	lead := None</span><br><span class="line">	prevSoftSt := r.softState()</span><br><span class="line">	prevHardSt := emptyState</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// raft Node</span></span><br><span class="line">	<span class="hljs-comment">//raftNode结构体主循环：</span></span><br><span class="line">	<span class="hljs-comment">//如果proposeC中有数据写入：</span></span><br><span class="line">	<span class="hljs-comment">//调用node.Propose向raft库提交数据</span></span><br><span class="line">	<span class="hljs-comment">//如果confChangeC中有数据写入：</span></span><br><span class="line">	<span class="hljs-comment">//调用node.Node.ProposeConfChange向raft库提交配置变更数据</span></span><br><span class="line">	<span class="hljs-comment">//如果tick定时器到期：</span></span><br><span class="line">	<span class="hljs-comment">//调用node.Tick函数进行raft库的定时操作</span></span><br><span class="line">	<span class="hljs-comment">//如果node.Ready()函数返回的Ready结构体channel有数据变更：</span></span><br><span class="line">	<span class="hljs-comment">//依次处理Ready结构体中各成员数据</span></span><br><span class="line">	<span class="hljs-comment">//处理完毕之后调用node.Advance函数进行收尾处理</span></span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> advancec != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			readyc = <span class="hljs-literal">nil</span></span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			<span class="hljs-comment">//  这里做一个准备,msg 是从这里开始创建的</span></span><br><span class="line">			rd = newReady(r, prevSoftSt, prevHardSt)</span><br><span class="line">			<span class="hljs-keyword">if</span> rd.containsUpdates() &#123;</span><br><span class="line">				readyc = n.readyc</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				readyc = <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">if</span> lead != r.lead &#123;</span><br><span class="line">			<span class="hljs-comment">// 如果有leader节点</span></span><br><span class="line">			<span class="hljs-keyword">if</span> r.hasLeader() &#123;</span><br><span class="line">				<span class="hljs-keyword">if</span> lead == None &#123;</span><br><span class="line">					r.logger.Infof(<span class="hljs-string">"raft.node: %x elected leader %x at term %d"</span>, r.id, r.lead, r.Term)</span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					r.logger.Infof(<span class="hljs-string">"raft.node: %x changed leader from %x to %x at term %d"</span>, r.id, lead, r.lead, r.Term)</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="hljs-comment">// 处理消息结果集</span></span><br><span class="line">				propc = n.propc</span><br><span class="line">				<span class="hljs-comment">// 如果没有leader节点</span></span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				r.logger.Infof(<span class="hljs-string">"raft.node: %x lost leader %x at term %d"</span>, r.id, lead, r.Term)</span><br><span class="line">				propc = <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// 设置当前的leader鸡诶单</span></span><br><span class="line">			lead = r.lead</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// TODO：如果存在配置,可能缓冲配置建议（方式</span></span><br><span class="line">		<span class="hljs-comment">// 在raft文中描述）</span></span><br><span class="line">		<span class="hljs-comment">// 目前它在静默中被丢弃。</span></span><br><span class="line">		<span class="hljs-comment">// 从处理结果集中拿到消息</span></span><br><span class="line">		<span class="hljs-keyword">case</span> pm := &lt;-propc:</span><br><span class="line">			m := pm.m</span><br><span class="line">			m.From = r.id</span><br><span class="line">			<span class="hljs-comment">// 修改状态机的状态</span></span><br><span class="line">			err := r.Step(m)</span><br><span class="line">			<span class="hljs-keyword">if</span> pm.result != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				pm.result &lt;- err</span><br><span class="line">				<span class="hljs-built_in">close</span>(pm.result)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// 从接受的消息</span></span><br><span class="line">		<span class="hljs-keyword">case</span> m := &lt;-n.recvc:</span><br><span class="line">			<span class="hljs-comment">// 从未知发件人中筛选出响应消息。</span></span><br><span class="line">			<span class="hljs-keyword">if</span> pr := r.getProgress(m.From); pr != <span class="hljs-literal">nil</span> || !IsResponseMsg(m.Type) &#123;</span><br><span class="line">				<span class="hljs-comment">// 修改状态机状态</span></span><br><span class="line">				r.Step(m)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// 从配置消息中</span></span><br><span class="line">		<span class="hljs-keyword">case</span> cc := &lt;-n.confc:</span><br><span class="line">			<span class="hljs-keyword">if</span> cc.NodeID == None &#123;</span><br><span class="line">				<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">case</span> n.confstatec &lt;- pb.ConfState&#123;</span><br><span class="line">					Nodes:    r.nodes(),</span><br><span class="line">					Learners: r.learnerNodes()&#125;:</span><br><span class="line">				<span class="hljs-keyword">case</span> &lt;-n.done:</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="hljs-keyword">break</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">switch</span> cc.Type &#123;</span><br><span class="line">			<span class="hljs-comment">// 添加节点</span></span><br><span class="line">			<span class="hljs-keyword">case</span> pb.ConfChangeAddNode:</span><br><span class="line">				r.addNode(cc.NodeID)</span><br><span class="line">			<span class="hljs-comment">// 添加学习者节点</span></span><br><span class="line">			<span class="hljs-keyword">case</span> pb.ConfChangeAddLearnerNode:</span><br><span class="line">				r.addLearner(cc.NodeID)</span><br><span class="line">			<span class="hljs-comment">// 移除节点</span></span><br><span class="line">			<span class="hljs-keyword">case</span> pb.ConfChangeRemoveNode:</span><br><span class="line">				<span class="hljs-comment">// 删除本地节点时阻止传入的建议</span></span><br><span class="line">				<span class="hljs-keyword">if</span> cc.NodeID == r.id &#123;</span><br><span class="line">					propc = <span class="hljs-literal">nil</span></span><br><span class="line">				&#125;</span><br><span class="line">				r.removeNode(cc.NodeID)</span><br><span class="line">			<span class="hljs-comment">// 更新节点</span></span><br><span class="line">			<span class="hljs-keyword">case</span> pb.ConfChangeUpdateNode:</span><br><span class="line">			<span class="hljs-keyword">default</span>:</span><br><span class="line">				<span class="hljs-built_in">panic</span>(<span class="hljs-string">"unexpected conf type"</span>)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">case</span> n.confstatec &lt;- pb.ConfState&#123;</span><br><span class="line">				Nodes:    r.nodes(),</span><br><span class="line">				Learners: r.learnerNodes()&#125;:</span><br><span class="line">			<span class="hljs-keyword">case</span> &lt;-n.done:</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// 心跳和选举的timeout</span></span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;-n.tickc:</span><br><span class="line">			r.tick()</span><br><span class="line">			<span class="hljs-comment">// Ready是各种准备好的变更</span></span><br><span class="line">		<span class="hljs-keyword">case</span> readyc &lt;- rd:</span><br><span class="line">			<span class="hljs-keyword">if</span> rd.SoftState != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				prevSoftSt = rd.SoftState</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(rd.Entries) &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">				prevLastUnstablei = rd.Entries[<span class="hljs-built_in">len</span>(rd.Entries)<span class="hljs-number">-1</span>].Index</span><br><span class="line">				prevLastUnstablet = rd.Entries[<span class="hljs-built_in">len</span>(rd.Entries)<span class="hljs-number">-1</span>].Term</span><br><span class="line">				havePrevLastUnstablei = <span class="hljs-literal">true</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> !IsEmptyHardState(rd.HardState) &#123;</span><br><span class="line">				prevHardSt = rd.HardState</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> !IsEmptySnap(rd.Snapshot) &#123;</span><br><span class="line">				prevSnapi = rd.Snapshot.Metadata.Index</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> index := rd.appliedCursor(); index != <span class="hljs-number">0</span> &#123;</span><br><span class="line">				applyingToI = index</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			r.msgs = <span class="hljs-literal">nil</span></span><br><span class="line">			r.readStates = <span class="hljs-literal">nil</span></span><br><span class="line">			r.reduceUncommittedSize(rd.CommittedEntries)</span><br><span class="line">			advancec = n.advancec</span><br><span class="line">			<span class="hljs-comment">// 确认Ready已经处理完的</span></span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;-advancec:</span><br><span class="line">			<span class="hljs-keyword">if</span> applyingToI != <span class="hljs-number">0</span> &#123;</span><br><span class="line">				r.raftLog.appliedTo(applyingToI)</span><br><span class="line">				applyingToI = <span class="hljs-number">0</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> havePrevLastUnstablei &#123;</span><br><span class="line">				r.raftLog.stableTo(prevLastUnstablei, prevLastUnstablet)</span><br><span class="line">				havePrevLastUnstablei = <span class="hljs-literal">false</span></span><br><span class="line">			&#125;</span><br><span class="line">			r.raftLog.stableSnapTo(prevSnapi)</span><br><span class="line">			advancec = <span class="hljs-literal">nil</span></span><br><span class="line">			<span class="hljs-comment">// 状态变更的消息</span></span><br><span class="line">		<span class="hljs-keyword">case</span> c := &lt;-n.status:</span><br><span class="line">			c &lt;- getStatus(r)</span><br><span class="line">			<span class="hljs-comment">// 是否有停止节点的消息</span></span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;-n.stop:</span><br><span class="line">			<span class="hljs-built_in">close</span>(n.done)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>raftNode结构体主循环：</p>
+<ol>
+<li>如果proposeC中有数据写入（外部通信）:调用状态机进行处理</li>
+<li>如果recvc中有数据写入(内部通信),调用状态机进行处理</li>
+<li>如果confChangeC中有数据写入：调用node.Node.ProposeConfChange向raft库提交配置变更数据</li>
+<li>如果tick定时器到期：,调用node.Tick函数进行raft库的定时操作</li>
+<li>如果node.Ready()函数返回的Ready结构体channel有数据变更：依次处理Ready结构体中各成员数据</li>
+<li>处理完毕之后调用node.Advance函数,进行持久化或者快照操作</li>
+<li>如果状态有变更就变更状态</li>
+<li>监听节点是否停止的消息</li>
+</ol>
+<h3 id="main-newRaftNode-startRaft-Step"><a href="#main-newRaftNode-startRaft-Step" class="headerlink" title="main.newRaftNode.startRaft.Step"></a>main.newRaftNode.startRaft.Step</h3><p>状态机器处理过程,这是raft的核心逻辑</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// 状态机器理过程</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(r *raft)</span> <span class="hljs-title">Step</span><span class="hljs-params">(m pb.Message)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">//处理消息任期,这可能导致我们踩到追随者。</span></span><br><span class="line">	<span class="hljs-keyword">switch</span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 如果任期为0</span></span><br><span class="line">	<span class="hljs-keyword">case</span> m.Term == <span class="hljs-number">0</span>:</span><br><span class="line">		<span class="hljs-comment">// local message</span></span><br><span class="line">	<span class="hljs-comment">// 如果传入消息的任期大于当前节点的任期</span></span><br><span class="line">	<span class="hljs-comment">//1.首先该函数会判断msg.Term是否大于本节点的Term,如果消息的任期号更大则说明是一次新的选举。这种情况下将根据msg.Context是否等于“CampaignTransfer”字符串来确定是不是一次由于leader迁移导致的强制选举过</span></span><br><span class="line">	<span class="hljs-comment">// 程。同时也会根据当前的electionElapsed是否小于electionTimeout来确定是否还在租约期以内。如果既不是强制leader选举又在租约期以内,那么节点将忽略该消息的处理,在论文4.2.3部分论述这样做的原因,是为了避免</span></span><br><span class="line">	<span class="hljs-comment">// 已经离开集群的节点在不知道自己已经不在集群内的情况下,仍然频繁的向集群内节点发起选举导致耗时在这种无效的选举流程中。如果以上检查流程通过了,说明可以进行选举了,如果消息类型还不是MsgPreVote类型,那么此时节</span></span><br><span class="line">	<span class="hljs-comment">// 点会切换到follower状态且认为发送消息过来的节点msg.From是新的leader。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> m.Term &gt; r.Term:</span><br><span class="line">		<span class="hljs-comment">// 如果是 投票或者 与投票类型</span></span><br><span class="line">		<span class="hljs-keyword">if</span> m.Type == pb.MsgVote || m.Type == pb.MsgPreVote &#123;</span><br><span class="line">			<span class="hljs-comment">// 当context为campaignTransfer时表示强制要求进行竞选</span></span><br><span class="line">			force := bytes.Equal(m.Context, []<span class="hljs-keyword">byte</span>(campaignTransfer))</span><br><span class="line">			<span class="hljs-comment">// 判断当前是否在租约期以内,判断的条件包括：checkQuorum为true,当前节点保存的leader不为空,没有到选举超时,前面这三个条件同时满足。</span></span><br><span class="line">			inLease := r.checkQuorum &amp;&amp; r.lead != None &amp;&amp; r.electionElapsed &lt; r.electionTimeout</span><br><span class="line">			<span class="hljs-keyword">if</span> !force &amp;&amp; inLease &#123;</span><br><span class="line">				<span class="hljs-comment">// 如果非强制,而且又在租约期以内,就不做任何处理</span></span><br><span class="line">				<span class="hljs-comment">// 非强制又在租约期内可以忽略选举消息,见论文的4.2.3,这是为了阻止已经离开集群的节点再次发起投票请求</span></span><br><span class="line">				<span class="hljs-comment">// If a server receives a RequestVote request within the minimum election timeout</span></span><br><span class="line">				<span class="hljs-comment">// of hearing from a current leader, it does not update its term or grant its vote</span></span><br><span class="line">				r.logger.Infof(<span class="hljs-string">"%x [logterm: %d, index: %d, vote: %x] ignored %s from %x [logterm: %d, index: %d] at term %d: lease is not expired (remaining ticks: %d)"</span>,</span><br><span class="line">					r.id, r.raftLog.lastTerm(), r.raftLog.lastIndex(), r.Vote, m.Type, m.From, m.LogTerm, m.Index, r.Term, r.electionTimeout-r.electionElapsed)</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// 如果是与投票类型</span></span><br><span class="line">		<span class="hljs-keyword">switch</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">case</span> m.Type == pb.MsgPreVote:</span><br><span class="line">			<span class="hljs-comment">// 在应答一个prevote消息时不对任期term做修改</span></span><br><span class="line">			<span class="hljs-comment">// Never change our term in response to a PreVote</span></span><br><span class="line">		<span class="hljs-keyword">case</span> m.Type == pb.MsgPreVoteResp &amp;&amp; !m.Reject:</span><br><span class="line">		<span class="hljs-comment">//我们将在未来发送带有期限的投票前请求。如果</span></span><br><span class="line">		<span class="hljs-comment">//投票前获得批准,当我们获得投票时,我们将增加我们的期限</span></span><br><span class="line">		<span class="hljs-comment">//法定人数如果不是,则该任期来自节点</span></span><br><span class="line">		<span class="hljs-comment">//拒绝了我们的投票,所以我们应该成为新的追随者期限</span></span><br><span class="line">		<span class="hljs-keyword">default</span>:</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x [term: %d] received a %s message with higher term from %x [term: %d]"</span>,</span><br><span class="line">				r.id, r.Term, m.Type, m.From, m.Term)</span><br><span class="line">			<span class="hljs-comment">// 如果是日志复制复制,或者心跳,或者快照信息  认为发送过来的节点是新的leader</span></span><br><span class="line">			<span class="hljs-keyword">if</span> m.Type == pb.MsgApp || m.Type == pb.MsgHeartbeat || m.Type == pb.MsgSnap &#123;</span><br><span class="line">				<span class="hljs-comment">// 成为发送消息方等的跟随者</span></span><br><span class="line">				r.becomeFollower(m.Term, m.From)</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-comment">// 当前节点领导者设置为空,并更新任期为传入消息的任期,因为传入消息任期是大的</span></span><br><span class="line">				r.becomeFollower(m.Term, None)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// 如果传入消息的任期小于当前节点的任期</span></span><br><span class="line">	<span class="hljs-keyword">case</span> m.Term &lt; r.Term:</span><br><span class="line">		<span class="hljs-comment">// check quorum  eader 向集群的所有节点发起广播,如果还能收到大多数节点的响应,处理读请求。</span></span><br><span class="line">		<span class="hljs-keyword">if</span> (r.checkQuorum || r.preVote) &amp;&amp; (m.Type == pb.MsgHeartbeat || m.Type == pb.MsgApp) &#123;</span><br><span class="line">			<span class="hljs-comment">//我们收到了来自低任期领导的消息。有可能的</span></span><br><span class="line">			<span class="hljs-comment">//这些消息只是在网络中被延迟了,但是这可以</span></span><br><span class="line">			<span class="hljs-comment">//也表示此节点在网络中提升了其任期编号</span></span><br><span class="line">			<span class="hljs-comment">//分区,它现在无法赢得选举或重新加入</span></span><br><span class="line">			<span class="hljs-comment">//旧词的多数。如果checkQuorum为false,则为</span></span><br><span class="line">			<span class="hljs-comment">//通过递增任期编号来响应MsgVote来处理</span></span><br><span class="line">			<span class="hljs-comment">//更高的任期,但如果checkQuorum为真,我们可能无法推进该任期</span></span><br><span class="line">			<span class="hljs-comment">// MsgVote并且必须生成其他消息以推进该任期。互联网</span></span><br><span class="line">			<span class="hljs-comment">//这两个功能的结果是最小化由中断引起的</span></span><br><span class="line">			<span class="hljs-comment">//已从群集配置中删除的节点：a</span></span><br><span class="line">			<span class="hljs-comment">//删除的节点将发送将被忽略的MsgVotes（或MsgPreVotes）,</span></span><br><span class="line">			<span class="hljs-comment">//但它不会收到MsgApp或MsgHeartbeat,所以它不会创建</span></span><br><span class="line">			<span class="hljs-comment">//通过通知领导者此节点的活动性来增加破坏性任期。</span></span><br><span class="line">			<span class="hljs-comment">//以上评论也适用于预投票</span></span><br><span class="line">			<span class="hljs-comment">//</span></span><br><span class="line">			<span class="hljs-comment">//当追随者被隔离时,很快就会开始选举结束</span></span><br><span class="line">			<span class="hljs-comment">//比起领导者更高的学期,虽然不会得到足够的</span></span><br><span class="line">			<span class="hljs-comment">//投票赢得大选。当它重新获得连接时,这种反应</span></span><br><span class="line">			<span class="hljs-comment">//使用更高级别的“pb.MsgAppResp”会迫使领导者下台。</span></span><br><span class="line">			<span class="hljs-comment">//但是,这种中断是不可避免的</span></span><br><span class="line">			<span class="hljs-comment">//新选举这可以通过预投票阶段来预防。</span></span><br><span class="line">			r.send(pb.Message&#123;To: m.From, Type: pb.MsgAppResp&#125;)</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> m.Type == pb.MsgPreVote &#123;</span><br><span class="line">			<span class="hljs-comment">//在预投票启用之前,可能有更高期限的候选人,</span></span><br><span class="line">			<span class="hljs-comment">//但更少的日志。更新到Pre-Vote后,群集可能会死锁</span></span><br><span class="line">			<span class="hljs-comment">//我们删除较低期限的邮件。</span></span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x [logterm: %d, index: %d, vote: %x] rejected %s from %x [logterm: %d, index: %d] at term %d"</span>,</span><br><span class="line">				r.id, r.raftLog.lastTerm(), r.raftLog.lastIndex(), r.Vote, m.Type, m.From, m.LogTerm, m.Index, r.Term)</span><br><span class="line">			r.send(pb.Message&#123;To: m.From, Term: r.Term, Type: pb.MsgPreVoteResp, Reject: <span class="hljs-literal">true</span>&#125;)</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			<span class="hljs-comment">//忽略其他情况</span></span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x [term: %d] ignored a %s message with lower term from %x [term: %d]"</span>,</span><br><span class="line">				r.id, r.Term, m.Type, m.From, m.Term)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">switch</span> m.Type &#123;</span><br><span class="line">	<span class="hljs-comment">// 选举信息</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgHup:</span><br><span class="line">		<span class="hljs-keyword">if</span> r.state != StateLeader &#123;</span><br><span class="line">			ents, err := r.raftLog.slice(r.raftLog.applied+<span class="hljs-number">1</span>, r.raftLog.committed+<span class="hljs-number">1</span>, noLimit)</span><br><span class="line">			<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				r.logger.Panicf(<span class="hljs-string">"unexpected error getting unapplied entries (%v)"</span>, err)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> n := numOfPendingConf(ents); n != <span class="hljs-number">0</span> &amp;&amp; r.raftLog.committed &gt; r.raftLog.applied &#123;</span><br><span class="line">				r.logger.Warningf(<span class="hljs-string">"%x cannot campaign at term %d since there are still %d pending configuration changes to apply"</span>, r.id, r.Term, n)</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x is starting a new election at term %d"</span>, r.id, r.Term)</span><br><span class="line">			<span class="hljs-keyword">if</span> r.preVote &#123;</span><br><span class="line">				r.campaign(campaignPreElection)</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				r.campaign(campaignElection)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			r.logger.Debugf(<span class="hljs-string">"%x ignoring MsgHup because already leader"</span>, r.id)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">//2.在raft.Step函数的后面,会判断消息类型是MsgVote或者MsgPreVote来进一步进行处理。其判断条件是以下两个条件同时成立：</span></span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">//2.1.当前没有给任何节点进行过投票（r.Vote == None ）,或者消息的任期号更大（m.Term &gt; r.Term ）,或者是之前已经投过票的节点（r.Vote == m.From)）。这个条件是检查是否可以还能给该节点投票。</span></span><br><span class="line">		<span class="hljs-comment">//2.2.同时该节点的日志数据是最新的（r.raftLog.isUpToDate(m.Index, m.LogTerm) ）。这个条件是检查这个节点上的日志数据是否足够的新。 只有在满足以上两个条件的情况下,节点才投票给这个消息节点,将修改raft.Vote为消息发送者ID。如果不满足条件,将应答msg.Reject=true,拒绝该节点的投票消息。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgVote, pb.MsgPreVote:</span><br><span class="line">		<span class="hljs-comment">//如果是在续租之内那么就忽视</span></span><br><span class="line">		<span class="hljs-keyword">if</span> r.isLearner &#123;</span><br><span class="line">			<span class="hljs-comment">// TODO：学习者可能需要投票,如果节点在交换时失败。</span></span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x [logterm: %d, index: %d, vote: %x] ignored %s from %x [logterm: %d, index: %d] at term %d: learner can not vote"</span>,</span><br><span class="line">				r.id, r.raftLog.lastTerm(), r.raftLog.lastIndex(), r.Vote, m.Type, m.From, m.LogTerm, m.Index, r.Term)</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">//之前已经投过票的节点</span></span><br><span class="line">		canVote := r.Vote == m.From ||</span><br><span class="line">			<span class="hljs-comment">// 当前没有给任何节点进行过投票,并且没有领导者......</span></span><br><span class="line">			(r.Vote == None &amp;&amp; r.lead == None) ||</span><br><span class="line">			<span class="hljs-comment">// 消息i和一个预投票,并且消息的任期号更大</span></span><br><span class="line">			(m.Type == pb.MsgPreVote &amp;&amp; m.Term &gt; r.Term)</span><br><span class="line">		<span class="hljs-comment">// r.raftLog.isUpToDate该节点的日志数据是最新的</span></span><br><span class="line">		<span class="hljs-keyword">if</span> canVote &amp;&amp; r.raftLog.isUpToDate(m.Index, m.LogTerm) &#123;</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x [logterm: %d, index: %d, vote: %x] cast %s for %x [logterm: %d, index: %d] at term %d"</span>,</span><br><span class="line">				r.id, r.raftLog.lastTerm(), r.raftLog.lastIndex(), r.Vote, m.Type, m.From, m.LogTerm, m.Index, r.Term)</span><br><span class="line">			r.send(pb.Message&#123;To: m.From, Term: m.Term, Type: voteRespMsgType(m.Type)&#125;)</span><br><span class="line">			<span class="hljs-keyword">if</span> m.Type == pb.MsgVote &#123;</span><br><span class="line">				r.electionElapsed = <span class="hljs-number">0</span></span><br><span class="line"></span><br><span class="line">				r.Vote = m.From</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x [logterm: %d, index: %d, vote: %x] rejected %s from %x [logterm: %d, index: %d] at term %d"</span>,</span><br><span class="line">				r.id, r.raftLog.lastTerm(), r.raftLog.lastIndex(), r.Vote, m.Type, m.From, m.LogTerm, m.Index, r.Term)</span><br><span class="line">			<span class="hljs-comment">// 否则拒绝投票</span></span><br><span class="line">			r.send(pb.Message&#123;To: m.From, Term: r.Term, Type: voteRespMsgType(m.Type), Reject: <span class="hljs-literal">true</span>&#125;)</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">default</span>:</span><br><span class="line">		err := r.step(r, m)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> err</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当条件是:</p>
+<ol>
+<li>如果任期为0,不做处理</li>
+<li>如果消息任期大于当前节点的任期<ul>
+<li>如果是预投票或者和投票类型<ul>
+<li>如果非强制,而且又在租约期以内,就不做任何处理（见论文的4.2.3,这是为了阻止已经离开集群的节点再次发起投票请求） ⚠️结束</li>
+</ul>
+</li>
+<li>如果是MsgPreVote类型,在应答一个prevote消息时不对任期term做修改 (防止分区导致的,领导人重新选举)</li>
+<li>如果是MsgPreVoteResp类型并且没有拒绝</li>
+<li>如果上面两者都不是的话<ul>
+<li>如果是领导者给跟随者发的消息或者收到了心跳或者收到了快照信息,就将当前节点,设置为跟随者。（根据论文 5.2 领导人选举 这一节）</li>
+<li>否则就将领导者设置为空,因为不满足上面的条件不应当处理</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>如果传入消息的任期小于当前节点的任期<ul>
+<li>在等待投票的时候,候选人可能会从其他的服务器接收到声明它是领导人的附加日志项 RPC。如果这个领导人的任期号（包含在此次的 RPC中）不小于候选人当前的任期号,那么候选人会承认领导人合法并回到跟随者状态 （根据论文 5.2 领导人选举 这一节）</li>
+<li>如果是MsgPreVote类型,会拒绝,因为候选人的任期没有当前节点的任期大,日志不是最新的。</li>
+<li>否则忽略其他类型 ⚠️结束</li>
+</ul>
+</li>
+<li>如果是选举类型 （该类型只会由本节点发送给自己）<ul>
+<li>如果状态不是领导者<ul>
+<li>如果待处理的配置更改要应用,因此无法进行选举  ⚠️结束</li>
+<li>如果状态是预投票,就开始预选举</li>
+<li>如果状态是正式投票,就开始正式选举</li>
+</ul>
+</li>
+<li>如果是领导者就是忽略这条消息</li>
+</ul>
+</li>
+<li>如果是预投票或者和投票类型<ul>
+<li>如果该节点是学习者,学习者不能投票  ⚠️结束</li>
+<li>如果  （1.)之前已经投过票的节点 或者 2.)当前没有给任何节点进行过投票,并且没有领导者 或者 3.)消息是预投票,并且消息的任期号更大）并且（该节点的日志数据是最新的） 就投票给这个消息节点,将修改raft.Vote为消息发送者ID</li>
+<li>否则 将应答msg.Reject=true,拒绝该节点的投票消息</li>
+</ul>
+<ol start="6">
+<li>如果上面两种状态都不是,就进入特有身份处理步骤中</li>
+</ol>
+<ul>
+<li>stepLeader</li>
+<li>stepCandidate</li>
+<li>stepFollower</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">stepLeader</span><span class="hljs-params">(r *raft, m pb.Message)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">//这些消息类型不需要m.From的任何进展。</span></span><br><span class="line">	<span class="hljs-keyword">switch</span> m.Type &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgBeat:</span><br><span class="line">		r.bcastHeartbeat()</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		<span class="hljs-comment">//		leader的定时器函数,在超过选举时间时,如果当前打开了raft.checkQuorum开关,那么leader将给自己发送一条MsgCheckQuorum消息,对该消息的处理是：</span></span><br><span class="line">		<span class="hljs-comment">//		检查集群中所有节点的状态,如果超过半数的节点都不活跃了,那么leader也切换到follower状态。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgCheckQuorum:</span><br><span class="line">		<span class="hljs-keyword">if</span> !r.checkQuorumActive() &#123;</span><br><span class="line">			r.logger.Warningf(<span class="hljs-string">"%x stepped down to follower since quorum is not active"</span>, r.id)</span><br><span class="line">			r.becomeFollower(r.Term, None)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">//  raft库的使用者向raft库propose数据时,最后会封装成这个类型的消息来进行提交,不同类型的节点处理还不尽相同。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgProp:</span><br><span class="line">		<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(m.Entries) == <span class="hljs-number">0</span> &#123;</span><br><span class="line">			r.logger.Panicf(<span class="hljs-string">"%x stepped empty MsgProp"</span>, r.id)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> _, ok := r.prs[r.id]; !ok &#123;</span><br><span class="line">			<span class="hljs-comment">//如果我们当前不是范围的成员（即此节点）</span></span><br><span class="line">			<span class="hljs-comment">//作为领导者从配置中删除了）,</span></span><br><span class="line">			<span class="hljs-comment">//删除任何新提案。</span></span><br><span class="line">			<span class="hljs-keyword">return</span> ErrProposalDropped</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> r.leadTransferee != None &#123;</span><br><span class="line">			r.logger.Debugf(<span class="hljs-string">"%x [term %d] transfer leadership to %x is in progress; dropping proposal"</span>, r.id, r.Term, r.leadTransferee)</span><br><span class="line">			<span class="hljs-keyword">return</span> ErrProposalDropped</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">for</span> i, e := <span class="hljs-keyword">range</span> m.Entries &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> e.Type == pb.EntryConfChange &#123;</span><br><span class="line">				<span class="hljs-keyword">if</span> r.pendingConfIndex &gt; r.raftLog.applied &#123;</span><br><span class="line">					r.logger.Infof(<span class="hljs-string">"propose conf %s ignored since pending unapplied configuration [index %d, applied %d]"</span>,</span><br><span class="line">						e.String(), r.pendingConfIndex, r.raftLog.applied)</span><br><span class="line">					m.Entries[i] = pb.Entry&#123;Type: pb.EntryNormal&#125;</span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					r.pendingConfIndex = r.raftLog.lastIndex() + <span class="hljs-keyword">uint64</span>(i) + <span class="hljs-number">1</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">if</span> !r.appendEntry(m.Entries...) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> ErrProposalDropped</span><br><span class="line">		&#125;</span><br><span class="line">		r.bcastAppend()</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		<span class="hljs-comment">// 其中,entries数组只会有一条数据,带上的是应用层此次请求的标识数据,在follower收到MsgReadIndex消息进行应答时,同样需要把这个数据原样带回返回给leader,详细的线性读一致性的实现在后面展开分析。</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgReadIndex:</span><br><span class="line">		<span class="hljs-keyword">if</span> r.quorum() &gt; <span class="hljs-number">1</span> &#123;</span><br><span class="line">			<span class="hljs-comment">//  首先如果该leader在成为新的leader之后没有提交过任何值,那么会直接返回不做处理。</span></span><br><span class="line">			<span class="hljs-keyword">if</span> r.raftLog.zeroTermOnErrCompacted(r.raftLog.term(r.raftLog.committed)) != r.Term &#123;</span><br><span class="line">				<span class="hljs-comment">//当此领导者未在其任期内提交任何日志条目时,拒绝只读请求。</span></span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="hljs-comment">//思考：使用一个内部定义的上下文而不是用户给定的上下文。</span></span><br><span class="line">			<span class="hljs-comment">//我们可以用任期和索引来表示,而不是用户提供的值。</span></span><br><span class="line">			<span class="hljs-comment">//这将允许多次读取捎带在同一条消息上。</span></span><br><span class="line">			<span class="hljs-keyword">switch</span> r.readOnly.option &#123;</span><br><span class="line">			<span class="hljs-keyword">case</span> ReadOnlySafe:</span><br><span class="line">				<span class="hljs-comment">// 保存该MsgreadIndex请求到来时的commit索引。</span></span><br><span class="line">				r.readOnly.addRequest(r.raftLog.committed, m)</span><br><span class="line">				<span class="hljs-comment">// 向集群中所有其他节点广播一个心跳消息MsgHeartbeat,并且在其中带上该读请求的唯一标识。</span></span><br><span class="line">				r.bcastHeartbeatWithCtx(m.Entries[<span class="hljs-number">0</span>].Data)</span><br><span class="line">			<span class="hljs-keyword">case</span> ReadOnlyLeaseBased:</span><br><span class="line">				ri := r.raftLog.committed</span><br><span class="line">				<span class="hljs-keyword">if</span> m.From == None || m.From == r.id &#123; <span class="hljs-comment">// from local member</span></span><br><span class="line">					r.readStates = <span class="hljs-built_in">append</span>(r.readStates, ReadState&#123;Index: r.raftLog.committed, RequestCtx: m.Entries[<span class="hljs-number">0</span>].Data&#125;)</span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					r.send(pb.Message&#123;To: m.From, Type: pb.MsgReadIndexResp, Index: ri, Entries: m.Entries&#125;)</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;                                  <span class="hljs-comment">// there is only one voting member (the leader) in the cluster</span></span><br><span class="line">			<span class="hljs-keyword">if</span> m.From == None || m.From == r.id &#123; <span class="hljs-comment">// from leader itself</span></span><br><span class="line">				r.readStates = <span class="hljs-built_in">append</span>(r.readStates, ReadState&#123;Index: r.raftLog.committed, RequestCtx: m.Entries[<span class="hljs-number">0</span>].Data&#125;)</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123; <span class="hljs-comment">//来自学习者成员</span></span><br><span class="line">				r.send(pb.Message&#123;To: m.From, Type: pb.MsgReadIndexResp, Index: r.raftLog.committed, Entries: m.Entries&#125;)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// All other message types require a progress for m.From (pr).</span></span><br><span class="line">	pr := r.getProgress(m.From)</span><br><span class="line">	<span class="hljs-keyword">if</span> pr == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		r.logger.Debugf(<span class="hljs-string">"%x no progress available for %x"</span>, r.id, m.From)</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">switch</span> m.Type &#123;</span><br><span class="line">	<span class="hljs-comment">//在节点收到leader的MsgApp/MsgSnap消息时,可能出现leader上的数据与自身节点数据不一致的情况,这种情况下会返回reject为true的MsgAppResp消息,同时rejectHint字段是本节点raft最后一条日志的索引ID。</span></span><br><span class="line">	<span class="hljs-comment">//而index字段则返回的是当前节点的日志索引ID,用于向leader汇报自己已经commit的日志数据ID,这样leader就知道下一次同步数据给这个节点时,从哪条日志数据继续同步了。</span></span><br><span class="line">	<span class="hljs-comment">//leader节点在收到MsgAppResp消息的处理流程大体如下（stepLeader函数中MsgAppResp case的处理流程）。</span></span><br><span class="line">	<span class="hljs-comment">//首先,收到节点的MsgAppResp消息,说明该节点是活跃的,因此保存节点状态的RecentActive成员置为true。</span></span><br><span class="line">	<span class="hljs-comment">//接下来,再根据msg.Reject的返回值,即节点是否拒绝了这次数据同步,来区分两种情况进行处理。</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">//msg.Reject为true的情况</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">//如果msg.Reject为true,说明节点拒绝了前面的MsgApp/MsgSnap消息,根据msg.RejectHint成员回退leader上保存的关于该节点的日志记录状态。比如leader前面认为从日志索引为10的位置开始向节点A同步数据,但是节点A拒绝了这次数据同步,同时返回RejectHint为2,说明节点A告知leader在它上面保存的最大日志索引ID为2,这样下一次leader就可以直接从索引为2的日志数据开始同步数据到节点A。而如果没有这个RejectHint成员,leader只能在每次被拒绝数据同步后都递减1进行下一次数据同步,显然这样是低效的。</span></span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">	<span class="hljs-comment">//1.因为上面节点拒绝了这次数据同步,所以节点的状态可能存在一些异常,此时如果leader上保存的节点状态为ProgressStateReplicate,那么将切换到ProgressStateProbe状态（关于这几种状态,下面会谈到）。</span></span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">	<span class="hljs-comment">//2.前面已经按照msg.RejectHint修改了leader上关于该节点日志状态的索引数据,接着再次尝试按照这个新的索引数据向该节点再次同步数据。</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">//msg.Reject为false的情况</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">//这种情况说明这个节点通过了leader的这一次数据同步请求,这种情况下根据msg.Index来判断在leader中保存的该节点日志数据索引是否发生了更新,如果发生了更新那么就说明这个节点通过了新的数据,这种情况下会做以下的几个操作。</span></span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">	<span class="hljs-comment">//1.修改节点状态</span></span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">	<span class="hljs-comment">//1.1如果该节点之前在ProgressStateProbe状态,说明之前处于探测状态,此时可以切换到ProgressStateReplicate,开始正常的接收leader的同步数据了。</span></span><br><span class="line">	<span class="hljs-comment">//1.2如果之前处于ProgressStateSnapshot状态,即还在同步副本,说明节点之前可能落后leader数据比较多才采用了接收副本的状态。这里还需要多做一点解释,因为在节点落后leader数据很多的情况下,可能leader会多次通过snapshot同步数据给节点,而当 pr.Match &gt;= pr.PendingSnapshot的时候,说明通过快照来同步数据的流程完成了,这时可以进入正常的接收同步数据状态了,这就是函数Progress.needSnapshotAbort要做的判断。</span></span><br><span class="line">	<span class="hljs-comment">//1.3.如果之前处于ProgressStateReplicate状态,此时可以修改leader关于这个节点的滑动窗口索引,释放掉这部分数据索引,好让节点可以接收新的数据了。关于这个滑动窗口设计,见下面详细解释。</span></span><br><span class="line">	<span class="hljs-comment">//2.判断是否有新的数据可以提交（commit）了。因为raft的提交数据的流程是这样的：首先节点将数据提议（propose）给leader,leader在将数据写入到自己的日志成功之后,再通过MsgApp把这些提议的数据广播给集群中的其他节点,在某一条日志数据收到超过半数（qurom）的节点同意之后,才认为是可以提交（commit）的。因此每次leader节点在收到一条MsgAppResp类型消息,同时msg.Reject又是false的情况下,都需要去检查当前有哪些日志是超过半数的节点同意的,再将这些可以提交（commit）的数据广播出去。而在没有数据可以提交的情况下,如果之前节点处于暂停状态,那么将继续向该节点同步数据。</span></span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">	<span class="hljs-comment">//3.最后还要做一个跟leader迁移相关的操作。如果该消息节点是准备迁移过去的新leader节点（raft.leadTransferee == msg.From）,而且此时该节点上的Match索引已经跟旧的leader的日志最大索引一致,说明新旧节点的日志数据已经同步,可以正式进行集群leader迁移操作了。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgAppResp:</span><br><span class="line">		pr.RecentActive = <span class="hljs-literal">true</span></span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">if</span> m.Reject &#123;</span><br><span class="line">			r.logger.Debugf(<span class="hljs-string">"%x received msgApp rejection(lastindex: %d) from %x for index %d"</span>,</span><br><span class="line">				r.id, m.RejectHint, m.From, m.Index)</span><br><span class="line">			<span class="hljs-keyword">if</span> pr.maybeDecrTo(m.Index, m.RejectHint) &#123;</span><br><span class="line">				r.logger.Debugf(<span class="hljs-string">"%x decreased progress of %x to [%s]"</span>, r.id, m.From, pr)</span><br><span class="line">				<span class="hljs-keyword">if</span> pr.State == ProgressStateReplicate &#123;</span><br><span class="line">					pr.becomeProbe()</span><br><span class="line">				&#125;</span><br><span class="line">				r.sendAppend(m.From)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			oldPaused := pr.IsPaused()</span><br><span class="line">			<span class="hljs-keyword">if</span> pr.maybeUpdate(m.Index) &#123;</span><br><span class="line">				<span class="hljs-keyword">switch</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">case</span> pr.State == ProgressStateProbe:</span><br><span class="line">					pr.becomeReplicate()</span><br><span class="line">				<span class="hljs-keyword">case</span> pr.State == ProgressStateSnapshot &amp;&amp; pr.needSnapshotAbort():</span><br><span class="line">					r.logger.Debugf(<span class="hljs-string">"%x snapshot aborted, resumed sending replication messages to %x [%s]"</span>, r.id, m.From, pr)</span><br><span class="line">					<span class="hljs-comment">// Transition back to replicating state via probing state</span></span><br><span class="line">					<span class="hljs-comment">// (which takes the snapshot into account). If we didn't</span></span><br><span class="line">					<span class="hljs-comment">// move to replicating state, that would only happen with</span></span><br><span class="line">					<span class="hljs-comment">// the next round of appends (but there may not be a next</span></span><br><span class="line">					<span class="hljs-comment">// round for a while, exposing an inconsistent RaftStatus).</span></span><br><span class="line">					pr.becomeProbe()</span><br><span class="line">					pr.becomeReplicate()</span><br><span class="line">				<span class="hljs-keyword">case</span> pr.State == ProgressStateReplicate:</span><br><span class="line">					pr.ins.freeTo(m.Index)</span><br><span class="line">				&#125;</span><br><span class="line"></span><br><span class="line">				<span class="hljs-keyword">if</span> r.maybeCommit() &#123;</span><br><span class="line">					r.bcastAppend()</span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> oldPaused &#123;</span><br><span class="line">					<span class="hljs-comment">// If we were paused before, this node may be missing the</span></span><br><span class="line">					<span class="hljs-comment">// latest commit index, so send it.</span></span><br><span class="line">					r.sendAppend(m.From)</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="hljs-comment">// We've updated flow control information above, which may</span></span><br><span class="line">				<span class="hljs-comment">// allow us to send multiple (size-limited) in-flight messages</span></span><br><span class="line">				<span class="hljs-comment">// at once (such as when transitioning from probe to</span></span><br><span class="line">				<span class="hljs-comment">// replicate, or when freeTo() covers multiple messages). If</span></span><br><span class="line">				<span class="hljs-comment">// we have more entries to send, send as many messages as we</span></span><br><span class="line">				<span class="hljs-comment">// can (without sending empty messages for the commit index)</span></span><br><span class="line">				<span class="hljs-keyword">for</span> r.maybeSendAppend(m.From, <span class="hljs-literal">false</span>) &#123;</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="hljs-comment">// Transfer leadership is in progress.</span></span><br><span class="line">				<span class="hljs-keyword">if</span> m.From == r.leadTransferee &amp;&amp; pr.Match == r.raftLog.lastIndex() &#123;</span><br><span class="line">					r.logger.Infof(<span class="hljs-string">"%x sent MsgTimeoutNow to %x after received MsgAppResp"</span>, r.id, m.From)</span><br><span class="line">					r.sendTimeoutNow(m.From)</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">//leader中会定时向集群中其他节点发送心跳消息,该消息的作用除了探测节点的存活情况之外,还包括：</span></span><br><span class="line">		<span class="hljs-comment">//</span></span><br><span class="line">		<span class="hljs-comment">//commit成员：leader选择min[节点上的Match,leader日志最大提交索引],用于告知节点哪些日志可以进行提交（commit）。</span></span><br><span class="line">		<span class="hljs-comment">//context：与线性一致性读相关,后面会进行解释。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgHeartbeatResp:</span><br><span class="line">		pr.RecentActive = <span class="hljs-literal">true</span></span><br><span class="line">		pr.resume()</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">// free one slot for the full inflights window to allow progress.</span></span><br><span class="line">		<span class="hljs-keyword">if</span> pr.State == ProgressStateReplicate &amp;&amp; pr.ins.full() &#123;</span><br><span class="line">			pr.ins.freeFirstOne()</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> pr.Match &lt; r.raftLog.lastIndex() &#123;</span><br><span class="line">			r.sendAppend(m.From)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// leader在接收到MsgHeartbeatResp消息后,如果其中有ctx字段,说明该MsgHeartbeatResp消息对应的MsgHeartbeat消息,是收到ReadIndex时leader消息为了确认自己还是集群leader发送的心跳消息</span></span><br><span class="line">		<span class="hljs-keyword">if</span> r.readOnly.option != ReadOnlySafe || <span class="hljs-built_in">len</span>(m.Context) == <span class="hljs-number">0</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">// 首先会调用r.readOnly.recvAck(m)函数,根据消息中的ctx字段,到全局的pendingReadIndex中查找是否有保存该ctx的带处理的readIndex请求,如果有就在acks map中记录下该follower已经进行了应答。</span></span><br><span class="line">		ackCount := r.readOnly.recvAck(m)</span><br><span class="line">		<span class="hljs-comment">// 当ack数量超过了集群半数时,意味着该leader仍然还是集群的leader,此时调用r.readOnly.advance(m)函数</span></span><br><span class="line">		<span class="hljs-keyword">if</span> ackCount &lt; r.quorum() &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">// 将该readIndex之前的所有readIndex请求都认为是已经成功进行确认的了,所有成功确认的readIndex请求,将会加入到readStates数组中,同时leader也会向follower发送MsgReadIndexResp。</span></span><br><span class="line">		rss := r.readOnly.advance(m)</span><br><span class="line">		<span class="hljs-keyword">for</span> _, rs := <span class="hljs-keyword">range</span> rss &#123;</span><br><span class="line">			req := rs.req</span><br><span class="line">			<span class="hljs-keyword">if</span> req.From == None || req.From == r.id &#123; <span class="hljs-comment">// from local member</span></span><br><span class="line">				r.readStates = <span class="hljs-built_in">append</span>(r.readStates, ReadState&#123;Index: rs.index, RequestCtx: req.Entries[<span class="hljs-number">0</span>].Data&#125;)</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				r.send(pb.Message&#123;To: req.From, Type: pb.MsgReadIndexResp, Index: rs.index, Entries: req.Entries&#125;)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">//仅leader处理这类消息：</span></span><br><span class="line">		<span class="hljs-comment">//1.如果reject为false：表示接收快照成功,将切换该节点状态到探测状态。</span></span><br><span class="line">		<span class="hljs-comment">//2.否则接收失败。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgSnapStatus:</span><br><span class="line">		<span class="hljs-keyword">if</span> pr.State != ProgressStateSnapshot &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> !m.Reject &#123;</span><br><span class="line">			pr.becomeProbe()</span><br><span class="line">			r.logger.Debugf(<span class="hljs-string">"%x snapshot succeeded, resumed sending replication messages to %x [%s]"</span>, r.id, m.From, pr)</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			pr.snapshotFailure()</span><br><span class="line">			pr.becomeProbe()</span><br><span class="line">			r.logger.Debugf(<span class="hljs-string">"%x snapshot failed, resumed sending replication messages to %x [%s]"</span>, r.id, m.From, pr)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">//如果快照完成,请在发送之前等待来自远程节点的msgAppResp</span></span><br><span class="line">		<span class="hljs-comment">//淘汰下一个msgApp。</span></span><br><span class="line">		<span class="hljs-comment">//如果快照失败,请在下次尝试之前等待心跳间隔</span></span><br><span class="line">		pr.pause()</span><br><span class="line">		<span class="hljs-comment">// 仅leader才处理这类消息,leader如果判断该节点此时处于正常接收数据的状态（ProgressStateReplicate）,那么就切换到探测状态。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgUnreachable:</span><br><span class="line">		<span class="hljs-comment">//在乐观复制期间,如果远程无法访问,</span></span><br><span class="line">		<span class="hljs-comment">// MsgApp很有可能丢失。</span></span><br><span class="line">		<span class="hljs-keyword">if</span> pr.State == ProgressStateReplicate &#123;</span><br><span class="line">			pr.becomeProbe()</span><br><span class="line">		&#125;</span><br><span class="line">		r.logger.Debugf(<span class="hljs-string">"%x failed to send message to %x because it is unreachable [%s]"</span>, r.id, m.From, pr)</span><br><span class="line">		<span class="hljs-comment">//3.这类消息follower将转发给leader处理,因为follower并没有修改集群配置状态的权限。</span></span><br><span class="line">		<span class="hljs-comment">//leader在收到这类消息时,是以下的处理流程。</span></span><br><span class="line">		<span class="hljs-comment">//3.1.如果当前的raft.leadTransferee成员不为空,说明有正在进行的leader迁移流程。此时会判断是否与这次迁移是同样的新leader ID,如果是则忽略该消息直接返回；否则将终止前面还没有完毕的迁移流程。</span></span><br><span class="line">		<span class="hljs-comment">//3.2.如果这次迁移过去的新节点,就是当前的leader ID,也直接返回不进行处理。</span></span><br><span class="line">		<span class="hljs-comment">//到了这一步就是正式开始这一次的迁移leader流程了,一个节点能成为一个集群的leader,其必要条件是上面的日志与当前leader的一样多,所以这里会判断是否满足这个条件,如果满足那么发送MsgTimeoutNow消息给新的leader通知该节点进行leader迁移,否则就先进行日志同步操作让新的leader追上旧leader的日志数据。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgTransferLeader:</span><br><span class="line">		<span class="hljs-comment">// 如果是学习者 就不能进行转发给leader</span></span><br><span class="line">		<span class="hljs-keyword">if</span> pr.IsLearner &#123;</span><br><span class="line">			r.logger.Debugf(<span class="hljs-string">"%x is learner. Ignored transferring leadership"</span>, r.id)</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		leadTransferee := m.From</span><br><span class="line">		lastLeadTransferee := r.leadTransferee</span><br><span class="line">		<span class="hljs-keyword">if</span> lastLeadTransferee != None &#123;</span><br><span class="line">			<span class="hljs-comment">// 判断是否已经有相同节点的leader转让流程在进行中</span></span><br><span class="line">			<span class="hljs-keyword">if</span> lastLeadTransferee == leadTransferee &#123;</span><br><span class="line">				r.logger.Infof(<span class="hljs-string">"%x [term %d] transfer leadership to %x is in progress, ignores request to same node %x"</span>,</span><br><span class="line">					r.id, r.Term, leadTransferee, leadTransferee)</span><br><span class="line">				<span class="hljs-comment">// 如果是,直接返回</span></span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-comment">// 否则中断之前的转让流程</span></span><br><span class="line">			r.abortLeaderTransfer()</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x [term %d] abort previous transferring leadership to %x"</span>, r.id, r.Term, lastLeadTransferee)</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">// 判断是否转让过来的leader是否本节点,如果是也直接返回,因为本节点已经是leader了</span></span><br><span class="line">		<span class="hljs-keyword">if</span> leadTransferee == r.id &#123;</span><br><span class="line">			r.logger.Debugf(<span class="hljs-string">"%x is already leader. Ignored transferring leadership to self"</span>, r.id)</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-comment">//将领导权转移给第三方。</span></span><br><span class="line">		r.logger.Infof(<span class="hljs-string">"%x [term %d] starts to transfer leadership to %x"</span>, r.id, r.Term, leadTransferee)</span><br><span class="line">		<span class="hljs-comment">//转移领导应该在一个electionTimeout中完成,所以重置r.electionElapsed。</span></span><br><span class="line">		r.electionElapsed = <span class="hljs-number">0</span></span><br><span class="line">		r.leadTransferee = leadTransferee</span><br><span class="line">		<span class="hljs-keyword">if</span> pr.Match == r.raftLog.lastIndex() &#123;</span><br><span class="line">			<span class="hljs-comment">// 如果日志已经匹配了,那么就发送timeoutnow协议过去</span></span><br><span class="line">			r.sendTimeoutNow(leadTransferee)</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x sends MsgTimeoutNow to %x immediately as %x already has up-to-date log"</span>, r.id, leadTransferee, leadTransferee)</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			<span class="hljs-comment">// 否则继续追加日志</span></span><br><span class="line">			r.sendAppend(leadTransferee)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>case pb.MsgBeat:</code>向所有跟随者,广播心跳,⚠️结束</li>
+<li><code>case pb.MsgCheckQuorum:</code>  检查是否有一半以上的跟随者在自己的状态机中处于活跃,⚠️结束</li>
+<li><code>case pb.MsgProp:</code>raft库的使用者向raft库propose数据时,最后会封装成这个类型的消息来进行提交,不同类型的节点处理还不尽相同。⚠️结束</li>
+<li><code>case pb.MsgReadIndex:</code><ol>
+<li>如果总节点人数大于一个,也就是除了自己还有其他节点<ol>
+<li>首先如果该leader在成为新的leader之后没有提交过任何值,那么会直接返回不做处理。</li>
+<li>然后检查只读类型是<code>ReadOnlySafe</code>还是<code>ReadOnlyLeaseBased</code>,<ul>
+<li>如果是<code>ReadOnlySafe</code>, 保存该MsgreadIndex请求到来时的commit索引,向集群中所有其他节点广播一个心跳消息MsgHeartbeat,并且在其中带上该读请求的唯一标识。</li>
+<li>如果是<code>ReadOnlyLeaseBased</code><ul>
+<li>如果消息是当前成员,如果没有提交过任何数据,那么在它所在的这个任期（term）内的commit索引当时是并不知道的,因此在成为leader之后,需要马上提交一个no-op的空日志,这样拿到该任期的第一个commit索引。</li>
+<li>否则就发送消息回应给跟随者</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>否则<ul>
+<li>如果消息是当前成员,如果没有提交过任何数据,那么在它所在的这个任期（term）内的commit索引当时是并不知道的,因此在成为leader之后,需要马上提交一个no-op的空日志,这样拿到该任期的第一个commit索引。</li>
+<li>否则就回应该消息,因为是因为是来自学习者<ol start="3">
+<li>⚠️结束    </li>
+</ol>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>获取跟随者的进度</li>
+<li><code>case pb.MsgAppResp:</code><ol>
+<li>msg.Reject为true的情况,说明节点拒绝了前面的MsgApp/MsgSnap消息,根据msg.RejectHint成员回退leader上保存的关于该节点的日志记录状态。比如leader前面认为从日志索引为10的位置开始向节点A同步数据,但是节点A拒绝了这次数据同步,同时返回RejectHint为2,说明节点A告知leader在它上面保存的最大日志索引ID为2,这样下一次leader就可以直接从索引为2的日志数据开始同步数据到节点A。而如果没有这个RejectHint成员,leader只能在每次被拒绝数据同步后都递减1进行下一次数据同步,显然这样是低效的。<ol>
+<li>因为上面节点拒绝了这次数据同步,所以节点的状态可能存在一些异常,此时如果leader上保存的节点状态为ProgressStateReplicate,那么将切换到ProgressStateProbe状态（关于这几种状态,下面会谈到）。</li>
+<li>前面已经按照msg.RejectHint修改了leader上关于该节点日志状态的索引数据,接着再次尝试按照这个新的索引数据向该节点再次同步数据。</li>
+</ol>
+</li>
+<li>msg.Reject为false的情况<ol>
+<li>更新进度,如果不是过时的<ol>
+<li>如果该节点之前在ProgressStateProbe状态,说明之前处于探测状态,此时可以切换到ProgressStateReplicate,开始正常的接收leader的同步数据了。</li>
+<li>如果之前处于ProgressStateSnapshot状态,即还在同步副本,说明节点之前可能落后leader数据比较多才采用了接收副本的状态。这里还需要多做一点解释,因为在节点落后leader数据很多的情况下,可能leader会多次通过snapshot同步数据给节点,而当 pr.Match &gt;= pr.PendingSnapshot的时候,说明通过快照来同步数据的流程完成了,这时可以进入正常的接收同步数据状态了,这就是函数Progress.needSnapshotAbort要做的判断。</li>
+<li>如果之前处于ProgressStateReplicate状态,此时可以修改leader关于这个节点的滑动窗口索引,释放掉这部分数据索引,好让节点可以接收新的数据了。关于这个滑动窗口设计,见下面详细解释。</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>判断是否有新的数据可以提交（commit）了。因为raft的提交数据的流程是这样的：首先节点将数据提议（propose）给leader,leader在将数据写入到自己的日志成功之后,再通过MsgApp把这些提议的数据广播给集群中的其他节点,在某一条日志数据收到超过半数（qurom）的节点同意之后,才认为是可以提交（commit）的。因此每次leader节点在收到一条MsgAppResp类型消息,同时msg.Reject又是false的情况下,都需要去检查当前有哪些日志是超过半数的节点同意的,再将这些可以提交（commit）的数据广播出去。而在没有数据可以提交的情况下,如果之前节点处于暂停状态,那么将继续向该节点同步数据。</li>
+<li>最后还要做一个跟leader迁移相关的操作。如果该消息节点是准备迁移过去的新leader节点（raft.leadTransferee == msg.From）,而且此时该节点上的Match索引已经跟旧的leader的日志最大索引一致,说明新旧节点的日志数据已经同步,可以正式进行集群leader迁移操作了。</li>
+</ol>
+</li>
+<li><code>case pb.MsgHeartbeatResp:</code><ol>
+<li>将进度设置为活跃</li>
+<li>为完整滑动窗口释放一个插槽以允许进度</li>
+<li>如果消息节点是日志索引是落后的就发送追加</li>
+<li>leader在接收到MsgHeartbeatResp消息后,如果其中有ctx字段,说明该MsgHeartbeatResp消息对应的MsgHeartbeat消息,是收到ReadIndex时leader消息为了确认自己还是集群leader发送的心跳消息</li>
+<li>通知raft状态机收到的只读结构对只读请求附加的心跳的确认上下文,根据消息中的ctx字段,到全局的pendingReadIndex中查找是否有保存该ctx的带处理的readIndex请求,如果有就在acks map中记录下该follower已经进行了应答</li>
+<li>当ack数量超过了集群半数时,意味着该leader仍然还是集群的leader,此时调用r.readOnly.advance(m)函数</li>
+<li>将该readIndex之前的所有readIndex请求都认为是已经成功进行确认的了,所有成功确认的readIndex请求,将会加入到readStates数组中,同时leader也会向follower发送MsgReadIndexResp。</li>
+</ol>
+</li>
+<li><code>case pb.MsgSnapStatus:</code>仅leader处理这类消息<ol>
+<li>如果reject为false：表示接收快照成功,将切换该节点状态到探测状态。</li>
+<li>否则接收失败,将切换该节点状态到探测状态。</li>
+<li>当Paused为true时,raft应暂停向此对等方发送复制消息。</li>
+</ol>
+</li>
+<li><code>case pb.MsgUnreachable:</code>在乐观复制期间,如果远程无法访问,MsgApp很有可能丢失。<ol>
+<li>如果远程节点状态变为复制状态,就变为探测状态</li>
+</ol>
+</li>
+<li><p><code>case pb.MsgTransferLeader:</code>这类消息follower将转发给leader处理,因为follower并没有修改集群配置状态的权限。</p>
+<ol>
+<li>如果是学习者 就不能进行转发给leader</li>
+<li>如果当前的raft.leadTransferee成员不为空,说明有正在进行的leader迁移流程。此时会判断是否与这次迁移是同样的新leader ID,如果是则忽略该消息直接返回；否则将终止前面还没有完毕的迁移流程。</li>
+<li>判断是否转让过来的leader是否本节点,如果是也直接返回,因为本节点已经是leader了</li>
+<li>如果日志已经匹配了,那么就发送timeoutnow协议过去</li>
+<li>否则继续追加日志到新的领导者<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// stepCandidate 由StateCandidate和StatePreCandidate共享;不同的是</span></span><br><span class="line"><span class="hljs-comment">//它们是否响应MsgVoteResp或MsgPreVoteResp。</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">stepCandidate</span><span class="hljs-params">(r *raft, m pb.Message)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// 只处理与我们的候选资格相对应的投票回复 (当在StateCandidate, 在这个任期中,我们可能会收到陈旧的MsgPreVoteResp消息从我们的 pre-candidate 状态).</span></span><br><span class="line">	<span class="hljs-keyword">var</span> myVoteRespType pb.MessageType</span><br><span class="line">	<span class="hljs-keyword">if</span> r.state == StatePreCandidate &#123;</span><br><span class="line">		myVoteRespType = pb.MsgPreVoteResp</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		myVoteRespType = pb.MsgVoteResp</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">switch</span> m.Type &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgProp:</span><br><span class="line">		r.logger.Infof(<span class="hljs-string">"%x no leader at term %d; dropping proposal"</span>, r.id, r.Term)</span><br><span class="line">		<span class="hljs-keyword">return</span> ErrProposalDropped</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgApp:</span><br><span class="line">		r.becomeFollower(m.Term, m.From) <span class="hljs-comment">// always m.Term == r.Term</span></span><br><span class="line">		r.handleAppendEntries(m)</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgHeartbeat:</span><br><span class="line">		r.becomeFollower(m.Term, m.From) <span class="hljs-comment">// always m.Term == r.Term</span></span><br><span class="line">		r.handleHeartbeat(m)</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgSnap:</span><br><span class="line">		r.becomeFollower(m.Term, m.From) <span class="hljs-comment">// always m.Term == r.Term</span></span><br><span class="line">		r.handleSnapshot(m)</span><br><span class="line">	<span class="hljs-keyword">case</span> myVoteRespType:</span><br><span class="line">		<span class="hljs-comment">//1.节点调用raft.poll函数,其中传入msg.Reject参数表示发送者是否同意这次选举,根据这些来计算当前集群中有多少节点给这次选举投了同意票。</span></span><br><span class="line">		<span class="hljs-comment">//2.如果有半数的节点同意了,如果选举类型是PreVote,那么进行Vote状态正式进行一轮选举；否则该节点就成为了新的leader,调用raft.becomeLeader函数切换状态,然后开始同步日志数据给集群中其他节点了。</span></span><br><span class="line">		<span class="hljs-comment">//3.而如果半数以上的节点没有同意,那么重新切换到follower状态。</span></span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">// 计算当前集群中有多少节点给自己投了票</span></span><br><span class="line">		gr := r.poll(m.From, m.Type, !m.Reject)</span><br><span class="line">		r.logger.Infof(<span class="hljs-string">"%x [quorum:%d] has received %d %s votes and %d vote rejections"</span>, r.id, r.quorum(), gr, m.Type, <span class="hljs-built_in">len</span>(r.votes)-gr)</span><br><span class="line">		<span class="hljs-keyword">switch</span> r.quorum() &#123;</span><br><span class="line">		<span class="hljs-keyword">case</span> gr: <span class="hljs-comment">// 如果进行投票的节点数量正好是半数以上节点数量</span></span><br><span class="line">			<span class="hljs-comment">//如果选举类型是PreVote,那么进行Vote状态正式进行一轮选举；</span></span><br><span class="line">			<span class="hljs-keyword">if</span> r.state == StatePreCandidate &#123;</span><br><span class="line">				r.campaign(campaignElection)</span><br><span class="line">				<span class="hljs-comment">//vote状态正式的一轮选举</span></span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-comment">// 变成leader</span></span><br><span class="line">				r.becomeLeader()</span><br><span class="line">				r.bcastAppend()</span><br><span class="line">			&#125;</span><br><span class="line">		<span class="hljs-keyword">case</span> <span class="hljs-built_in">len</span>(r.votes) - gr: <span class="hljs-comment">// 如果是半数以上节点拒绝了投票</span></span><br><span class="line">			<span class="hljs-comment">// 变成follower</span></span><br><span class="line">			<span class="hljs-comment">// pb.MsgPreVoteResp包含未来候选人的期限</span></span><br><span class="line">			<span class="hljs-comment">// m.Term &gt; r.Term; reuse r.Term</span></span><br><span class="line">			r.becomeFollower(r.Term, None)</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgTimeoutNow:</span><br><span class="line">		r.logger.Debugf(<span class="hljs-string">"%x [term %d state %v] ignored MsgTimeoutNow from %x"</span>, r.id, r.Term, r.state, m.From)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+<li><p><code>pb.MsgProp:</code>如果是提议属性消息,那么就直接放弃,因为在候选人阶段是不能够添加日志。</p>
+</li>
+<li><code>pb.MsgApp:</code>如果收到领导人消息,直接将当前节点转为跟随者,并且向领导人发送当前的commitid</li>
+<li><code>pb.MsgHeartbeat:</code>如果收到心跳,也变为跟随者,然后处理心跳</li>
+<li><code>pb.MsgSnap:</code>如果收到快照,也变为跟随者,然后处理快照</li>
+<li><code>case myVoteRespType:</code><ol>
+<li>节点调用raft.poll函数,其中传入msg.Reject参数表示发送者是否同意这次选举,根据这些来计算当前集群中有多少节点给这次选举投了同意票。</li>
+<li>如果有半数的节点同意了,如果选举类型是PreVote,那么进行Vote状态正式进行一轮选举；否则该节点就成为了新的leader,调用raft.becomeLeader函数切换状态,然后开始同步日志数据给集群中其他节点了。</li>
+<li>而如果半数以上的节点没有同意,那么重新切换到follower状态。</li>
+</ol>
+</li>
+<li><code>case pb.MsgTimeoutNow:</code>忽略这条信息,因为状态不对。</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">stepFollower</span><span class="hljs-params">(r *raft, m pb.Message)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">switch</span> m.Type &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgProp:</span><br><span class="line">		<span class="hljs-keyword">if</span> r.lead == None &#123;</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x no leader at term %d; dropping proposal"</span>, r.id, r.Term)</span><br><span class="line">			<span class="hljs-keyword">return</span> ErrProposalDropped</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> r.disableProposalForwarding &#123;</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x not forwarding to leader %x at term %d; dropping proposal"</span>, r.id, r.lead, r.Term)</span><br><span class="line">			<span class="hljs-keyword">return</span> ErrProposalDropped</span><br><span class="line">		&#125;</span><br><span class="line">		m.To = r.lead</span><br><span class="line">		r.send(m)</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgApp:</span><br><span class="line">		r.electionElapsed = <span class="hljs-number">0</span></span><br><span class="line">		r.lead = m.From</span><br><span class="line">		r.handleAppendEntries(m)</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgHeartbeat:</span><br><span class="line">		r.electionElapsed = <span class="hljs-number">0</span></span><br><span class="line">		r.lead = m.From</span><br><span class="line">		r.handleHeartbeat(m)</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgSnap:</span><br><span class="line">		r.electionElapsed = <span class="hljs-number">0</span></span><br><span class="line">		r.lead = m.From</span><br><span class="line">		r.handleSnapshot(m)</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgTransferLeader:</span><br><span class="line">		<span class="hljs-keyword">if</span> r.lead == None &#123;</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x no leader at term %d; dropping leader transfer msg"</span>, r.id, r.Term)</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		m.To = r.lead</span><br><span class="line">		r.send(m)</span><br><span class="line">		<span class="hljs-comment">// 新的leader节点,在还未迁移之前仍然是follower,在收到这条消息后,就可以进行迁移了,此时会调用前面分析MsgVote时说过的campaign函数,传入的参数是campaignTransfer,表示这是一次由于迁移leader导致的选举流程。</span></span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgTimeoutNow:</span><br><span class="line">		<span class="hljs-keyword">if</span> r.promotable() &#123;</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x [term %d] received MsgTimeoutNow from %x and starts an election to get leadership."</span>, r.id, r.Term, m.From)</span><br><span class="line">			<span class="hljs-comment">// Leadership transfers never use pre-vote even if r.preVote is true; we</span></span><br><span class="line">			<span class="hljs-comment">// know we are not recovering from a partition so there is no need for the</span></span><br><span class="line">			<span class="hljs-comment">// extra round trip.</span></span><br><span class="line">			r.campaign(campaignTransfer)</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x received MsgTimeoutNow from %x but is not promotable"</span>, r.id, m.From)</span><br><span class="line">		&#125;</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgReadIndex:</span><br><span class="line">		<span class="hljs-keyword">if</span> r.lead == None &#123;</span><br><span class="line">			r.logger.Infof(<span class="hljs-string">"%x no leader at term %d; dropping index reading msg"</span>, r.id, r.Term)</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		m.To = r.lead</span><br><span class="line">		r.send(m)</span><br><span class="line">	<span class="hljs-keyword">case</span> pb.MsgReadIndexResp:</span><br><span class="line">		<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(m.Entries) != <span class="hljs-number">1</span> &#123;</span><br><span class="line">			r.logger.Errorf(<span class="hljs-string">"%x invalid format of MsgReadIndexResp from %x, entries count: %d"</span>, r.id, m.From, <span class="hljs-built_in">len</span>(m.Entries))</span><br><span class="line">			<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">		r.readStates = <span class="hljs-built_in">append</span>(r.readStates, ReadState&#123;Index: m.Index, RequestCtx: m.Entries[<span class="hljs-number">0</span>].Data&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>case pb.MsgProp:</code>将消息转发给领导人</li>
+<li><code>case pb.MsgApp:</code>收到了领导人了消息,重置弹性超时时间,并且添加日志</li>
+<li><code>case pb.MsgHeartbeat:</code>收到心跳,重置弹性超时时间,处理心跳</li>
+<li><code>case pb.MsgSnap:</code>收到快照,重置弹性超时时间,处理快照</li>
+<li><code>case pb.MsgTransferLeader:</code>转移领导人</li>
+<li><code>case pb.MsgTimeoutNow:</code>新的leader节点,在还未迁移之前仍然是follower,在收到这条消息后,就可以进行迁移了,此时会调用前面分析MsgVote时说过的campaign函数,传入的参数是campaignTransfer,表示这是一次由于迁移leader导致的选举流程。</li>
+<li><code>case pb.MsgReadIndex:</code>像领导人发送读请求</li>
+<li><code>case pb.MsgReadIndexResp:</code>从远程条目里面,添加到本地条目到读状态数组</li>
+</ol>
+<h1 id="四、总结"><a href="#四、总结" class="headerlink" title="四、总结"></a>四、总结</h1><p>源码还是比较难的,还有一些地方我还需要仔细分析,在后面会慢慢加上去,目前就先分析主要流程。最核心的代码依然是在状态机中,Step()函数,以及三个身份的步骤的状态函数。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Algorithm/" rel="tag">Algorithm</a>, <a class="has-link-grey -link" href="/tags/Etcd/" rel="tag">Etcd</a>, <a class="has-link-grey -link" href="/tags/Raft/" rel="tag">Raft</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/11/18/Go/Golang%E8%AF%91%E6%96%87/Go1.13%E4%B8%AD%E7%9A%84%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Go 1.13中的错误处理</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/09/09/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/Raft%E8%AE%BA%E6%96%87(%E8%AF%91%E6%96%87)/">
+                <span class="level-item">(译) Raft 论文</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '4da6f5afed8aea36d908a7f1bd799587',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、分析流程">
+        <span class="has-mr-6">1</span>
+        <span>一、分析流程</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#运行单节点raftexample">
+        <span class="has-mr-6">1.1</span>
+        <span>运行单节点raftexample</span>
+        </a></li><li>
+        <a class="is-flex" href="#运行本地群集">
+        <span class="has-mr-6">1.2</span>
+        <span>运行本地群集</span>
+        </a></li><li>
+        <a class="is-flex" href="#容错">
+        <span class="has-mr-6">1.3</span>
+        <span>容错</span>
+        </a></li><li>
+        <a class="is-flex" href="#动态集群重新配置">
+        <span class="has-mr-6">1.4</span>
+        <span>动态集群重新配置</span>
+        </a></li><li>
+        <a class="is-flex" href="#设计">
+        <span class="has-mr-6">1.5</span>
+        <span>设计</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#二、介绍raft库代码结构及核心数据结构">
+        <span class="has-mr-6">2</span>
+        <span>二、介绍raft库代码结构及核心数据结构</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#MsgHup消息">
+        <span class="has-mr-6">2.1</span>
+        <span>MsgHup消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#MsgBeat消息">
+        <span class="has-mr-6">2.2</span>
+        <span>MsgBeat消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#MsgProp消息">
+        <span class="has-mr-6">2.3</span>
+        <span>MsgProp消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#MsgApp-MsgSnap消息">
+        <span class="has-mr-6">2.4</span>
+        <span>MsgApp/MsgSnap消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#MsgApp消息">
+        <span class="has-mr-6">2.5</span>
+        <span>MsgApp消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#MsgSnap消息">
+        <span class="has-mr-6">2.6</span>
+        <span>MsgSnap消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#MsgAppResp消息">
+        <span class="has-mr-6">2.7</span>
+        <span>MsgAppResp消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#MsgVote-MsgPreVote消息">
+        <span class="has-mr-6">2.8</span>
+        <span>MsgVote/MsgPreVote消息</span>
+        </a></li><li>
+        <a class="is-flex" href="#MsgVoteResp-MsgPreVoteResp消息">
+        <span class="has-mr-6">2.9</span>
+        <span>MsgVoteResp/MsgPreVoteResp消息</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#三、分析源码">
+        <span class="has-mr-6">3</span>
+        <span>三、分析源码</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#main">
+        <span class="has-mr-6">3.1</span>
+        <span>main</span>
+        </a></li><li>
+        <a class="is-flex" href="#main-newKVStore">
+        <span class="has-mr-6">3.2</span>
+        <span>main.newKVStore</span>
+        </a></li><li>
+        <a class="is-flex" href="#main-serveHttpKVAPI">
+        <span class="has-mr-6">3.3</span>
+        <span>main.serveHttpKVAPI</span>
+        </a></li><li>
+        <a class="is-flex" href="#main-newRaftNode">
+        <span class="has-mr-6">3.4</span>
+        <span>main.newRaftNode</span>
+        </a></li><li>
+        <a class="is-flex" href="#main-newRaftNode-startRaft">
+        <span class="has-mr-6">3.5</span>
+        <span>main.newRaftNode.startRaft</span>
+        </a></li><li>
+        <a class="is-flex" href="#main-newRaftNode-startRaft-run">
+        <span class="has-mr-6">3.6</span>
+        <span>main.newRaftNode.startRaft.run</span>
+        </a></li><li>
+        <a class="is-flex" href="#main-newRaftNode-startRaft-Step">
+        <span class="has-mr-6">3.7</span>
+        <span>main.newRaftNode.startRaft.Step</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#四、总结">
+        <span class="has-mr-6">4</span>
+        <span>四、总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Etcd 中 Raft 协议源码的不完全分析（1）" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

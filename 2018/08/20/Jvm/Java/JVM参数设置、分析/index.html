@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>JVM参数设置、分析 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="不管是YGC还是Full GC,GC过程中都会对导致程序运行中中断,正确的选择不同的GC策略,调整JVM、GC的参数,可以极大的减少由于GC工作,而导致的程序运行中断方面的问题,进而适当的提高Java程序的工作效率。但是调整GC是以个极为复杂的过程,由于各个程序具备不同的特点,如：web和GUI程序就有很大区别（Web可以适当的停顿,但GUI停顿是客户无法接受的）,而且由于跑在各个机器上的配置不同">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM参数设置、分析">
+<meta property="og:url" content="https://www.ulovecode.com/2018/08/20/Jvm/Java/JVM%E5%8F%82%E6%95%B0%E8%AE%BE%E7%BD%AE%E3%80%81%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="不管是YGC还是Full GC,GC过程中都会对导致程序运行中中断,正确的选择不同的GC策略,调整JVM、GC的参数,可以极大的减少由于GC工作,而导致的程序运行中断方面的问题,进而适当的提高Java程序的工作效率。但是调整GC是以个极为复杂的过程,由于各个程序具备不同的特点,如：web和GUI程序就有很大区别（Web可以适当的停顿,但GUI停顿是客户无法接受的）,而且由于跑在各个机器上的配置不同">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://md.ulovecode.com/static/images/posts/b33a5b6e868b41b81a9ac7a5ff5e660d.jpg">
+<meta property="article:published_time" content="2018-08-20T09:41:00.000Z">
+<meta property="article:modified_time" content="2018-08-20T09:41:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="原理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://md.ulovecode.com/static/images/posts/b33a5b6e868b41b81a9ac7a5ff5e660d.jpg">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="JVM参数设置、分析" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//md.ulovecode.com/static/images/posts/b33a5b6e868b41b81a9ac7a5ff5e660d.jpg" alt="JVM参数设置、分析">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2018-08-20T09:41:00.000Z">2018-08-20</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Java/">Java</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    6 分钟 读完 (大约 972 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                JVM参数设置、分析
+            
+        </h1>
+        <div class="content">
+            <p>不管是YGC还是Full GC,GC过程中都会对导致程序运行中中断,正确的选择不同的GC策略,调整JVM、GC的参数,可以极大的减少由于GC工作,而导致的程序运行中断方面的问题,进而适当的提高Java程序的工作效率。但是调整GC是以个极为复杂的过程,由于各个程序具备不同的特点,如：web和GUI程序就有很大区别（Web可以适当的停顿,但GUI停顿是客户无法接受的）,而且由于跑在各个机器上的配置不同（主要cup个数,内存不同）,所以使用的GC种类也会不同(如何选择见GC种类及如何选择)。本文将注重介绍JVM、GC的一些重要参数的设置来提高系统的性能。</p>
+<a id="more"></a>
+<h5 id="设置堆大小"><a href="#设置堆大小" class="headerlink" title="设置堆大小"></a><strong>设置堆大小</strong></h5><ul>
+<li>-Xms 初始堆大小  物理内存的1/64(&lt;1GB)  </li>
+<li>-Xmx 最大堆大小  物理内存的1/4(&lt;1GB)</li>
+</ul>
+<h5 id="设置年轻代大小"><a href="#设置年轻代大小" class="headerlink" title="设置年轻代大小"></a><strong>设置年轻代大小</strong></h5><ul>
+<li>-Xmn 年轻代大小(1.4or lator)</li>
+<li>-XX:NewSize 设置年轻代大小(for 1.3/1.4)</li>
+<li>-XX:MaxNewSize  年轻代最大值(for 1.3/1.4)</li>
+</ul>
+<h5 id="设置持久代大小"><a href="#设置持久代大小" class="headerlink" title="设置持久代大小"></a><strong>设置持久代大小</strong></h5><ul>
+<li>-XX:PermSize 设置持久代(perm gen)初始值 物理内存的1/64</li>
+<li>-XX:MaxPermSize 设置持久代最大值 物理内存的1/4</li>
+</ul>
+<h5 id="设置虚拟机栈大小"><a href="#设置虚拟机栈大小" class="headerlink" title="设置虚拟机栈大小"></a><strong>设置虚拟机栈大小</strong></h5><ul>
+<li>-Xss:每个线程的堆栈大小</li>
+<li>-XX:ThreadStack Size Thread Stack Size</li>
+</ul>
+<h5 id="设置空间比例"><a href="#设置空间比例" class="headerlink" title="设置空间比例"></a><strong>设置空间比例</strong></h5><ul>
+<li>-XX:NewRatio 年轻代(包括Eden和两个Survivor区)与年老代的比值(除去持久代)</li>
+<li>-XX:SurvivorRatio Eden区与Survivor区的大小比值</li>
+</ul>
+<h5 id="其他"><a href="#其他" class="headerlink" title="其他"></a><strong>其他</strong></h5><ul>
+<li>-XX:LargePageSizeInBytes 内存页的大小不可设置过大, 会影响Perm的大小</li>
+<li>-XX:+UseFastAccessorMethods 原始类型的快速优化</li>
+<li>-XX:+DisableExplicitGC 关闭System.gc()</li>
+<li>-XX:MaxTenuringThreshold 垃圾最大年龄</li>
+<li>-XX:+AggressiveOpts 加快编译</li>
+<li>-XX:+UseBiasedLocking 锁机制的性能改善</li>
+<li>-Xnoclassgc 禁用class回收</li>
+<li>-XX:SoftRefLRUPolicyMSPerMB 每兆堆空闲空间中SoftReference的存活时间</li>
+<li>-XX:PretenureSizeThreshold 对象超过多大是直接在旧生代分配</li>
+<li>-XX:TLABWasteTargetPercent TLAB占eden区的百分比</li>
+<li>-XX:+CollectGen0First FullGC时是否先YGC</li>
+</ul>
+<h5 id="并行收集器相关参数"><a href="#并行收集器相关参数" class="headerlink" title="并行收集器相关参数"></a><strong>并行收集器相关参数</strong></h5><ul>
+<li>-XX:+UseParallelGC Full GC采用parallel MSC(此项待验证)</li>
+<li>-XX:+UseParNewGC 设置年轻代为并行收集</li>
+<li>-XX:ParallelGCThreads 并行收集器的线程数</li>
+<li>-XX:+UseParallelOldGC 年老代垃圾收集方式为并行收集(Parallel Compacting)</li>
+<li>-XX:MaxGCPauseMillis 每次年轻代垃圾回收的最长时间(最大暂停时间)</li>
+<li>-XX:+UseAdaptiveSizePolicy 自动选择年轻代区大小和相应的Survivor区比例</li>
+<li>-XX:GCTimeRatio 设置垃圾回收时间占程序运行时间的百分比</li>
+<li>-XX:+ScavengeBeforeFullGC Full GC前调用YGC</li>
+</ul>
+<h5 id="CMS-相关参数"><a href="#CMS-相关参数" class="headerlink" title=" CMS 相关参数"></a><strong> CMS 相关参数</strong></h5><ul>
+<li>-XX:+UseConcMarkSweepGC 使用CMS内存收集</li>
+<li>-XX:+AggressiveHeap 试图使用大量的物理内存</li>
+<li>-XX:CMSFullGCsBeforeCompaction 多少次后进行内存压缩</li>
+<li>-XX:+CMSParallelRemarkEnabled 降低标记停顿</li>
+<li>-XX+UseCMSCompactAtFullCollection 在FULL GC的时候, 对年老代的压缩</li>
+<li>-XX:+UseCMSInitiatingOccupancyOnly 使用手动定义初始化定义开始CMS收集</li>
+<li>-XX:CMSInitiatingOccupancyFraction=70 使用cms作为垃圾回收使用70％后开始CMS收集</li>
+<li>-XX:CMSInitiatingPermOccupancyFraction 设置Perm Gen使用到达多少比率时触发</li>
+<li>-XX:+CMSIncrementalMode 设置为增量模式</li>
+<li>-XX:+CMSClassUnloadingEnabled CMS收集器默认不会对永久代进行垃圾回收。如果希望对永久代进行垃圾回收</li>
+</ul>
+<h5 id="辅助信息"><a href="#辅助信息" class="headerlink" title="辅助信息"></a><strong>辅助信息</strong></h5><ul>
+<li>-XX:+PrintGC</li>
+<li>-XX:+PrintGCDetails</li>
+<li>-XX:+PrintGCTimeStamps</li>
+<li>-XX:+PrintGC:PrintGCTimeStamps  可与-XX:+PrintGC -XX:+PrintGCDetails混用</li>
+<li>-XX:+PrintGCApplicationStoppedTime 打印垃圾回收期间程序暂停的时间.可与上面混合使用 </li>
+<li>-XX:+PrintGCApplicationConcurrentTime 打印每次垃圾回收前,程序未中断的执行时间.可与上面混合使用</li>
+<li>-XX:+PrintHeapAtGC打印GC前后的详细堆栈信息</li>
+<li>-Xloggc:filename 把相关日志信息记录到文件以便分析.与上面几个配合使用</li>
+<li>-XX:+PrintClassHistogram garbage collects before printing the histogram.</li>
+<li>-XX:+PrintTLAB 查看TLAB空间的使用情况</li>
+<li>-XX:+PrintTenuringDistribution 查看每次minor GC后新的存活周期的阈值</li>
+</ul>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E5%8E%9F%E7%90%86/" rel="tag">原理</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2018/08/23/Jvm/Java/Synchroized%E5%92%8CVolatile%E7%9A%84%E5%88%86%E6%9E%90%E5%92%8C%E5%8C%BA%E5%88%AB/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">synchronized和volatile的分析和区别</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2018/08/19/Jvm/Java/Java%E5%9F%BA%E7%A1%80%E6%A2%B3%E7%90%86%E5%8F%8A%E5%85%B3%E9%94%AE%E5%8E%9F%E7%90%86/">
+                <span class="level-item">Java基础梳理及关键原理</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '1d054a802c4b05ef640494b596ec5536',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#设置堆大小">
+        <span class="has-mr-6">1</span>
+        <span>设置堆大小</span>
+        </a></li><li>
+        <a class="is-flex" href="#设置年轻代大小">
+        <span class="has-mr-6">2</span>
+        <span>设置年轻代大小</span>
+        </a></li><li>
+        <a class="is-flex" href="#设置持久代大小">
+        <span class="has-mr-6">3</span>
+        <span>设置持久代大小</span>
+        </a></li><li>
+        <a class="is-flex" href="#设置虚拟机栈大小">
+        <span class="has-mr-6">4</span>
+        <span>设置虚拟机栈大小</span>
+        </a></li><li>
+        <a class="is-flex" href="#设置空间比例">
+        <span class="has-mr-6">5</span>
+        <span>设置空间比例</span>
+        </a></li><li>
+        <a class="is-flex" href="#其他">
+        <span class="has-mr-6">6</span>
+        <span>其他</span>
+        </a></li><li>
+        <a class="is-flex" href="#并行收集器相关参数">
+        <span class="has-mr-6">7</span>
+        <span>并行收集器相关参数</span>
+        </a></li><li>
+        <a class="is-flex" href="#CMS-相关参数">
+        <span class="has-mr-6">8</span>
+        <span> CMS 相关参数</span>
+        </a></li><li>
+        <a class="is-flex" href="#辅助信息">
+        <span class="has-mr-6">9</span>
+        <span>辅助信息</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="JVM参数设置、分析" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

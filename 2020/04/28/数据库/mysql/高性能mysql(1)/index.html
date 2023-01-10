@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>高性能 MySQL ｜ MySQL 逻辑架构 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="MySQL 的逻辑架构分为三层,客户端,服务器,存储引擎。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高性能 MySQL ｜ MySQL 逻辑架构">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/28/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql/%E9%AB%98%E6%80%A7%E8%83%BDmysql(1)/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="MySQL 的逻辑架构分为三层,客户端,服务器,存储引擎。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/b4/38/b416c2fd6da665dee1685a5bc8a42638.png?x-oss-process=image/crop,y_1,w_1137,h_638/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-04-28T11:35:00.000Z">
+<meta property="article:modified_time" content="2020-04-28T11:35:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/b4/38/b416c2fd6da665dee1685a5bc8a42638.png?x-oss-process=image/crop,y_1,w_1137,h_638/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="高性能 MySQL ｜ MySQL 逻辑架构" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/b4/38/b416c2fd6da665dee1685a5bc8a42638.png?x-oss-process=image/crop,y_1,w_1137,h_638/resize,w_1280,h_847" alt="高性能 MySQL ｜ MySQL 逻辑架构">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-28T11:35:00.000Z">2020-04-28</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    30 分钟 读完 (大约 4493 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                高性能 MySQL ｜ MySQL 逻辑架构
+            
+        </h1>
+        <div class="content">
+            <p>MySQL 的逻辑架构分为三层,客户端,服务器,存储引擎。</p>
+<a id="more"></a>
+<h2 id="一、逻辑架构"><a href="#一、逻辑架构" class="headerlink" title="一、逻辑架构"></a>一、逻辑架构</h2><p><img src="https://md.ulovecode.com/static/images/posts/mysql-structure-01.png" alt="架构图"></p>
+<h4 id="1-客户端"><a href="#1-客户端" class="headerlink" title="1.客户端"></a>1.客户端</h4><p>第一层负责连接管理、授权认证、安全等等。每个客户端的连接都对应着服务器上的一个线程。服务器上维护了一个线程池,避免为每个连接都创建销毁一个线程。当客户端连接到MySQL服务器时,服务器对其进行认证。可以通过用户名和密码的方式进行认证,也可以通过SSL证书进行认证。登录认证通过后,服务器还会验证该客户端是否有执行某个查询的权限。</p>
+<h4 id="2-服务器"><a href="#2-服务器" class="headerlink" title="2.服务器"></a>2.服务器</h4><p>第二层架构是MySQL比较有意思的部分。大多数MySQL的核心服务功能都在这一层,包括查询解析、分析、优化、缓存以及所有的内置函数（例如,日期、时间、数学和加密函数）,所有跨存储引擎的功能都在这一层实现：存储过程、触发器、视图等。</p>
+<ol>
+<li>连接/线程处理</li>
+<li>查询缓存</li>
+<li>解析器</li>
+<li>优化器</li>
+</ol>
+<h4 id="3-存储引擎"><a href="#3-存储引擎" class="headerlink" title="3.存储引擎"></a>3.存储引擎</h4><p>第三层包含了存储引擎。存储引擎负责MySQL中数据的存储和提取。和GNU/Linux下的各种文件系统一样,每个存储引擎都有它的优势和劣势。服务器通过API与存储引擎进行通信。这些接口屏蔽了不同存储引擎之间的差异,使得这些差异对上层的查询过程透明。存储引擎API包含几十个底层函数,用于执行诸如“开始一个事务”或者“根据主键提取一行记录”等操作。但存储引擎不会去解析SQL(1),不同存储引擎之间也不会相互通信,而只是简单地响应上层服务器的请求。</p>
+<h5 id="执行与优化过程"><a href="#执行与优化过程" class="headerlink" title="执行与优化过程"></a>执行与优化过程</h5><ol>
+<li>解析查询</li>
+<li>创建内部数据结构（解析树）</li>
+<li>重写查询</li>
+<li>决定表的读取顺序</li>
+<li>选择合适的索引</li>
+</ol>
+<blockquote>
+<p>对其进行各种优化,用户可以通过特殊的关键字提示（hint）优化器,影响它的决策过程。也可以请求优化器解释（explain）优化过程的各个因素</p>
+</blockquote>
+<h2 id="二、并发控制"><a href="#二、并发控制" class="headerlink" title="二、并发控制"></a>二、并发控制</h2><h4 id="1-读写锁"><a href="#1-读写锁" class="headerlink" title="1.读写锁"></a>1.读写锁</h4><h5 id="共享锁（shared-lock）-也叫读锁（read-lock）"><a href="#共享锁（shared-lock）-也叫读锁（read-lock）" class="headerlink" title="共享锁（shared lock）,也叫读锁（read lock）"></a>共享锁（shared lock）,也叫读锁（read lock）</h5><p>读锁是共享的,或者说是相互不阻塞的。多个客户在同一时刻可以同时读取同一个资源,而互不干扰。</p>
+<h5 id="写锁（write-lock）-也叫排他锁（exclusive-lock）"><a href="#写锁（write-lock）-也叫排他锁（exclusive-lock）" class="headerlink" title="写锁（write lock）,也叫排他锁（exclusive lock）"></a>写锁（write lock）,也叫排他锁（exclusive lock）</h5><p>写锁则是排他的,也就是说一个写锁会阻塞其他的写锁和读锁,这是出于安全策略的考虑,只有这样,才能确保在给定的时间里,只有一个用户能执行写入,并防止其他用户读取正在写入的同一资源。</p>
+<h4 id="2-锁粒度"><a href="#2-锁粒度" class="headerlink" title="2.锁粒度"></a>2.锁粒度</h4><h5 id="表锁（table-lock）"><a href="#表锁（table-lock）" class="headerlink" title="表锁（table lock）"></a>表锁（table lock）</h5><p>表锁是MySQL中最基本的锁策略,并且是开销最小的策略。表锁非常类似于前文描述的邮箱加锁机制：它会锁定整张表。一个用户在对表进行写操作（插入、删除、更新等）前,需要先获得写锁,这会阻塞其他用户对该表的所有读写操作。只有没有写锁时,其他读取的用户才能获得读锁,读锁之间是不相互阻塞的。</p>
+<h5 id="行级锁（row-lock）"><a href="#行级锁（row-lock）" class="headerlink" title="行级锁（row lock）"></a>行级锁（row lock）</h5><p>行级锁可以最大程度地支持并发处理（同时也带来了最大的锁开销）。众所周知,在InnoDB和XtraDB,以及其他一些存储引擎中实现了行级锁。行级锁只在存储引擎层实现,而 MySQL 服务器层没有实现。服务器层完全不了解存储引擎中的锁实现。</p>
+<h2 id="三、事物"><a href="#三、事物" class="headerlink" title="三、事物"></a>三、事物</h2><h4 id="1-ACID-特性"><a href="#1-ACID-特性" class="headerlink" title="1.ACID 特性"></a>1.ACID 特性</h4><h5 id="原子性（atomicity）"><a href="#原子性（atomicity）" class="headerlink" title="原子性（atomicity）"></a>原子性（atomicity）</h5><p>一个事务必须被视为一个不可分割的最小工作单元,整个事务中的所有操作要么全部提交成功,要么全部失败回滚,对于一个事务来说,不可能只执行其中的一部分操作,这就是事务的原子性。</p>
+<h5 id="一致性（consistency）"><a href="#一致性（consistency）" class="headerlink" title="一致性（consistency）"></a>一致性（consistency）</h5><p>数据库总是从一个一致性的状态转换到另外一个一致性的状态。在前面的例子中,一致性确保了,即使在执行第三、四条语句之间时系统崩溃,支票账户中也不会损失200美元,因为事务最终没有提交,所以事务中所做的修改也不会保存到数据库中。</p>
+<h5 id="隔离性（isolation）"><a href="#隔离性（isolation）" class="headerlink" title="隔离性（isolation）"></a>隔离性（isolation）</h5><p>通常来说,一个事务所做的修改在最终提交以前,对其他事务是不可见的。在前面的例子中,当执行完第三条语句、第四条语句还未开始时,此时有另外一个账户汇总程序开始运行,则其看到的支票账户的余额并没有被减去200美元。后面我们讨论隔离级别（Isolation level）的时候,会发现为什么我们要说“通常来说”是不可见的。</p>
+<h5 id="持久性（durability）"><a href="#持久性（durability）" class="headerlink" title="持久性（durability）"></a>持久性（durability）</h5><p>一旦事务提交,则其所做的修改就会永久保存到数据库中。此时即使系统崩溃,修改的数据也不会丢失。持久性是个有点模糊的概念,因为实际上持久性也分很多不同的级别。有些持久性策略能够提供非常强的安全保障,而有些则未必。而且不可能有能做到100％的持久性保证的策略（如果数据库本身就能做到真正的持久性,那么备份又怎么能增加持久性呢？）。在后面的一些章节中,我们会继续讨论MySQL中持久性的真正含义。</p>
+<h4 id="2-隔离级别"><a href="#2-隔离级别" class="headerlink" title="2.隔离级别"></a>2.隔离级别</h4><h5 id="READ-UNCOMMITTED（未提交读）"><a href="#READ-UNCOMMITTED（未提交读）" class="headerlink" title="READ UNCOMMITTED（未提交读）"></a>READ UNCOMMITTED（未提交读）</h5><p>在READ UNCOMMITTED级别,事务中的修改,即使没有提交,对其他事务也都是可见的。事务可以读取未提交的数据,这也被称为脏读（Dirty Read）。这个级别会导致很多问题,从性能上来说,READ UNCOMMITTED不会比其他的级别好太多,但却缺乏其他级别的很多好处,除非真的有非常必要的理由,在实际应用中一般很少使用。</p>
+<h5 id="READ-COMMITTED（提交读）"><a href="#READ-COMMITTED（提交读）" class="headerlink" title="READ COMMITTED（提交读）"></a>READ COMMITTED（提交读）</h5><p>大多数数据库系统的默认隔离级别都是READ COMMITTED（但MySQL不是）。READ COMMITTED满足前面提到的隔离性的简单定义：一个事务开始时,只能“看见”已经提交的事务所做的修改。换句话说,一个事务从开始直到提交之前,所做的任何修改对其他事务都是不可见的。这个级别有时候也叫做不可重复读（nonrepeatable read）,因为两次执行同样的查询,可能会得到不一样的结果。</p>
+<h5 id="REPEATABLE-READ（可重复读）"><a href="#REPEATABLE-READ（可重复读）" class="headerlink" title="REPEATABLE READ（可重复读）"></a>REPEATABLE READ（可重复读）</h5><p>REPEATABLE READ解决了脏读的问题。该级别保证了在同一个事务中多次读取同样记录的结果是一致的。但是理论上,可重复读隔离级别还是无法解决另外一个幻读（Phantom Read）的问题。所谓幻读,指的是当某个事务在读取某个范围内的记录时,另外一个事务又在该范围内插入了新的记录,当之前的事务再次读取该范围的记录时,会产生幻行（Phantom Row）。InnoDB和XtraDB存储引擎通过多版本并发控制（MVCC,Multiversion Concurrency Control）解决了幻读的问题。本章稍后会做进一步的讨论。</p>
+<blockquote>
+<p>可重复读是MySQL的默认事务隔离级别</p>
+</blockquote>
+<h5 id="SERIALIZABLE（可串行化）"><a href="#SERIALIZABLE（可串行化）" class="headerlink" title="SERIALIZABLE（可串行化）"></a>SERIALIZABLE（可串行化）</h5><p>SERIALIZABLE是最高的隔离级别。它通过强制事务串行执行,避免了前面说的幻读的问题。简单来说,SERIALIZABLE会在读取的每一行数据上都加锁,所以可能导致大量的超时和锁争用的问题。实际应用中也很少用到这个隔离级别,只有在非常需要确保数据的一致性而且可以接受没有并发的情况下,才考虑采用该级别。</p>
+<h4 id="3-死锁"><a href="#3-死锁" class="headerlink" title="3.死锁"></a>3.死锁</h4><h5 id="死锁的产生有双重原因"><a href="#死锁的产生有双重原因" class="headerlink" title="死锁的产生有双重原因"></a>死锁的产生有双重原因</h5><ol>
+<li>有些是因为真正的数据冲突</li>
+<li>有些则完全是由于存储引擎的实现方式导致的</li>
+</ol>
+<h5 id="系统的解决办法"><a href="#系统的解决办法" class="headerlink" title="系统的解决办法"></a>系统的解决办法</h5><p>InnoDB目前处理死锁的方法是,将持有最少行级排他锁的事务进行回滚（这是相对比较简单的死锁回滚算法）。</p>
+<ol>
+<li><strong>超时机制</strong></li>
+</ol>
+<p>就是当查询的时间达到锁等待超时的设定后放弃锁请求,这种方式通常来说不太好。</p>
+<ol start="2">
+<li><strong>死锁检测</strong></li>
+</ol>
+<p>比如InnoDB存储引擎,越能检测到死锁的循环依赖,并立即返回一个错误。</p>
+<blockquote>
+<p>死锁发生以后,只有部分或者完全回滚其中一个事务,才能打破死锁。</p>
+</blockquote>
+<h5 id="事务日志"><a href="#事务日志" class="headerlink" title="事务日志"></a>事务日志</h5><ol>
+<li>预写式日志（Write-Ahead Logging）,追加的方式,因此写日志的操作是磁盘上一小块区域内的顺序I/O,而不像随机I/O需要在磁盘的多个地方移动磁头,所以采用事务日志的方式相对来说要快得多。</li>
+<li>写回磁盘</li>
+</ol>
+<h4 id="4-MySQL中的事务"><a href="#4-MySQL中的事务" class="headerlink" title="4.MySQL中的事务"></a>4.MySQL中的事务</h4><h5 id="事务型的存储引擎"><a href="#事务型的存储引擎" class="headerlink" title="事务型的存储引擎"></a>事务型的存储引擎</h5><ul>
+<li>InnoDB</li>
+<li>NDB Cluster</li>
+<li>第三方存储引擎</li>
+</ul>
+<h5 id="自动提交（AUTOCOMMIT）"><a href="#自动提交（AUTOCOMMIT）" class="headerlink" title="自动提交（AUTOCOMMIT）"></a>自动提交（AUTOCOMMIT）</h5><p>MySQL默认采用自动提交（AUTOCOMMIT）模式。</p>
+<h5 id="隐式和显式锁定"><a href="#隐式和显式锁定" class="headerlink" title="隐式和显式锁定"></a>隐式和显式锁定</h5><p><strong>隐式锁定</strong></p>
+<p>在事务执行过程中,随时都可以执行锁定,锁只有在执行COMMIT或者ROLLBACK的时候才会释放,并且所有的锁是在同一时刻被释放。InnoDB会根据隔离级别在需要的时候自动加锁。</p>
+<p><strong>显式锁定</strong></p>
+<p>除了事务中禁用了AUTOCOMMIT,可以使用LOCK TABLES之外,其他任何时候都不要显式地执行LOCK TABLES,不管使用的是什么存储引擎。</p>
+<ul>
+<li>FOR UPDATE</li>
+<li>LOCK TABLES</li>
+</ul>
+<h2 id="四、多版本并发控制（MVCC）"><a href="#四、多版本并发控制（MVCC）" class="headerlink" title="四、多版本并发控制（MVCC）"></a>四、多版本并发控制（MVCC）</h2><h4 id="1-两种实现原理"><a href="#1-两种实现原理" class="headerlink" title="1.两种实现原理"></a>1.两种实现原理</h4><p>通过保存数据在某个时间点的快照来实现的</p>
+<ul>
+<li>乐观（optimistic）并发控制</li>
+<li>悲观（pessimistic）并发控制</li>
+</ul>
+<h4 id="2-InnoDB的MVCC的实现原理"><a href="#2-InnoDB的MVCC的实现原理" class="headerlink" title="2.InnoDB的MVCC的实现原理"></a>2.InnoDB的MVCC的实现原理</h4><p>通过在每行记录后面保存两个隐藏的列来实现的</p>
+<ul>
+<li>行的创建时间</li>
+<li>行的过期时间（或删除时间）</li>
+</ul>
+<blockquote>
+<p>当然存储的并不是实际的时间值,而是系统版本号（system version number）。每开始一个新的事务,系统版本号都会自动递增。事务开始时刻的系统版本号会作为事务的版本号,用来和查询到的每行记录的版本号进行比较。</p>
+</blockquote>
+<h5 id="SELECT"><a href="#SELECT" class="headerlink" title="SELECT"></a>SELECT</h5><ul>
+<li>只查找版本早于当前事务版本的数据行</li>
+<li>行的删除版本要么未定义,要么大于当前事务版本号</li>
+</ul>
+<h5 id="INSERT"><a href="#INSERT" class="headerlink" title="INSERT"></a>INSERT</h5><p>为新插入的每一行保存当前系统版本号作为行版本号</p>
+<h5 id="DELETE"><a href="#DELETE" class="headerlink" title="DELETE"></a>DELETE</h5><p>为删除的每一行保存当前系统版本号作为行删除标识</p>
+<h5 id="UPDATE"><a href="#UPDATE" class="headerlink" title="UPDATE"></a>UPDATE</h5><p>为插入一行新记录,保存当前系统版本号作为行版本号,同时保存当前系统版本号到原来的行作为行删除标识。</p>
+<blockquote>
+<p>MVCC 只在<code>REPEATABLE READ</code>和<code>READ COMMITTED</code>两个隔离级别下工作。其他两个隔离级别都和 MVCC 不兼容,因为<code>READ UNCOMMITTED</code>总是读取最新的数据行,而不是符合当前事务版本的数据行。而<code>SERIALIZABLE</code>则会对所有读取的行都加锁。</p>
+</blockquote>
+<h2 id="五、存储引擎"><a href="#五、存储引擎" class="headerlink" title="五、存储引擎"></a>五、存储引擎</h2><h4 id="1-InnoDB存储引擎-事务型的数据库"><a href="#1-InnoDB存储引擎-事务型的数据库" class="headerlink" title="1.InnoDB存储引擎(事务型的数据库)"></a>1.InnoDB存储引擎(事务型的数据库)</h4><p>InnoDB采用MVCC来支持高并发,并且实现了四个标准的隔离级别。其默认级别是REPEATABLE READ（可重复读）,并且通过间隙锁（next-key locking）策略防止幻读的出现。间隙锁使得InnoDB不仅仅锁定查询涉及的行,还会对索引中的间隙进行锁定,以防止幻影行的插入。</p>
+<ul>
+<li>从磁盘读取数据时采用的可预测性预读</li>
+<li>加速插入操作的插入缓冲区（insert buffer）</li>
+<li>索引<ul>
+<li>基于聚簇索引,聚簇索引对主键查询有很高的性能。</li>
+<li>二级索引,二级索引（secondary index,非主键索引）中必须包含主键列,所以如果主键列很大的话,其他的所有索引都会很大。因此,若表上的索引较多的话,主键应当尽可能的小。</li>
+<li>自适应哈希索引,能够自动在内存中创建hash索引以加速读操作。</li>
+</ul>
+</li>
+</ul>
+<h4 id="2-MyISAM存储引擎-非事务型的数据库"><a href="#2-MyISAM存储引擎-非事务型的数据库" class="headerlink" title="2.MyISAM存储引擎(非事务型的数据库)"></a>2.MyISAM存储引擎(非事务型的数据库)</h4><p>MyISAM提供了大量的特性,包括全文索引、压缩、空间函数（GIS）等,但MyISAM不支持事务和行级锁,而且有一个毫无疑问的缺陷就是崩溃后无法安全恢复。</p>
+<h4 id="3-Archive引擎-非事务型的数据库"><a href="#3-Archive引擎-非事务型的数据库" class="headerlink" title="3.Archive引擎(非事务型的数据库)"></a>3.Archive引擎(非事务型的数据库)</h4><p>Archive存储引擎只支持INSERT和SELECT操作,在MySQL 5.1之前也不支持索引。Archive引擎会缓存所有的写并利用zlib对插入的行进行压缩,所以比MyISAM表的磁盘I/O更少。但是每次SELECT查询都需要执行全表扫描。所以Archive表适合日志和数据采集类应用,这类应用做数据分析时往往需要全表扫描。或者在一些需要更快速的INSERT操作的场合下也可以使用。Archive引擎支持行级锁和专用的缓冲区,所以可以实现高并发的插入。在一个查询开始直到返回表中存在的所有行数之前,Archive引擎会阻止其他的SELECT执行,以实现一致性读。另外,也实现了批量插入在完成之前对读操作是不可见的。这种机制模仿了事务和MVCC的一些特性,但Archive引擎不是一个事务型的引擎,而是一个针对高速插入和压缩做了优化的简单引擎。</p>
+<h4 id="4-Blackhole引擎"><a href="#4-Blackhole引擎" class="headerlink" title="4.Blackhole引擎"></a>4.Blackhole引擎</h4><p>Blackhole引擎没有实现任何的存储机制,它会丢弃所有插入的数据,不做任何保存。但是服务器会记录Blackhole表的日志,所以可以用于复制数据到备库,或者只是简单地记录到日志。这种特殊的存储引擎可以在一些特殊的复制架构和日志审核时发挥作用。但这种应用方式我们碰到过很多问题,因此并不推荐。</p>
+<h4 id="5-CSV引擎"><a href="#5-CSV引擎" class="headerlink" title="5.CSV引擎"></a>5.CSV引擎</h4><p>CSV引擎可以将普通的CSV文件（逗号分割值的文件）作为MySQL的表来处理,但这种表不支持索引。CSV引擎可以在数据库运行时拷入或者拷出文件。可以将Excel等电子表格软件中的数据存储为CSV文件,然后复制到MySQL数据目录下,就能在MySQL中打开使用。同样,如果将数据写入到一个CSV引擎表,其他的外部程序也能立即从表的数据文件中读取CSV格式的数据。因此CSV引擎可以作为一种数据交换的机制,非常有用。</p>
+<h4 id="6-Federated引擎"><a href="#6-Federated引擎" class="headerlink" title="6.Federated引擎"></a>6.Federated引擎</h4><p>Federated引擎是访问其他MySQL服务器的一个代理,它会创建一个到远程MySQL服务器的客户端连接,并将查询传输到远程服务器执行,然后提取或者发送需要的数据。最初设计该存储引擎是为了和企业级数据库如Microsoft SQL Server和Oracle的类似特性竞争的,可以说更多的是一种市场行为。尽管该引擎看起来提供了一种很好的跨服务器的灵活性,但也经常带来问题,因此默认是禁用的。MariaDB使用了它的一个后续改进版本,叫做FederatedX。</p>
+<h4 id="7-Memory引擎"><a href="#7-Memory引擎" class="headerlink" title="7.Memory引擎"></a>7.Memory引擎</h4><h5 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h5><ul>
+<li>用于查找（lookup）或者映射（mapping）表</li>
+<li>用于缓存周期性聚合数据（periodically aggregated data）的结果</li>
+<li>用于保存数据分析中产生的中间数据</li>
+</ul>
+<h5 id="锁粒度"><a href="#锁粒度" class="headerlink" title="锁粒度"></a>锁粒度</h5><p>使用表锁（table lock,表锁是MySQL中最基本的锁策略,并且是开销最小的策略。表锁非常类似于前文描述的邮箱加锁机制：它会锁定整张表。一个用户在对表进行写操作（插入、删除、更新等）前,需要先获得写锁,这会阻塞其他用户对该表的所有读写操作。只有没有写锁时,其他读取的用户才能获得读锁,读锁之间是不相互阻塞的。</p>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><ul>
+<li>并发写入的性能较低</li>
+<li>不支持BLOB或TEXT类型的列,并且每行的长度是固定的</li>
+</ul>
+<h4 id="8-NDB集群引擎"><a href="#8-NDB集群引擎" class="headerlink" title="8.NDB集群引擎"></a>8.NDB集群引擎</h4><p><strong>TODO</strong></p>
+<h4 id="9-Merge引擎"><a href="#9-Merge引擎" class="headerlink" title="9.Merge引擎"></a>9.Merge引擎</h4><p>Merge表是由多个MyISAM表合并而来的虚拟表。如果将MySQL用于日志或者数据仓库类应用,该引擎可以发挥作用。但是引入分区功能后,该引擎已经被放弃</p>
+<h4 id="10-第三方存储引擎"><a href="#10-第三方存储引擎" class="headerlink" title="10.第三方存储引擎"></a>10.第三方存储引擎</h4><p><strong>TODO</strong></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/" rel="tag">MySQL</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/30/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql/%E9%AB%98%E6%80%A7%E8%83%BDmysql(2)/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">高性能 MySQL ｜ Schema 与数据类型优化</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/04/28/Go/Colly%E5%AE%98%E6%96%B9%E6%96%87%E6%A1%A3%E5%AD%A6%E4%B9%A0%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E5%85%A5%E5%9C%9F/">
+                <span class="level-item">Colly 官方文档学习从入门到入土</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '7621a11e4b982a6fecd38c39901d3377',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、逻辑架构">
+        <span class="has-mr-6">1</span>
+        <span>一、逻辑架构</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-客户端">
+        <span class="has-mr-6">1.1</span>
+        <span>1.客户端</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-服务器">
+        <span class="has-mr-6">1.2</span>
+        <span>2.服务器</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-存储引擎">
+        <span class="has-mr-6">1.3</span>
+        <span>3.存储引擎</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#执行与优化过程">
+        <span class="has-mr-6">1.3.1</span>
+        <span>执行与优化过程</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#二、并发控制">
+        <span class="has-mr-6">2</span>
+        <span>二、并发控制</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-读写锁">
+        <span class="has-mr-6">2.1</span>
+        <span>1.读写锁</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#共享锁（shared-lock）-也叫读锁（read-lock）">
+        <span class="has-mr-6">2.1.1</span>
+        <span>共享锁（shared lock）,也叫读锁（read lock）</span>
+        </a></li><li>
+        <a class="is-flex" href="#写锁（write-lock）-也叫排他锁（exclusive-lock）">
+        <span class="has-mr-6">2.1.2</span>
+        <span>写锁（write lock）,也叫排他锁（exclusive lock）</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#2-锁粒度">
+        <span class="has-mr-6">2.2</span>
+        <span>2.锁粒度</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#表锁（table-lock）">
+        <span class="has-mr-6">2.2.1</span>
+        <span>表锁（table lock）</span>
+        </a></li><li>
+        <a class="is-flex" href="#行级锁（row-lock）">
+        <span class="has-mr-6">2.2.2</span>
+        <span>行级锁（row lock）</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#三、事物">
+        <span class="has-mr-6">3</span>
+        <span>三、事物</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-ACID-特性">
+        <span class="has-mr-6">3.1</span>
+        <span>1.ACID 特性</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#原子性（atomicity）">
+        <span class="has-mr-6">3.1.1</span>
+        <span>原子性（atomicity）</span>
+        </a></li><li>
+        <a class="is-flex" href="#一致性（consistency）">
+        <span class="has-mr-6">3.1.2</span>
+        <span>一致性（consistency）</span>
+        </a></li><li>
+        <a class="is-flex" href="#隔离性（isolation）">
+        <span class="has-mr-6">3.1.3</span>
+        <span>隔离性（isolation）</span>
+        </a></li><li>
+        <a class="is-flex" href="#持久性（durability）">
+        <span class="has-mr-6">3.1.4</span>
+        <span>持久性（durability）</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#2-隔离级别">
+        <span class="has-mr-6">3.2</span>
+        <span>2.隔离级别</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#READ-UNCOMMITTED（未提交读）">
+        <span class="has-mr-6">3.2.1</span>
+        <span>READ UNCOMMITTED（未提交读）</span>
+        </a></li><li>
+        <a class="is-flex" href="#READ-COMMITTED（提交读）">
+        <span class="has-mr-6">3.2.2</span>
+        <span>READ COMMITTED（提交读）</span>
+        </a></li><li>
+        <a class="is-flex" href="#REPEATABLE-READ（可重复读）">
+        <span class="has-mr-6">3.2.3</span>
+        <span>REPEATABLE READ（可重复读）</span>
+        </a></li><li>
+        <a class="is-flex" href="#SERIALIZABLE（可串行化）">
+        <span class="has-mr-6">3.2.4</span>
+        <span>SERIALIZABLE（可串行化）</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#3-死锁">
+        <span class="has-mr-6">3.3</span>
+        <span>3.死锁</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#死锁的产生有双重原因">
+        <span class="has-mr-6">3.3.1</span>
+        <span>死锁的产生有双重原因</span>
+        </a></li><li>
+        <a class="is-flex" href="#系统的解决办法">
+        <span class="has-mr-6">3.3.2</span>
+        <span>系统的解决办法</span>
+        </a></li><li>
+        <a class="is-flex" href="#事务日志">
+        <span class="has-mr-6">3.3.3</span>
+        <span>事务日志</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#4-MySQL中的事务">
+        <span class="has-mr-6">3.4</span>
+        <span>4.MySQL中的事务</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#事务型的存储引擎">
+        <span class="has-mr-6">3.4.1</span>
+        <span>事务型的存储引擎</span>
+        </a></li><li>
+        <a class="is-flex" href="#自动提交（AUTOCOMMIT）">
+        <span class="has-mr-6">3.4.2</span>
+        <span>自动提交（AUTOCOMMIT）</span>
+        </a></li><li>
+        <a class="is-flex" href="#隐式和显式锁定">
+        <span class="has-mr-6">3.4.3</span>
+        <span>隐式和显式锁定</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#四、多版本并发控制（MVCC）">
+        <span class="has-mr-6">4</span>
+        <span>四、多版本并发控制（MVCC）</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-两种实现原理">
+        <span class="has-mr-6">4.1</span>
+        <span>1.两种实现原理</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-InnoDB的MVCC的实现原理">
+        <span class="has-mr-6">4.2</span>
+        <span>2.InnoDB的MVCC的实现原理</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#SELECT">
+        <span class="has-mr-6">4.2.1</span>
+        <span>SELECT</span>
+        </a></li><li>
+        <a class="is-flex" href="#INSERT">
+        <span class="has-mr-6">4.2.2</span>
+        <span>INSERT</span>
+        </a></li><li>
+        <a class="is-flex" href="#DELETE">
+        <span class="has-mr-6">4.2.3</span>
+        <span>DELETE</span>
+        </a></li><li>
+        <a class="is-flex" href="#UPDATE">
+        <span class="has-mr-6">4.2.4</span>
+        <span>UPDATE</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#五、存储引擎">
+        <span class="has-mr-6">5</span>
+        <span>五、存储引擎</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-InnoDB存储引擎-事务型的数据库">
+        <span class="has-mr-6">5.1</span>
+        <span>1.InnoDB存储引擎(事务型的数据库)</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-MyISAM存储引擎-非事务型的数据库">
+        <span class="has-mr-6">5.2</span>
+        <span>2.MyISAM存储引擎(非事务型的数据库)</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-Archive引擎-非事务型的数据库">
+        <span class="has-mr-6">5.3</span>
+        <span>3.Archive引擎(非事务型的数据库)</span>
+        </a></li><li>
+        <a class="is-flex" href="#4-Blackhole引擎">
+        <span class="has-mr-6">5.4</span>
+        <span>4.Blackhole引擎</span>
+        </a></li><li>
+        <a class="is-flex" href="#5-CSV引擎">
+        <span class="has-mr-6">5.5</span>
+        <span>5.CSV引擎</span>
+        </a></li><li>
+        <a class="is-flex" href="#6-Federated引擎">
+        <span class="has-mr-6">5.6</span>
+        <span>6.Federated引擎</span>
+        </a></li><li>
+        <a class="is-flex" href="#7-Memory引擎">
+        <span class="has-mr-6">5.7</span>
+        <span>7.Memory引擎</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#应用场景">
+        <span class="has-mr-6">5.7.1</span>
+        <span>应用场景</span>
+        </a></li><li>
+        <a class="is-flex" href="#锁粒度">
+        <span class="has-mr-6">5.7.2</span>
+        <span>锁粒度</span>
+        </a></li><li>
+        <a class="is-flex" href="#缺点">
+        <span class="has-mr-6">5.7.3</span>
+        <span>缺点</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#8-NDB集群引擎">
+        <span class="has-mr-6">5.8</span>
+        <span>8.NDB集群引擎</span>
+        </a></li><li>
+        <a class="is-flex" href="#9-Merge引擎">
+        <span class="has-mr-6">5.9</span>
+        <span>9.Merge引擎</span>
+        </a></li><li>
+        <a class="is-flex" href="#10-第三方存储引擎">
+        <span class="has-mr-6">5.10</span>
+        <span>10.第三方存储引擎</span>
+        </a></li></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="高性能 MySQL ｜ MySQL 逻辑架构" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

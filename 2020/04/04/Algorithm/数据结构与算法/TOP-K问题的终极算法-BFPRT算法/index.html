@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>TOP-K 问题的终极算法 - BFPRT 算法 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="TOP-K 问题,从一堆无序数据里面找到前 K 大（当然也可以是前 K 小的数。我可以用堆排序或者快速排序可以做到,但是时间复杂度为 O（NlogN）, 这里就不多说了。BFPRT 算法,该算法于1973年由 Blum、Floyd、Pratt、Rivest 和 Tarjan 联合发明,其中蕴含的深刻思想改变了世界。BFPRT 算法解决了这样一个问题,在时间复杂度 O（N）内,从无序的数组中找到第">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TOP-K 问题的终极算法 - BFPRT 算法">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/04/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/TOP-K%E9%97%AE%E9%A2%98%E7%9A%84%E7%BB%88%E6%9E%81%E7%AE%97%E6%B3%95-BFPRT%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="TOP-K 问题,从一堆无序数据里面找到前 K 大（当然也可以是前 K 小的数。我可以用堆排序或者快速排序可以做到,但是时间复杂度为 O（NlogN）, 这里就不多说了。BFPRT 算法,该算法于1973年由 Blum、Floyd、Pratt、Rivest 和 Tarjan 联合发明,其中蕴含的深刻思想改变了世界。BFPRT 算法解决了这样一个问题,在时间复杂度 O（N）内,从无序的数组中找到第">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/61/c0/618b8f81a8153554837c1064f8593dc0.jpg?x-oss-process=image/crop,y_61,w_1280,h_730/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-04-04T01:10:00.000Z">
+<meta property="article:modified_time" content="2020-04-04T01:10:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="算法">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/61/c0/618b8f81a8153554837c1064f8593dc0.jpg?x-oss-process=image/crop,y_61,w_1280,h_730/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="TOP-K 问题的终极算法 - BFPRT 算法" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/61/c0/618b8f81a8153554837c1064f8593dc0.jpg?x-oss-process=image/crop,y_61,w_1280,h_730/resize,w_1280,h_847" alt="TOP-K 问题的终极算法 - BFPRT 算法">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-04T01:10:00.000Z">2020-04-04</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Algorithm/">Algorithm</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/">数据结构与算法</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    12 分钟 读完 (大约 1815 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                TOP-K 问题的终极算法 - BFPRT 算法
+            
+        </h1>
+        <div class="content">
+            <p>TOP-K 问题,从一堆无序数据里面找到前 K 大（当然也可以是前 K 小的数。我可以用堆排序或者快速排序可以做到,但是时间复杂度为 O（NlogN）, 这里就不多说了。BFPRT 算法,该算法于1973年由 Blum、Floyd、Pratt、Rivest 和 Tarjan 联合发明,其中蕴含的深刻思想改变了世界。BFPRT 算法解决了这样一个问题,在时间复杂度 O（N）内,从无序的数组中找到第 K 小的数。</p>
+<a id="more"></a>
+<h2 id="1-BFPRT-算法的核心思想"><a href="#1-BFPRT-算法的核心思想" class="headerlink" title="1.BFPRT 算法的核心思想"></a><strong>1.BFPRT 算法的核心思想</strong></h2><p>假设 BFPRT 算法的函数是<code>selectK(des []int, start int, end int, i int) int</code>,该函数的功能为在arr中找到第k小的数,然后返回该数。<code>selectK(des []int, start int, end int, i int) int</code>的过程如下：</p>
+<ol>
+<li>将arr中的n个元素划分成n/5组,每组5个元素,如果最后的组不够5个元素,那么最后剩下的元素为一组（n%5个元素）。</li>
+<li>对每个组进行插入排序,只针对每个组最多5个元素之间的组内排序,组与组之间并不排序。排序后找到每个组的中位数,如果组的元素个数为偶数,这里规定找到下中位数(位置处于排好序数组右边的中位数)。</li>
+<li>步骤2中一共会找到n/5个中位数,让这些中位数组成一个新的数组,记为 midArray 。递归调用<code>selectK （midArray, 0, len(midArray)-1, len(midArray)/2）</code>,意义是找到 mArr 数组中的中位数,即 midArray 中第<code>（midArray.length/2）</code>小的数。</li>
+<li>假设步骤3中递归调用<code>selectK （midArray, 0, len(midArray)-1, len(midArray)/2）</code>后,返回的数为 x 。根据这个 x 划分整个 arr 数组（partition过程）,划分的过程为：<strong>在arr中,比 x 小的数都在 x 的左边,大于 x 的数都在 x 的右边,x 在中间。划分完成后,x 在 arr 中的位置记为 i。</strong></li>
+<li>如果 i==k ,说明x为整个数组中第 k 小的数,直接返回。<ul>
+<li>如果 i＜k,说明 x 处在第 k 小的数的左边,应该在 x 的右边寻找第 k 小的数,所以递归调用<code>selectK</code>函数,在右半区寻找第 i 小的数。</li>
+<li>如果 i＞k,说明 x 处在第 k 小的数的右边,应该在 x 的左边寻找第k小的数,所以递归调用<code>selectK</code>函数,在左半区寻找第 k 小的数。</li>
+</ul>
+</li>
+</ol>
+<h2 id="2-BFPRT-算法怎么找到第K大的数"><a href="#2-BFPRT-算法怎么找到第K大的数" class="headerlink" title="2.BFPRT 算法怎么找到第K大的数"></a><strong>2.BFPRT 算法怎么找到第K大的数</strong></h2><p>BFPRT 算法又叫中位数的中位数算法,一次中位数的运算可以找到第50%的数，根据当前中位数在数组中的位置K’，可以判断当前第50%大的数是不是第K<br>的数。如果 K’ &lt; K ，则往右半区查找。因为在合并后，K’位置左边的数一定比所有小于K’位置的数小，K’位置右边的数一定比所有小于K’位置的数大。所以当 K’ = K 时,就是第 K 大的数。</p>
+<h2 id="3-BFPRT-算法实现"><a href="#3-BFPRT-算法实现" class="headerlink" title="3.BFPRT 算法实现"></a><strong>3.BFPRT 算法实现</strong></h2><blockquote>
+<p>主函数过程如下:从当前数组中找到第 K 大中位数,然后对数组进行划分,比 x 小的数都在x的左边,大于 x 的数都在 x 的右边,x在中间。x在arr中的位置记为i。如果 i==k,说明x为整个数组中第 k 小的数,直接返回。如果 i＜k,说明 x 处在第 k 小的数的左边,应该在 x 的右边寻找第 k 小的数,所以递归调用<code>selectK</code>函数,在右半区寻找第 i 小的数。如果 i＞k,说明 x 处在第 k 小的数的右边,应该在 x 的左边寻找第k小的数,所以递归调用<code>selectK</code>函数,在左半区寻找第 k 小的数。</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">selectK</span><span class="hljs-params">(arr []<span class="hljs-keyword">int</span>, start <span class="hljs-keyword">int</span>, end <span class="hljs-keyword">int</span>, i <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> start == end &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> arr[start]</span><br><span class="line">	&#125;</span><br><span class="line">	midNumber := getMinNumberByArray(arr, start, end)</span><br><span class="line">	rangeMid := getRangMidPosition(arr, start, end, midNumber)</span><br><span class="line">	<span class="hljs-comment">//println("=========================")</span></span><br><span class="line">	<span class="hljs-comment">//fmt.Println("arr = ",arr)</span></span><br><span class="line">	<span class="hljs-comment">//fmt.Println("midNumber = ",midNumber)</span></span><br><span class="line">	<span class="hljs-comment">//println("pivotRange = ", rangeMid[0], " ", rangeMid[1])</span></span><br><span class="line">	<span class="hljs-keyword">if</span> i &gt;= rangeMid[<span class="hljs-number">0</span>] &amp;&amp; i &lt;= rangeMid[<span class="hljs-number">1</span>] &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> arr[i]</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> i &gt;= rangeMid[<span class="hljs-number">0</span>] &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> selectK(arr, rangeMid[<span class="hljs-number">1</span>]+<span class="hljs-number">1</span>, end, i)</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> selectK(arr, start, rangeMid[<span class="hljs-number">0</span>]<span class="hljs-number">-1</span>, i)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>从原始数组中找到算出中位数数组的长度大小,如果最后剩余长度小于5,则单独划分成一组,通过<code>getMid</code>函数,得到每小组的中位数。然后再对中位数数组继续调用<code>selectK</code>方法,找到中位数组的中位数,直到<code>start == end</code>为止,返回的数 x 就是当前数组中位数的值。</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">getMinNumberByArray</span><span class="hljs-params">(arr []<span class="hljs-keyword">int</span>, begin, end <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> midArray []<span class="hljs-keyword">int</span></span><br><span class="line">	num := end - begin + <span class="hljs-number">1</span></span><br><span class="line">	<span class="hljs-keyword">if</span> num%<span class="hljs-number">5</span> == <span class="hljs-number">0</span> &#123;</span><br><span class="line">		midArray = <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">int</span>, num/<span class="hljs-number">5</span>)</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">		midArray = <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">int</span>, num/<span class="hljs-number">5</span>+<span class="hljs-number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-built_in">len</span>(midArray); i++ &#123;</span><br><span class="line">		s := begin + i*<span class="hljs-number">5</span></span><br><span class="line">		e := s + <span class="hljs-number">4</span></span><br><span class="line">		midArray[i] = getMid(arr, s, <span class="hljs-keyword">int</span>(math.Min(<span class="hljs-keyword">float64</span>(e), <span class="hljs-keyword">float64</span>(end))))</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> selectK(midArray, <span class="hljs-number">0</span>, <span class="hljs-built_in">len</span>(midArray)<span class="hljs-number">-1</span>, <span class="hljs-built_in">len</span>(midArray)/<span class="hljs-number">2</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>得到当前段数组的中位数过程,首先进行插入排序,保证这是一个有序数组,如果当前数组是偶数,<code>sum/2</code>得出的就直接是下中位数,如果数组不是偶数,则使用下中位数<code>mid := sum/2 + sum%2</code>。</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">getMid</span><span class="hljs-params">(arr []<span class="hljs-keyword">int</span>, s <span class="hljs-keyword">int</span>, e <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	insertSort(arr, s, e)</span><br><span class="line">	sum := s + e</span><br><span class="line">	mid := sum/<span class="hljs-number">2</span> + sum%<span class="hljs-number">2</span></span><br><span class="line">	<span class="hljs-keyword">return</span> arr[mid]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>插入排序过程如下</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">insertSort</span><span class="hljs-params">(arr []<span class="hljs-keyword">int</span>, s <span class="hljs-keyword">int</span>, e <span class="hljs-keyword">int</span>)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> i := s + <span class="hljs-number">1</span>; i != e+<span class="hljs-number">1</span>; i++ &#123;</span><br><span class="line">		<span class="hljs-keyword">for</span> j := i; j != s; j-- &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> arr[j<span class="hljs-number">-1</span>] &gt; arr[j] &#123;</span><br><span class="line">				arr[j<span class="hljs-number">-1</span>], arr[j] = arr[j], arr[j<span class="hljs-number">-1</span>]</span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">break</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>得到数组的中位数后,然后对数组进行划分,比 x 小的数都在 x 的左边,大于 x 的数都在x的右边,值为 x 在中间 small 到 big的区域,这样就不用重复计算这些数据。</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">getRangMidPosition</span><span class="hljs-params">(arr []<span class="hljs-keyword">int</span>, start <span class="hljs-keyword">int</span>, end <span class="hljs-keyword">int</span>, midNumber <span class="hljs-keyword">int</span>)</span> [2]<span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	small := start</span><br><span class="line">	big := end</span><br><span class="line">	cur := start</span><br><span class="line">	<span class="hljs-keyword">for</span> cur != big+<span class="hljs-number">1</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> arr[cur] &lt; midNumber &#123;</span><br><span class="line">			arr[cur], arr[small] = arr[small], arr[cur]</span><br><span class="line">			cur++</span><br><span class="line">			small++</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> arr[cur] &gt; midNumber &#123;</span><br><span class="line">			arr[cur], arr[big] = arr[big], arr[cur]</span><br><span class="line">			big--</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			cur++</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> [<span class="hljs-number">2</span>]<span class="hljs-keyword">int</span>&#123;small, big&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>我们通过一组数据来具体的说明算法是如何工作的,下面给出一组测试案例</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Test_getMinKByBF</span><span class="hljs-params">(t *testing.T)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">type</span> args <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">		arr []<span class="hljs-keyword">int</span></span><br><span class="line">		k   <span class="hljs-keyword">int</span></span><br><span class="line">	&#125;</span><br><span class="line">	tests := []<span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">		name <span class="hljs-keyword">string</span></span><br><span class="line">		args args</span><br><span class="line">		want <span class="hljs-keyword">int</span></span><br><span class="line">	&#125;&#123;</span><br><span class="line">		&#123;name: <span class="hljs-string">""</span>, args: <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">			arr []<span class="hljs-keyword">int</span></span><br><span class="line">			k   <span class="hljs-keyword">int</span></span><br><span class="line">		&#125;&#123;arr: []<span class="hljs-keyword">int</span>&#123;<span class="hljs-number">6</span>, <span class="hljs-number">9</span>, <span class="hljs-number">1</span>, <span class="hljs-number">3</span>, <span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">2</span>, <span class="hljs-number">5</span>, <span class="hljs-number">6</span>, <span class="hljs-number">1</span>, <span class="hljs-number">3</span>, <span class="hljs-number">5</span>, <span class="hljs-number">9</span>, <span class="hljs-number">7</span>, <span class="hljs-number">2</span>, <span class="hljs-number">5</span>, <span class="hljs-number">6</span>, <span class="hljs-number">1</span>, <span class="hljs-number">9</span>&#125;, k: <span class="hljs-number">16</span>&#125;, want: <span class="hljs-number">7</span>&#125;,</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">for</span> _, tt := <span class="hljs-keyword">range</span> tests &#123;</span><br><span class="line">		t.Run(tt.name, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(t *testing.T)</span></span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> got := getMinKByBFPRT(tt.args.arr, tt.args.k); got != tt.want &#123;</span><br><span class="line">				t.Errorf(<span class="hljs-string">"getMinKByBFPRT() = %v, want %v"</span>, got, tt.want)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>因此数组是从 0 开始的,那么在数组中的位置是 15</p>
+</blockquote>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">getMinKByBFPRT</span><span class="hljs-params">(arr []<span class="hljs-keyword">int</span>, k <span class="hljs-keyword">int</span>)</span> <span class="hljs-title">int</span></span> &#123;</span><br><span class="line">	des := <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">int</span>, <span class="hljs-built_in">len</span>(arr))</span><br><span class="line">	<span class="hljs-built_in">copy</span>(des, arr)</span><br><span class="line">	<span class="hljs-keyword">return</span> selectK(des, <span class="hljs-number">0</span>, <span class="hljs-built_in">len</span>(arr)<span class="hljs-number">-1</span>, k<span class="hljs-number">-1</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>运行结果如下：</p>
+</blockquote>
+<figure class="highlight angelscript hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">=========================</span><br><span class="line">arr =  [<span class="hljs-number">2</span> <span class="hljs-number">3</span> <span class="hljs-number">5</span> <span class="hljs-number">6</span>]</span><br><span class="line">midNumber =  <span class="hljs-number">5</span></span><br><span class="line">pivotRange =  <span class="hljs-number">2</span>   <span class="hljs-number">2</span></span><br><span class="line">i =  <span class="hljs-number">2</span></span><br><span class="line">=========================</span><br><span class="line">arr =  [<span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">3</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">2</span> <span class="hljs-number">2</span> <span class="hljs-number">2</span> <span class="hljs-number">3</span> <span class="hljs-number">5</span> <span class="hljs-number">5</span> <span class="hljs-number">5</span> <span class="hljs-number">7</span> <span class="hljs-number">9</span> <span class="hljs-number">6</span> <span class="hljs-number">9</span> <span class="hljs-number">6</span> <span class="hljs-number">9</span> <span class="hljs-number">6</span>]</span><br><span class="line">midNumber =  <span class="hljs-number">5</span></span><br><span class="line">pivotRange =  <span class="hljs-number">9</span>   <span class="hljs-number">11</span></span><br><span class="line">i =  <span class="hljs-number">15</span></span><br><span class="line">=========================</span><br><span class="line">arr =  [<span class="hljs-number">7</span> <span class="hljs-number">9</span>]</span><br><span class="line">midNumber =  <span class="hljs-number">9</span></span><br><span class="line">pivotRange =  <span class="hljs-number">1</span>   <span class="hljs-number">1</span></span><br><span class="line">i =  <span class="hljs-number">1</span></span><br><span class="line">=========================</span><br><span class="line">arr =  [<span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">3</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">2</span> <span class="hljs-number">2</span> <span class="hljs-number">2</span> <span class="hljs-number">3</span> <span class="hljs-number">5</span> <span class="hljs-number">5</span> <span class="hljs-number">5</span> <span class="hljs-number">6</span> <span class="hljs-number">6</span> <span class="hljs-number">7</span> <span class="hljs-number">6</span> <span class="hljs-number">9</span> <span class="hljs-number">9</span> <span class="hljs-number">9</span>]</span><br><span class="line">midNumber =  <span class="hljs-number">9</span></span><br><span class="line">pivotRange =  <span class="hljs-number">16</span>   <span class="hljs-number">18</span></span><br><span class="line">i =  <span class="hljs-number">15</span></span><br><span class="line">=========================</span><br><span class="line">arr =  [<span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">3</span> <span class="hljs-number">1</span> <span class="hljs-number">1</span> <span class="hljs-number">2</span> <span class="hljs-number">2</span> <span class="hljs-number">2</span> <span class="hljs-number">3</span> <span class="hljs-number">5</span> <span class="hljs-number">5</span> <span class="hljs-number">5</span> <span class="hljs-number">6</span> <span class="hljs-number">6</span> <span class="hljs-number">6</span> <span class="hljs-number">7</span> <span class="hljs-number">9</span> <span class="hljs-number">9</span> <span class="hljs-number">9</span>]</span><br><span class="line">midNumber =  <span class="hljs-number">6</span></span><br><span class="line">pivotRange =  <span class="hljs-number">12</span>   <span class="hljs-number">14</span></span><br><span class="line">i =  <span class="hljs-number">15</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>首先找到无序数组<code>6, 9, 1, 3, 1, 2, 2, 5, 6, 1, 3, 5, 9, 7, 2, 5, 6, 1, 9</code>的中位数,进入递归,递归后的划分原来的中位数数组为<code>[2 3 5 6]</code>,并且已经被中位数 5 划分了,返回 5,5 就是原来无序数组的中位数。</li>
+<li>从递归回到主函数后,根据找到的中位数 5 ,划分数组,划分后的位置在<code>[9,11]</code>比我们要找到第 16 大数小,所以排除左边区域,从右边开始找。</li>
+<li>和上面解释一样,找到了 新无序数组的中位数组的中位数,返回 9 ,位置在<code>[16,18]</code>比 15 大 ,往前查找,最终找到了位置<code>[12,14]</code>比 15 大,往前后查找,<code>start == end</code>,此时<code>start</code>位置 15 就是第 16 小的数。</li>
+</ol>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E7%AE%97%E6%B3%95/" rel="tag">算法</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/05/Go/Golang%E8%AF%91%E6%96%87/Uber-Go-%E9%A3%8E%E6%A0%BC%E6%8C%87%E5%8D%97/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Uber Go 风格指南</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/04/03/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%AE%8C%E5%85%A8%E5%BC%84%E6%87%82KMP%E7%AE%97%E6%B3%95/">
+                <span class="level-item">完全弄懂 KMP 算法</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '9071d9d162b75a636477d9e92f9e26de',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#1-BFPRT-算法的核心思想">
+        <span class="has-mr-6">1</span>
+        <span>1.BFPRT 算法的核心思想</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-BFPRT-算法怎么找到第K大的数">
+        <span class="has-mr-6">2</span>
+        <span>2.BFPRT 算法怎么找到第K大的数</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-BFPRT-算法实现">
+        <span class="has-mr-6">3</span>
+        <span>3.BFPRT 算法实现</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="TOP-K 问题的终极算法 - BFPRT 算法" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

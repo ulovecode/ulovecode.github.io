@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) Go 1.13中的错误处理 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="在过去的十年中, Go的errors are values的理念在编码实践中运行得也很良好。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) Go 1.13中的错误处理">
+<meta property="og:url" content="https://www.ulovecode.com/2019/11/18/Go/Golang%E8%AF%91%E6%96%87/Go1.13%E4%B8%AD%E7%9A%84%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="在过去的十年中, Go的errors are values的理念在编码实践中运行得也很良好。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/f7/1b/f7026e52866a7274e4ee275517cd151b.jpg?x-oss-process=image/crop,y_1,w_1919,h_1078/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-11-18T09:15:00.000Z">
+<meta property="article:modified_time" content="2019-11-18T09:15:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="错误处理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/f7/1b/f7026e52866a7274e4ee275517cd151b.jpg?x-oss-process=image/crop,y_1,w_1919,h_1078/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go 1.13中的错误处理" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/f7/1b/f7026e52866a7274e4ee275517cd151b.jpg?x-oss-process=image/crop,y_1,w_1919,h_1078/resize,w_1280,h_847" alt="(译) Go 1.13中的错误处理">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-18T09:15:00.000Z">2019-11-18</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E8%AF%91%E6%96%87/">Golang译文</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    20 分钟 读完 (大约 3059 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) Go 1.13中的错误处理
+            
+        </h1>
+        <div class="content">
+            <p>在过去的十年中, Go的errors are values的理念在编码实践中运行得也很良好。</p>
+<a id="more"></a>
+<p>尽管标准库对错误处理的的支持很少（只有errors.New和fmt.Errorf函数可以用来构造仅包含字符串消息的错误）,但是内置的error接口使Go程序员可以添加所需的任何信息。它所需要的只是一个实现Error方法的类型：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> QueryError <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    Query <span class="hljs-keyword">string</span></span><br><span class="line">    Err   error</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(e *QueryError)</span> <span class="hljs-title">Error</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123; <span class="hljs-keyword">return</span> e.Query + <span class="hljs-string">": "</span> + e.Err.Error() &#125;</span><br></pre></td></tr></table></figure>
+<p>像这样的错误类型无处不在,它们存储的信息变化很大,从时间戳到文件名再到服务器地址。通常,该信息包括另一个较低级别的错误以提供其他上下文信息。</p>
+<p>在Go代码中,使用一个包含了另一个错误的错误类型的模式十分普遍,以至于经过广泛讨论后,Go 1.13为其添加了明确的支持。这篇文章描述了标准库提供的支持：errors包中的三个新功能,以及fmt.Errorf中添加的新格式化动词。</p>
+<p>在详细描述这些变化之前,让我们先回顾一下在Go语言的早期版本中如何检查和构造错误。</p>
+<h1 id="一、Go-1-13版本之前的错误处理"><a href="#一、Go-1-13版本之前的错误处理" class="headerlink" title="一、Go 1.13版本之前的错误处理"></a>一、Go 1.13版本之前的错误处理</h1><h2 id="检查错误"><a href="#检查错误" class="headerlink" title="检查错误"></a>检查错误</h2><p>错误是值(errors are values)。程序通过几种方式基于这些值来做出决策。最常见的是通过与nil的比较来确定操作是否失败。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">    <span class="hljs-comment">// 出错了!</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>有时我们将错误与已知的哨兵值(sentinel value)进行比较来查看是否发生了特定错误。比如：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> ErrNotFound = errors.New(<span class="hljs-string">"not found"</span>)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">if</span> err == ErrNotFound &#123;</span><br><span class="line">    <span class="hljs-comment">// something wasn't found</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>错误值可以是满足语言定义的error 接口的任何类型。程序可以使用类型断言(type assertion)或类型开关(type switch)来判断错误值是否可被视为特定的错误类型。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> NotFoundError <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    Name <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(e *NotFoundError)</span> <span class="hljs-title">Error</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123; <span class="hljs-keyword">return</span> e.Name + <span class="hljs-string">": not found"</span> &#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">if</span> e, ok := err.(*NotFoundError); ok &#123;</span><br><span class="line">    <span class="hljs-comment">// e.Name wasn't found</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="添加信息"><a href="#添加信息" class="headerlink" title="添加信息"></a>添加信息</h2><p>函数通常在将错误向上传递给调用堆栈时添加额外错误信息,例如对错误发生时所发生情况的简短描述。一种简单的方法是构造一个新错误,并在其中包括上一个错误：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">"decompress %v: %v"</span>, name, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用fmt.Errorf创建的新错误将丢弃原始错误中的所有内容（文本除外）。就像我们在前面所看到的QueryError那样,有时我们可能想要定义一个包含基础错误的新错误类型,并将其保存下来以供代码检查。我们再次来看一下QueryError：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> QueryError <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    Query <span class="hljs-keyword">string</span></span><br><span class="line">    Err   error</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序可以查看一个*QueryError值的内部以根据潜在的错误进行决策。有时您会看到称为“展开”错误的信息。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> e, ok := err.(*QueryError); ok &amp;&amp; e.Err == ErrPermission &#123;</span><br><span class="line">    <span class="hljs-comment">// query failed because of a permission problem</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>标准库中的os.PathError类型就是另外一个在错误中包含另一个错误的示例。</p>
+<h1 id="二、Go-1-13版本的错误处理"><a href="#二、Go-1-13版本的错误处理" class="headerlink" title="二、Go 1.13版本的错误处理"></a>二、Go 1.13版本的错误处理</h1><h2 id="Unwrap方法"><a href="#Unwrap方法" class="headerlink" title="Unwrap方法"></a>Unwrap方法</h2><p>Go 1.13在errors和fmt标准库包中引入了新功能以简化处理包含其他错误的错误。其中最重要的不是改变,而是一个约定：包含另一个错误的错误可以实现Unwrap方法来返回所包含的底层错误。如果e1.Unwrap()返回了e2,那么我们说e1包装了e2,您可以Unwrap e1来得到e2。</p>
+<p>遵循此约定,我们可以为上面的QueryError类型提供一个Unwrap方法来返回其包含的错误：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(e *QueryError)</span> <span class="hljs-title">Unwrap</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123; <span class="hljs-keyword">return</span> e.Err &#125;</span><br></pre></td></tr></table></figure>
+<p>Unwrap错误的结果本身(底层错误)可能也具有Unwrap方法。我们将这种通过重复unwrap而得到的错误序列为错误链。</p>
+<h2 id="使用Is和As检查错误"><a href="#使用Is和As检查错误" class="headerlink" title="使用Is和As检查错误"></a>使用Is和As检查错误</h2><p>Go 1.13的errors包中包括了两个用于检查错误的新函数：Is和As。</p>
+<p>errors.Is函数将错误与值进行比较。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Similar to:</span></span><br><span class="line"><span class="hljs-comment">//   if err == ErrNotFound &#123; … &#125;</span></span><br><span class="line"><span class="hljs-keyword">if</span> errors.Is(err, ErrNotFound) &#123;</span><br><span class="line">    <span class="hljs-comment">// something wasn't found</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>As函数用于测试错误是否为特定类型。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Similar to:</span></span><br><span class="line"><span class="hljs-comment">//   if e, ok := err.(*QueryError); ok &#123; … &#125;</span></span><br><span class="line"><span class="hljs-keyword">var</span> e *QueryError</span><br><span class="line"><span class="hljs-keyword">if</span> errors.As(err, &amp;e) &#123;</span><br><span class="line">    <span class="hljs-comment">// err is a *QueryError, and e is set to the error's value</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在最简单的情况下,errors.Is函数的行为类似于上面对哨兵错误(sentinel error))的比较,而errors.As函数的行为类似于类型断言(type assertion)。但是,在处理包装错误(包含其他错误的错误）时,这些函数会考虑错误链中的所有错误。让我们再次看一下通过展开QueryError以检查潜在错误：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> e, ok := err.(*QueryError); ok &amp;&amp; e.Err == ErrPermission &#123;</span><br><span class="line">    <span class="hljs-comment">// query failed because of a permission problem</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用errors.Is函数,我们可以这样写：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> errors.Is(err, ErrPermission) &#123;</span><br><span class="line">    <span class="hljs-comment">// err, or some error that it wraps, is a permission problem</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>errors包还包括一个新Unwrap函数,该函数返回调用错误Unwrap方法的结果,或者当错误没有Unwrap方法时返回nil。通常我们最好使用errors.Is或errors.As,因为这些函数将在单个调用中检查整个错误链。</p>
+<h2 id="用-w包装错误"><a href="#用-w包装错误" class="headerlink" title="用%w包装错误"></a>用%w包装错误</h2><p>如前面所述,我们通常使用fmt.Errorf函数向错误添加其他信息。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">    <span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">"decompress %v: %v"</span>, name, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在Go 1.13中,fmt.Errorf函数支持新的%w动词。当存在该动词时,所返回的错误fmt.Errorf将具有Unwrap方法,该方法返回参数%w对应的错误。%w对应的参数必须是错误(类型)。在所有其他方面,%w与%v等同。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">    <span class="hljs-comment">// Return an error which unwraps to err.</span></span><br><span class="line">    <span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">"decompress %v: %w"</span>, name, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>使用%w创建的包装错误可用于errors.Is和errors.As：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">err := fmt.Errorf(<span class="hljs-string">"access denied: %w”, ErrPermission)</span></span><br><span class="line"><span class="hljs-string">    ...</span></span><br><span class="line"><span class="hljs-string"></span></span><br><span class="line"><span class="hljs-string">if errors.Is(err, ErrPermission)&#123;</span></span><br><span class="line"><span class="hljs-string">    ...	</span></span><br><span class="line"><span class="hljs-string">&#125;</span></span><br></pre></td></tr></table></figure>
+<h2 id="是否包装"><a href="#是否包装" class="headerlink" title="是否包装"></a>是否包装</h2><p>在使用fmt.Errorf或通过实现自定义类型将其他上下文添加到错误时,您需要确定新错误是否应该包装原始错误。这个问题没有统一答案。它取决于创建新错误的上下文。包装错误将会被公开给调用者。如果要避免暴露实现细节,那么请不要包装错误。</p>
+<p>举一个例子,假设一个Parse函数从io.Reader读取复杂的数据结构。如果发生错误,我们希望报告发生错误的行号和列号。如果从io.Reader读取时发生错误,我们将包装该错误以供检查底层问题。由于调用者为函数提供了io.Reader,因此有理由公开它产生的错误。</p>
+<p>相反,一个对数据库进行多次调用的函数可能不应该将其中调用之一的结果解开的错误返回。如果该函数使用的数据库是实现细节,那么暴露这些错误就是对抽象的违反。例如,如果你的程序包pkg中的函数LookupUser使用了Go的database/sql程序包,则可能会遇到sql.ErrNoRows错误。如果使用fmt.Errorf(“accessing DB: %v”, err)来返回该错误,则调用者无法检视到内部的sql.ErrNoRows。但是,如果函数使用fmt.Errorf(“accessing DB: %w”, err)返回错误,则调用者可以编写下面代码：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">err := pkg.LookupUser(...)</span><br><span class="line"><span class="hljs-keyword">if</span> errors.Is(err, sql.ErrNoRows) …</span><br></pre></td></tr></table></figure>
+<p>此时,如果您不希望对客户端源码产生影响,该函数也必须始终返回sql.ErrNoRows,即使您切换到其他数据库程序包。换句话说,包装错误会使该错误成为您API的一部分。如果您不想将来将错误作为API的一部分来支持,则不应包装该错误。</p>
+<p>重要的是要记住,无论是否包装错误,错误文本都将相同。那些试图理解错误的人将得到相同的信息,无论采用哪种方式; 是否要包装错误的选择是关于是否要给程序提供更多信息,以便他们可以做出更明智的决策,还是保留该信息以保留抽象层。</p>
+<h2 id="使用Is和As方法自定义错误测试"><a href="#使用Is和As方法自定义错误测试" class="headerlink" title="使用Is和As方法自定义错误测试"></a>使用Is和As方法自定义错误测试</h2><p>errors.Is函数检查错误链中的每个错误是否与目标值匹配。默认情况下,如果两者相等,则错误与目标匹配。另外,链中的错误可能会通过实现Is方法来声明它与目标匹配。</p>
+<p>例如,下面的错误类型定义是受Upspin error包的启发,它将错误与模板进行了比较,并且仅考虑模板中非零的字段：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Error <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">    Path <span class="hljs-keyword">string</span></span><br><span class="line">    User <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(e *Error)</span> <span class="hljs-title">Is</span><span class="hljs-params">(target error)</span> <span class="hljs-title">bool</span></span> &#123;</span><br><span class="line">    t, ok := target.(*Error)</span><br><span class="line">    <span class="hljs-keyword">if</span> !ok &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-keyword">return</span> (e.Path == t.Path || t.Path == <span class="hljs-string">""</span>) &amp;&amp;</span><br><span class="line">           (e.User == t.User || t.User == <span class="hljs-string">""</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">if</span> errors.Is(err, &amp;Error&#123;User: <span class="hljs-string">"someuser"</span>&#125;) &#123;</span><br><span class="line">    <span class="hljs-comment">// err's User field is "someuser".</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同样,errors.As函数将使用链中某个错误的As方法,如果该错误实现了As方法。</p>
+<h2 id="错误和包API"><a href="#错误和包API" class="headerlink" title="错误和包API"></a>错误和包API</h2><p>返回错误的程序包（大多数都会返回错误）应描述程序员可能依赖的那些错误的属性。一个经过精心设计的程序包也将避免返回带有不应依赖的属性的错误。</p>
+<p>最简单的规约是用于说明操作成功或失败的属性,分别返回nil或non-nil错误值。在许多情况下,不需要进一步的信息了。</p>
+<p>如果我们希望函数返回可识别的错误条件,例如“item not found”,则可能会返回包装哨兵的错误。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> ErrNotFound = errors.New(<span class="hljs-string">"not found"</span>)</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// FetchItem returns the named item.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// If no item with the name exists, FetchItem returns an error</span></span><br><span class="line"><span class="hljs-comment">// wrapping ErrNotFound.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">FetchItem</span><span class="hljs-params">(name <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">(*Item, error)</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">if</span> itemNotFound(name) &#123;</span><br><span class="line">        <span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, fmt.Errorf(<span class="hljs-string">"%q: %w"</span>, name, ErrNotFound)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还有其他现有的提供错误的模式,可以由调用方进行语义检查,例如直接返回哨兵值,特定类型或可以使用谓词函数检查的值。</p>
+<p>在所有情况下,都应注意不要向用户公开内部细节。正如我们在上面的“是否要包装”中提到的那样,当您从另一个包中返回错误时,应该将错误转换为不暴露基本错误的形式,除非您愿意将来再返回该特定错误。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">f, err := os.Open(filename)</span><br><span class="line"><span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">    <span class="hljs-comment">// The *os.PathError returned by os.Open is an internal detail.</span></span><br><span class="line">    <span class="hljs-comment">// To avoid exposing it to the caller, repackage it as a new</span></span><br><span class="line">    <span class="hljs-comment">// error with the same text. We use the %v formatting verb, since</span></span><br><span class="line">    <span class="hljs-comment">// %w would permit the caller to unwrap the original *os.PathError.</span></span><br><span class="line">    <span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">"%v"</span>, err)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果将函数定义为返回包装某些标记或类型的错误,请不要直接返回基础错误。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> ErrPermission = errors.New(<span class="hljs-string">"permission denied"</span>)</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// DoSomething returns an error wrapping ErrPermission if the user</span></span><br><span class="line"><span class="hljs-comment">// does not have permission to do something.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">DoSomething</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">    <span class="hljs-keyword">if</span> !userHasPermission() &#123;</span><br><span class="line">        <span class="hljs-comment">// If we return ErrPermission directly, callers might come</span></span><br><span class="line">        <span class="hljs-comment">// to depend on the exact error value, writing code like this:</span></span><br><span class="line">        <span class="hljs-comment">//</span></span><br><span class="line">        <span class="hljs-comment">//     if err := pkg.DoSomething(); err == pkg.ErrPermission &#123; … &#125;</span></span><br><span class="line">        <span class="hljs-comment">//</span></span><br><span class="line">        <span class="hljs-comment">// This will cause problems if we want to add additional</span></span><br><span class="line">        <span class="hljs-comment">// context to the error in the future. To avoid this, we</span></span><br><span class="line">        <span class="hljs-comment">// return an error wrapping the sentinel so that users must</span></span><br><span class="line">        <span class="hljs-comment">// always unwrap it:</span></span><br><span class="line">        <span class="hljs-comment">//</span></span><br><span class="line">        <span class="hljs-comment">//     if err := pkg.DoSomething(); errors.Is(err, pkg.ErrPermission) &#123; ... &#125;</span></span><br><span class="line">        <span class="hljs-keyword">return</span> fmt.Errorf(<span class="hljs-string">"%w"</span>, ErrPermission)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="hljs-comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="三、结论"><a href="#三、结论" class="headerlink" title="三、结论"></a>三、结论</h1><p>尽管我们讨论的更改仅包含三个函数和一个格式化动词(%w),但我们希望它们能大幅改善Go程序中错误处理的方式。我们希望通过包装来提供其他上下文的方式得到Gopher们地普遍使用,从而帮助程序做出更好的决策,并帮助程序员更快地发现错误。</p>
+<p>正如Russ Cox在GopherCon 2019主题演讲中所说的那样,在Go2的道路上,我们进行了实验,简化和发布。现在,我们已经发布了这些更改,我们期待接下来的实验。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/" rel="tag">错误处理</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/11/19/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(2)-errors/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Go源码分析(2) - errors</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/09/12/Go/Etcd%E4%B8%ADRaft%E5%8D%8F%E8%AE%AE%E6%BA%90%E7%A0%81%E7%9A%84%E4%B8%8D%E5%AE%8C%E5%85%A8%E5%88%86%E6%9E%90%EF%BC%881%EF%BC%89/">
+                <span class="level-item">Etcd 中 Raft 协议源码的不完全分析（1）</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '907f959c084bf2229ae6912f1d359349',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、Go-1-13版本之前的错误处理">
+        <span class="has-mr-6">1</span>
+        <span>一、Go 1.13版本之前的错误处理</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#检查错误">
+        <span class="has-mr-6">1.1</span>
+        <span>检查错误</span>
+        </a></li><li>
+        <a class="is-flex" href="#添加信息">
+        <span class="has-mr-6">1.2</span>
+        <span>添加信息</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#二、Go-1-13版本的错误处理">
+        <span class="has-mr-6">2</span>
+        <span>二、Go 1.13版本的错误处理</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Unwrap方法">
+        <span class="has-mr-6">2.1</span>
+        <span>Unwrap方法</span>
+        </a></li><li>
+        <a class="is-flex" href="#使用Is和As检查错误">
+        <span class="has-mr-6">2.2</span>
+        <span>使用Is和As检查错误</span>
+        </a></li><li>
+        <a class="is-flex" href="#用-w包装错误">
+        <span class="has-mr-6">2.3</span>
+        <span>用%w包装错误</span>
+        </a></li><li>
+        <a class="is-flex" href="#是否包装">
+        <span class="has-mr-6">2.4</span>
+        <span>是否包装</span>
+        </a></li><li>
+        <a class="is-flex" href="#使用Is和As方法自定义错误测试">
+        <span class="has-mr-6">2.5</span>
+        <span>使用Is和As方法自定义错误测试</span>
+        </a></li><li>
+        <a class="is-flex" href="#错误和包API">
+        <span class="has-mr-6">2.6</span>
+        <span>错误和包API</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#三、结论">
+        <span class="has-mr-6">3</span>
+        <span>三、结论</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go 1.13中的错误处理" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

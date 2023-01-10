@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>高性能 MySQL ｜ Schema 与数据类型优化 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="MySQL 支持的数据类型非常多,选择正确的数据类型至关重要。下面的几个简单原则有助于做出更好的选择。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="高性能 MySQL ｜ Schema 与数据类型优化">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/30/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql/%E9%AB%98%E6%80%A7%E8%83%BDmysql(2)/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="MySQL 支持的数据类型非常多,选择正确的数据类型至关重要。下面的几个简单原则有助于做出更好的选择。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/6f/96/6f4d9428a5fa69f32d005650d21c8f96.jpg?x-oss-process=image/crop,y_53,w_1920,h_1096/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-04-30T11:35:00.000Z">
+<meta property="article:modified_time" content="2020-04-30T11:35:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/6f/96/6f4d9428a5fa69f32d005650d21c8f96.jpg?x-oss-process=image/crop,y_53,w_1920,h_1096/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="高性能 MySQL ｜ Schema 与数据类型优化" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/6f/96/6f4d9428a5fa69f32d005650d21c8f96.jpg?x-oss-process=image/crop,y_53,w_1920,h_1096/resize,w_1280,h_847" alt="高性能 MySQL ｜ Schema 与数据类型优化">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-30T11:35:00.000Z">2020-04-30</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    27 分钟 读完 (大约 3993 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                高性能 MySQL ｜ Schema 与数据类型优化
+            
+        </h1>
+        <div class="content">
+            <p>MySQL 支持的数据类型非常多,选择正确的数据类型至关重要。下面的几个简单原则有助于做出更好的选择。</p>
+<a id="more"></a>
+<h2 id="一、更小的通常更好"><a href="#一、更小的通常更好" class="headerlink" title="一、更小的通常更好"></a>一、更小的通常更好</h2><p>一般情况下,应该尽量使用可以正确存储数据的最小数据类型。更小的数据类型通常更快,因为他们占用更少的磁盘,内存和cpu缓存,并且处理时需要的cpu周期也更少。</p>
+<h2 id="二、简单就好"><a href="#二、简单就好" class="headerlink" title="二、简单就好"></a>二、简单就好</h2><p>简单的数据类型操作通常需要更少的cpu周期。例如,整型比字符操作代价更低,因为字符集和校对规则（排序规则）使字符比较比整型更加复杂。注：应使用mysql内建的类型存储时间和日期,而不是字符串。</p>
+<h2 id="三、Mysql很难优化包含NULL的列"><a href="#三、Mysql很难优化包含NULL的列" class="headerlink" title="三、Mysql很难优化包含NULL的列"></a>三、Mysql很难优化包含NULL的列</h2><ul>
+<li>可为NULL的列使得索引、索引统计和值比较都更复杂</li>
+<li>可为NULL的列会使用更多的存储空间</li>
+<li>当可为NULL的列被索引时,每个索引记录需要一个额外的字节</li>
+</ul>
+<blockquote>
+<p>通常把可为NULL的列改为NOT NULL带来的性能提升比较小,所以（调优时）没有必要首先在现有schema中查找并修改掉这种情况,除非确定这会导致问题。但是,如果计划在列上建索引,就应该尽量避免设计成可为NULL的列。</p>
+</blockquote>
+<h2 id="四、选择优化的数据类型"><a href="#四、选择优化的数据类型" class="headerlink" title="四、选择优化的数据类型"></a>四、选择优化的数据类型</h2><h3 id="1-整数类型"><a href="#1-整数类型" class="headerlink" title="1.整数类型"></a>1.整数类型</h3><h4 id="无符号"><a href="#无符号" class="headerlink" title="无符号"></a>无符号</h4><ul>
+<li>UNSIGNED</li>
+</ul>
+<h4 id="有符号"><a href="#有符号" class="headerlink" title="有符号"></a>有符号</h4><ul>
+<li>BIGINT</li>
+<li>INT</li>
+<li>MEDIUMINT</li>
+<li>SMALLINT</li>
+<li>TINYINT</li>
+</ul>
+<h3 id="2-实数类型"><a href="#2-实数类型" class="headerlink" title="2.实数类型"></a>2.实数类型</h3><h4 id="FLOAT"><a href="#FLOAT" class="headerlink" title="FLOAT"></a>FLOAT</h4><h4 id="DOUBLE"><a href="#DOUBLE" class="headerlink" title="DOUBLE"></a>DOUBLE</h4><h4 id="DECIMAL"><a href="#DECIMAL" class="headerlink" title="DECIMAL"></a>DECIMAL</h4><p>因为CPU不支持对DECIMAL的直接计算,所以在MySQL 5.0以及更高版本中,MySQL服务器自身实现了DECIMAL的高精度计算。相对而言,CPU直接支持原生浮点计算,所以浮点运算明显更快。</p>
+<blockquote>
+<p>因为需要额外的空间和计算开销,所以应该尽量只在对小数进行精确计算时才使用DECIMAL——例如存储财务数据。但在数据量比较大的时候,可以考虑使用BIGINT代替DECIMAL,将需要存储的货币单位根据小数的位数乘以相应的倍数即可。假设要存储财务数据精确到万分之一分,则可以把所有金额乘以一百万,然后将结果存储在BIGINT里,这样可以同时避免浮点存储计算不精确和DECIMAL精确计算代价高的问题。</p>
+</blockquote>
+<h3 id="3-字符串类型"><a href="#3-字符串类型" class="headerlink" title="3.字符串类型"></a>3.字符串类型</h3><h4 id="VARCHAR"><a href="#VARCHAR" class="headerlink" title="VARCHAR"></a>VARCHAR</h4><p>VARCHAR类型用于存储可变长字符串,是最常见的字符串数据类型。它比定长类型更节省</p>
+<ul>
+<li>需要使用1或2个额外字节记录字符串的长<ul>
+<li>如果列的最大长度小于或等于255字节,只使用1个字节表示</li>
+<li>否则使用2个字节。</li>
+</ul>
+</li>
+<li>UPDATE时InnoDB可能分裂页,MyISAM会将行拆成不同的片段存储</li>
+<li>面这些情况下使用VARCHAR是合适的<ul>
+<li>字符串列的最大长度比平均长度大很多</li>
+<li>列的更新很少,所以碎片不是问题</li>
+<li>在5.0或者更高版本,MySQL在存储和检索时会保留末尾空格。但在4.1或更老的版本,MySQL会剔除末尾空格。</li>
+</ul>
+</li>
+</ul>
+<h4 id="CHAR"><a href="#CHAR" class="headerlink" title="CHAR"></a>CHAR</h4><ul>
+<li>对于经常变更的数据,CHAR也比VARCHAR更好,因为定长的CHAR类型不容易产生碎片</li>
+<li>CHAR适合存储很短的字符串</li>
+<li>对于非常短的列,CHAR比VARCHAR在存储空间上也更有效率(因为VARCHAR还有一或两个记录长度的额外字节。)</li>
+</ul>
+<blockquote>
+<p>使用VARCHAR（5）和VARCHAR（200）存储’hello’的空间开销是一样的。那么使用更短的列有什么优势吗？事实证明有很大的优势。更长的列会消耗更多的内存,因为MySQL通常会分配固定大小的内存块来保存内部值。尤其是使用内存临时表进行排序或操作时会特别糟糕。在利用磁盘临时表进行排序时也同样糟糕。</p>
+</blockquote>
+<h4 id="BLOB"><a href="#BLOB" class="headerlink" title="BLOB"></a>BLOB</h4><p>存储的是二进制数据</p>
+<h4 id="TEXT"><a href="#TEXT" class="headerlink" title="TEXT"></a>TEXT</h4><p>字符集和排序规则</p>
+<blockquote>
+<p>当BLOB和TEXT值太大时,InnoDB会使用专门的“外部”存储区域来进行存储,此时每个值在行内需要1～4个字节存储一个指针,然后在外部存储区域存储实际的值。MySQL不能将BLOB和TEXT列全部长度的字符串进行索引</p>
+</blockquote>
+<h4 id="ENUM"><a href="#ENUM" class="headerlink" title="ENUM"></a>ENUM</h4><p>MySQL在内部会将每个值在列表中的位置保存为整数,并且在表的.frm文件中保存“数字-字符串”映射关系的“查找表”。</p>
+<ul>
+<li>枚举字段是按照内部存储的整数而不是定义的字符串进行排序的</li>
+<li>由于MySQL把每个枚举值保存为整数,并且必须进行查找才能转换为字符串,所以枚举列有一些开销。</li>
+</ul>
+<h3 id="4-日期和时间类型"><a href="#4-日期和时间类型" class="headerlink" title="4.日期和时间类型"></a>4.日期和时间类型</h3><h4 id="TIMESTAMP"><a href="#TIMESTAMP" class="headerlink" title="TIMESTAMP"></a>TIMESTAMP</h4><ul>
+<li>从1970年到2038年,精度为秒</li>
+<li>MySQL提供了FROM_UNIXTIME()函数把Unix时间戳转换为日期,并提供了UNIX_TIMESTAMP()函数把日期转换为Unix时间戳。</li>
+<li>4个字节的存储空间</li>
+<li>TIMESTAMP显示的值也依赖于时区。</li>
+<li>TIMESTAMP列默认为NOT NULL,设置这个列的值为当前时间</li>
+</ul>
+<h4 id="DATETIME"><a href="#DATETIME" class="headerlink" title="DATETIME"></a>DATETIME</h4><ul>
+<li>从1001年到9999年,精度为秒</li>
+<li>8个字节的存储空间</li>
+<li>与时区无关</li>
+</ul>
+<blockquote>
+<p>如果需要存储比秒更小粒度的日期和时间值怎么办？MySQL目前没有提供合适的数据类型,但是可以使用自己的存储格式：可以使用BIGINT类型存储微秒级别的时间截,或者使用DOUBLE存储秒之后的小数部分。这两种方式都可以,或者也可以使用MariaDB替代MySQL。</p>
+</blockquote>
+<h4 id="TIMESTAMP-与-DATETIME-选择"><a href="#TIMESTAMP-与-DATETIME-选择" class="headerlink" title="TIMESTAMP 与 DATETIME 选择"></a>TIMESTAMP 与 DATETIME 选择</h4><p>TIMESTAMP只使用DATETIME一半的存储空间,并且会根据时区变化,具有特殊的自动更新能力。另一方面,TIMESTAMP允许的时间范围要小得多,有时候它的特殊能力会成为障碍。</p>
+<h3 id="5-位数据类型"><a href="#5-位数据类型" class="headerlink" title="5.位数据类型"></a>5.位数据类型</h3><h4 id="BIT"><a href="#BIT" class="headerlink" title="BIT"></a>BIT</h4><h4 id="SET"><a href="#SET" class="headerlink" title="SET"></a>SET</h4><h3 id="6-选择标识符（identifier）"><a href="#6-选择标识符（identifier）" class="headerlink" title="6.选择标识符（identifier）"></a>6.选择标识符（identifier）</h3><h4 id="完全“随机”的字符串"><a href="#完全“随机”的字符串" class="headerlink" title="完全“随机”的字符串"></a>完全“随机”的字符串</h4><ul>
+<li>因为插入值会随机地写到索引的不同位置,所以使得INSERT语句更慢。这会导致页分裂、磁盘随机访问,以及对于聚簇存储引擎产生聚簇索引碎片。</li>
+<li>SELECT语句会变得更慢,因为逻辑上相邻的行会分布在磁盘和内存的不同地方</li>
+<li>随机值导致缓存对所有类型的查询语句效果都很差,因为会使得缓存赖以工作的访问局部性原理失效。如果整个数据集都一样的“热”,那么缓存任何一部分特定数据到内存都没有好处；如果工作集比内存大,缓存将会有很多刷新和不命中。</li>
+</ul>
+<blockquote>
+<p>UUID()生成的值与加密散列函数例如SHA1()生成的值有不同的特征：UUID值虽然分布也不均匀,但还是有一定顺序,如果存储UUID值,则应该移除“-”符号；</p>
+</blockquote>
+<h3 id="7-特殊类型数据"><a href="#7-特殊类型数据" class="headerlink" title="7.特殊类型数据"></a>7.特殊类型数据</h3><p>人们经常使用VARCHAR（15）列来存储IP地址。然而,它们实际上是32位无符号整数,不是字符串。用小数点将地址分成四段的表示方法只是为了让人们阅读容易。所以应该用无符号整数存储IP地址。MySQL提供INET_ATON()和INET_NTOA()函数在这两种表示方法之间转换。</p>
+<blockquote>
+<p>良好的schema设计原则是普遍适用的,但MySQL有它自己的实现细节要注意。概括来说,尽可能保持任何东西小而简单总是好的。MySQL喜欢简单,需要使用数据库的人应该也同样会喜欢简单的原则：尽量避免过度设计,例如会导致极其复杂查询的schema设计,或者有很多列的表设计（很多的意思是介于有点多和非常多之间）。使用小而简单的合适数据类型,除非真实数据模型中有确切的需要,否则应该尽可能地避免使用NULL值。尽量使用相同的数据类型存储相似或相关的值,尤其是要在关联条件中使用的列。注意可变长字符串,其在临时表和排序时可能导致悲观的按最大长度分配内存。尽量使用整型定义标识列。避免使用MySQL已经遗弃的特性,例如指定浮点数的精度,或者整数的显示宽度。小心使用ENUM和SET。虽然它们用起来很方便,但是不要滥用,否则有时候会变成陷阱。最好避免使用BIT。</p>
+</blockquote>
+<h2 id="Schema-设计中的陷阱"><a href="#Schema-设计中的陷阱" class="headerlink" title="Schema 设计中的陷阱"></a>Schema 设计中的陷阱</h2><p>虽然有一些普遍的好或坏的设计原则,但也有一些问题是由MySQL的实现机制导致的,这意味着有可能犯一些只在MySQL下发生的特定错误。本节我们讨论设计MySQL的schema的问题。这也许会帮助你避免这些错误,并且选择在MySQL特定实现下工作得更好的替代方案。</p>
+<h4 id="太多的列"><a href="#太多的列" class="headerlink" title="太多的列"></a>太多的列</h4><p>MySQL的存储引擎API工作时需要在服务器层和存储引擎层之间通过行缓冲格式拷贝数据,然后在服务器层将缓冲内容解码成各个列。从行缓冲中将编码过的列转换成行数据结构的操作代价是非常高的。MyISAM的定长行结构实际上与服务器层的行结构正好匹配,所以不需要转换。然而,MyISAM的变长行结构和InnoDB的行结构则总是需要转换。转换的代价依赖于列的数量。当我们研究一个CPU占用非常高的案例时,发现客户使用了非常宽的表（数千个字段）,然而只有一小部分列会实际用到,这时转换的代价就非常高。如果计划使用数千个字段,必须意识到服务器的性能运行特征会有一些不同。</p>
+<h4 id="太多的关联"><a href="#太多的关联" class="headerlink" title="太多的关联"></a>太多的关联</h4><p>所谓的“实体-属性-值”（EAV）设计模式是一个常见的糟糕设计模式,尤其是在MySQL下不能靠谱地工作。MySQL限制了每个关联操作最多只能有61张表,但是EAV数据库需要许多自关联。我们见过不少EAV数据库最后超过了这个限制。事实上在许多关联少于61张表的情况下,解析和优化查询的代价也会成为MySQL的问题。一个粗略的经验法则,如果希望查询执行得快速且并发性好,单个查询最好在12个表以内做关联。</p>
+<h4 id="全能的枚举"><a href="#全能的枚举" class="headerlink" title="全能的枚举"></a>全能的枚举</h4><p>注意防止过度使用枚举（ENUM）。下面是我们见过的一个例子：</p>
+<figure class="highlight sql hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> ... (       </span><br><span class="line">	country enum(<span class="hljs-string">''</span>,<span class="hljs-string">'0'</span>,<span class="hljs-string">'1'</span>,<span class="hljs-string">'2'</span>,...,<span class="hljs-string">'31'</span>)</span><br></pre></td></tr></table></figure>
+<p>这种模式的schema设计非常凌乱。这么使用枚举值类型也许在任何支持枚举类型的数据库都是一个有问题的设计方案,这里应该用整数作为外键关联到字典表或者查找表来查找具体值。但是在MySQL中,当需要在枚举列表中增加一个新的国家时就要做一次ALTER TABLE操作。在MySQL 5.0以及更早的版本中ALTER TABLE是一种阻塞操作；即使在5.1和更新版本中,如果不是在列表的末尾增加值也会一样需要ALTER TABLE。</p>
+<h4 id="变相的枚举"><a href="#变相的枚举" class="headerlink" title="变相的枚举"></a>变相的枚举</h4><p>枚举（ENUM）列允许在列中存储一组定义值中的单个值,集合（SET）列则允许在列中存储一组定义值中的一个或多个值。有时候这可能比较容易导致混乱。这是一个例子：</p>
+<figure class="highlight sql hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">TABLE</span> ... (       </span><br><span class="line">	is_default <span class="hljs-keyword">set</span> (<span class="hljs-string">'Y'</span>,<span class="hljs-string">'N'</span>) <span class="hljs-keyword">NOT</span> <span class="hljs-literal">NULL</span> <span class="hljs-keyword">default</span> <span class="hljs-string">'N'</span></span><br></pre></td></tr></table></figure>
+<h4 id="非此发明（Not-Invent-Here）的NULL"><a href="#非此发明（Not-Invent-Here）的NULL" class="headerlink" title="非此发明（Not Invent Here）的NULL"></a>非此发明（Not Invent Here）的NULL</h4><p>我们之前写了避免使用NULL的好处,并且建议尽可能地考虑替代方案。即使需要存储一个事实上的“空值”到表中时,也不一定非得使用NULL。也许可以使用0、某个特殊值,或者空字符串作为代替</p>
+<h2 id="五、范式和反范式"><a href="#五、范式和反范式" class="headerlink" title="五、范式和反范式"></a>五、范式和反范式</h2><p>对于任何给定的数据通常都有很多种表示方法,从完全的范式化到完全的反范式化,以及两者的折中。在范式化的数据库中,每个事实数据会出现并且只出现一次。相反,在反范式化的数据库中,信息是冗余的,可能会存储在多个地方。</p>
+<h4 id="1-范式的优点和缺点"><a href="#1-范式的优点和缺点" class="headerlink" title="1.范式的优点和缺点"></a>1.范式的优点和缺点</h4><h5 id="范式化通常能够带来好处"><a href="#范式化通常能够带来好处" class="headerlink" title="范式化通常能够带来好处"></a>范式化通常能够带来好处</h5><ul>
+<li>范式化的更新操作通常比反范式化要快。</li>
+<li>当数据较好地范式化时,就只有很少或者没有重复数据,所以只需要修改更少的数据。</li>
+<li>范式化的表通常更小,可以更好地放在内存里,所以执行操作会更快。</li>
+<li>很少有多余的数据意味着检索列表数据时更少需要DISTINCT或者GROUP BY语句。还是前面的例子：在非范式化的结构中必须使用DISTINCT或者GROUP BY才能获得一份唯一的部门列表,但是如果部门（DEPARTMENT）是一张单独的表,则只需要简单的查询这张表就行了。</li>
+</ul>
+<h5 id="范式化设计的schema的缺点"><a href="#范式化设计的schema的缺点" class="headerlink" title="范式化设计的schema的缺点"></a>范式化设计的schema的缺点</h5><p>通常需要关联。</p>
+<h5 id="反范式的优点和缺点"><a href="#反范式的优点和缺点" class="headerlink" title="反范式的优点和缺点"></a>反范式的优点和缺点</h5><p>反范式化的schema因为所有数据都在一张表中,可以很好地避免关联。 如果不需要关联表,则对大部分查询最差的情况——即使表没有使用索引——是全表扫描。当数据比内存大时这可能比关联要快得多,因为这样避免了随机 I/O 。</p>
+<h4 id="2-混用范式化和反范式化"><a href="#2-混用范式化和反范式化" class="headerlink" title="2.混用范式化和反范式化"></a>2.混用范式化和反范式化</h4><p>事实是,完全的范式化和完全的反范式化schema都是实验室里才有的东西：在真实世界中很少会这么极端地使用。在实际应用中经常需要混用,可能使用部分范式化的schema、缓存表,以及其他技巧。</p>
+<p>最常见的反范式化数据的方法是复制或者缓存,在不同的表中存储相同的特定列。在MySQL 5.0和更新版本中,可以使用触发器更新缓存值,这使得实现这样的方案变得更简单。</p>
+<h2 id="六、缓存表和汇总表"><a href="#六、缓存表和汇总表" class="headerlink" title="六、缓存表和汇总表"></a>六、缓存表和汇总表</h2><h4 id="1-物化视图"><a href="#1-物化视图" class="headerlink" title="1.物化视图"></a>1.物化视图</h4><p><strong>TODO</strong></p>
+<h4 id="2-计数器表"><a href="#2-计数器表" class="headerlink" title="2.计数器表"></a>2.计数器表</h4><p><strong>TODO</strong></p>
+<h4 id="3-加快ALTER-TABLE操作的速度"><a href="#3-加快ALTER-TABLE操作的速度" class="headerlink" title="3.加快ALTER TABLE操作的速度"></a>3.加快ALTER TABLE操作的速度</h4><h5 id="只修改-frm文件"><a href="#只修改-frm文件" class="headerlink" title="只修改.frm文件"></a>只修改.frm文件</h5><p><strong>下面这些操作是有可能不需要重建表的</strong></p>
+<ul>
+<li>移除（不是增加）一个列的AUTO_INCREMENT属性。</li>
+<li>增加、移除,或更改ENUM和SET常量。如果移除的是已经有行数据用到其值的常量,查询将会返回一个空字串值。</li>
+</ul>
+<p><strong>修改方法</strong></p>
+<ol>
+<li>创建一张有相同结构的空表,并进行所需要的修改（例如增加ENUM常量）。</li>
+<li>执行<code>FLUSH TABLES WITH READ LOCK</code>。这将会关闭所有正在使用的表,并且禁止任何表被打开。</li>
+<li>交换.frm文件</li>
+<li>执行<code>UNLOCK TABLES</code>来释放第2步的读锁</li>
+</ol>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/MySQL/" rel="tag">MySQL</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/05/02/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql/%E9%AB%98%E6%80%A7%E8%83%BDmysql(3)/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">高性能 MySQL ｜ 创建高性能的索引</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/04/28/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql/%E9%AB%98%E6%80%A7%E8%83%BDmysql(1)/">
+                <span class="level-item">高性能 MySQL ｜ MySQL 逻辑架构</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'e99dca2b6906ba1cce3d4050336330d6',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、更小的通常更好">
+        <span class="has-mr-6">1</span>
+        <span>一、更小的通常更好</span>
+        </a></li><li>
+        <a class="is-flex" href="#二、简单就好">
+        <span class="has-mr-6">2</span>
+        <span>二、简单就好</span>
+        </a></li><li>
+        <a class="is-flex" href="#三、Mysql很难优化包含NULL的列">
+        <span class="has-mr-6">3</span>
+        <span>三、Mysql很难优化包含NULL的列</span>
+        </a></li><li>
+        <a class="is-flex" href="#四、选择优化的数据类型">
+        <span class="has-mr-6">4</span>
+        <span>四、选择优化的数据类型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-整数类型">
+        <span class="has-mr-6">4.1</span>
+        <span>1.整数类型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#无符号">
+        <span class="has-mr-6">4.1.1</span>
+        <span>无符号</span>
+        </a></li><li>
+        <a class="is-flex" href="#有符号">
+        <span class="has-mr-6">4.1.2</span>
+        <span>有符号</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#2-实数类型">
+        <span class="has-mr-6">4.2</span>
+        <span>2.实数类型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#FLOAT">
+        <span class="has-mr-6">4.2.1</span>
+        <span>FLOAT</span>
+        </a></li><li>
+        <a class="is-flex" href="#DOUBLE">
+        <span class="has-mr-6">4.2.2</span>
+        <span>DOUBLE</span>
+        </a></li><li>
+        <a class="is-flex" href="#DECIMAL">
+        <span class="has-mr-6">4.2.3</span>
+        <span>DECIMAL</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#3-字符串类型">
+        <span class="has-mr-6">4.3</span>
+        <span>3.字符串类型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#VARCHAR">
+        <span class="has-mr-6">4.3.1</span>
+        <span>VARCHAR</span>
+        </a></li><li>
+        <a class="is-flex" href="#CHAR">
+        <span class="has-mr-6">4.3.2</span>
+        <span>CHAR</span>
+        </a></li><li>
+        <a class="is-flex" href="#BLOB">
+        <span class="has-mr-6">4.3.3</span>
+        <span>BLOB</span>
+        </a></li><li>
+        <a class="is-flex" href="#TEXT">
+        <span class="has-mr-6">4.3.4</span>
+        <span>TEXT</span>
+        </a></li><li>
+        <a class="is-flex" href="#ENUM">
+        <span class="has-mr-6">4.3.5</span>
+        <span>ENUM</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#4-日期和时间类型">
+        <span class="has-mr-6">4.4</span>
+        <span>4.日期和时间类型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#TIMESTAMP">
+        <span class="has-mr-6">4.4.1</span>
+        <span>TIMESTAMP</span>
+        </a></li><li>
+        <a class="is-flex" href="#DATETIME">
+        <span class="has-mr-6">4.4.2</span>
+        <span>DATETIME</span>
+        </a></li><li>
+        <a class="is-flex" href="#TIMESTAMP-与-DATETIME-选择">
+        <span class="has-mr-6">4.4.3</span>
+        <span>TIMESTAMP 与 DATETIME 选择</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#5-位数据类型">
+        <span class="has-mr-6">4.5</span>
+        <span>5.位数据类型</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#BIT">
+        <span class="has-mr-6">4.5.1</span>
+        <span>BIT</span>
+        </a></li><li>
+        <a class="is-flex" href="#SET">
+        <span class="has-mr-6">4.5.2</span>
+        <span>SET</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#6-选择标识符（identifier）">
+        <span class="has-mr-6">4.6</span>
+        <span>6.选择标识符（identifier）</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#完全“随机”的字符串">
+        <span class="has-mr-6">4.6.1</span>
+        <span>完全“随机”的字符串</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#7-特殊类型数据">
+        <span class="has-mr-6">4.7</span>
+        <span>7.特殊类型数据</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#Schema-设计中的陷阱">
+        <span class="has-mr-6">5</span>
+        <span>Schema 设计中的陷阱</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#太多的列">
+        <span class="has-mr-6">5.1.1</span>
+        <span>太多的列</span>
+        </a></li><li>
+        <a class="is-flex" href="#太多的关联">
+        <span class="has-mr-6">5.1.2</span>
+        <span>太多的关联</span>
+        </a></li><li>
+        <a class="is-flex" href="#全能的枚举">
+        <span class="has-mr-6">5.1.3</span>
+        <span>全能的枚举</span>
+        </a></li><li>
+        <a class="is-flex" href="#变相的枚举">
+        <span class="has-mr-6">5.1.4</span>
+        <span>变相的枚举</span>
+        </a></li><li>
+        <a class="is-flex" href="#非此发明（Not-Invent-Here）的NULL">
+        <span class="has-mr-6">5.1.5</span>
+        <span>非此发明（Not Invent Here）的NULL</span>
+        </a></li></ul></ul></li><li>
+        <a class="is-flex" href="#五、范式和反范式">
+        <span class="has-mr-6">6</span>
+        <span>五、范式和反范式</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-范式的优点和缺点">
+        <span class="has-mr-6">6.1.1</span>
+        <span>1.范式的优点和缺点</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-混用范式化和反范式化">
+        <span class="has-mr-6">6.1.2</span>
+        <span>2.混用范式化和反范式化</span>
+        </a></li></ul></ul></li><li>
+        <a class="is-flex" href="#六、缓存表和汇总表">
+        <span class="has-mr-6">7</span>
+        <span>六、缓存表和汇总表</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#1-物化视图">
+        <span class="has-mr-6">7.1.1</span>
+        <span>1.物化视图</span>
+        </a></li><li>
+        <a class="is-flex" href="#2-计数器表">
+        <span class="has-mr-6">7.1.2</span>
+        <span>2.计数器表</span>
+        </a></li><li>
+        <a class="is-flex" href="#3-加快ALTER-TABLE操作的速度">
+        <span class="has-mr-6">7.1.3</span>
+        <span>3.加快ALTER TABLE操作的速度</span>
+        </a></li></ul></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="高性能 MySQL ｜ Schema 与数据类型优化" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

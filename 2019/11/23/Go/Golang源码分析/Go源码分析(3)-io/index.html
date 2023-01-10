@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Go源码分析(3) - io - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="io包下分为io和iotuil,提供了缓冲io和非缓冲io,拷贝文件等常见操作。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go源码分析(3) - io">
+<meta property="og:url" content="https://www.ulovecode.com/2019/11/23/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(3)-io/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="io包下分为io和iotuil,提供了缓冲io和非缓冲io,拷贝文件等常见操作。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/2a/98/2a4af0dadbb051ba9ec7cc09ffbc0498.jpg?x-oss-process=image/crop,w_1920,h_1080/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-11-23T05:49:00.000Z">
+<meta property="article:modified_time" content="2019-11-23T05:49:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Golang源码分析">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/2a/98/2a4af0dadbb051ba9ec7cc09ffbc0498.jpg?x-oss-process=image/crop,w_1920,h_1080/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go源码分析(3) - io" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/2a/98/2a4af0dadbb051ba9ec7cc09ffbc0498.jpg?x-oss-process=image/crop,w_1920,h_1080/resize,w_1280,h_847" alt="Go源码分析(3) - io">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-23T05:49:00.000Z">2019-11-23</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">Golang源码分析</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    24 分钟 读完 (大约 3594 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Go源码分析(3) - io
+            
+        </h1>
+        <div class="content">
+            <p>io包下分为io和iotuil,提供了缓冲io和非缓冲io,拷贝文件等常见操作。</p>
+<a id="more"></a>
+<h2 id="io-go"><a href="#io-go" class="headerlink" title="io.go"></a>io.go</h2><p>提供了四种基本通用api</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> Reader <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Read(p []<span class="hljs-keyword">byte</span>) (n <span class="hljs-keyword">int</span>, err error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Writer <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Write(p []<span class="hljs-keyword">byte</span>) (n <span class="hljs-keyword">int</span>, err error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Closer <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Close() error</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> Seeker <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Seek(offset <span class="hljs-keyword">int64</span>, whence <span class="hljs-keyword">int</span>) (<span class="hljs-keyword">int64</span>, error)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>Reader</code>接口提供了读操作接口</li>
+<li><code>Writer</code>接口提供了写操作接口</li>
+<li><code>Closer</code>接口关闭当前io操作以及资源释放</li>
+<li><code>Seeker</code>接口将当前读取或者移动指针移动到特定到位置</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// ReadWriter is the interface that groups the basic Read and Write methods.</span></span><br><span class="line"><span class="hljs-keyword">type</span> ReadWriter <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Reader</span><br><span class="line">	Writer</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ReadCloser is the interface that groups the basic Read and Close methods.</span></span><br><span class="line"><span class="hljs-keyword">type</span> ReadCloser <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Reader</span><br><span class="line">	Closer</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// WriteCloser is the interface that groups the basic Write and Close methods.</span></span><br><span class="line"><span class="hljs-keyword">type</span> WriteCloser <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Writer</span><br><span class="line">	Closer</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ReadWriteCloser is the interface that groups the basic Read, Write and Close methods.</span></span><br><span class="line"><span class="hljs-keyword">type</span> ReadWriteCloser <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Reader</span><br><span class="line">	Writer</span><br><span class="line">	Closer</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ReadSeeker is the interface that groups the basic Read and Seek methods.</span></span><br><span class="line"><span class="hljs-keyword">type</span> ReadSeeker <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Reader</span><br><span class="line">	Seeker</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// WriteSeeker is the interface that groups the basic Write and Seek methods.</span></span><br><span class="line"><span class="hljs-keyword">type</span> WriteSeeker <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Writer</span><br><span class="line">	Seeker</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ReadWriteSeeker is the interface that groups the basic Read, Write and Seek methods.</span></span><br><span class="line"><span class="hljs-keyword">type</span> ReadWriteSeeker <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	Reader</span><br><span class="line">	Writer</span><br><span class="line">	Seeker</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上几个接口都是对几种基本接口的组合</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// ReaderFrom is the interface that wraps the ReadFrom method.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// ReadFrom reads data from r until EOF or error.</span></span><br><span class="line"><span class="hljs-comment">// The return value n is the number of bytes read.</span></span><br><span class="line"><span class="hljs-comment">// Any error except io.EOF encountered during the read is also returned.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// The Copy function uses ReaderFrom if available.</span></span><br><span class="line"><span class="hljs-keyword">type</span> ReaderFrom <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	ReadFrom(r Reader) (n <span class="hljs-keyword">int64</span>, err error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// WriterTo is the interface that wraps the WriteTo method.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// WriteTo writes data to w until there's no more data to write or</span></span><br><span class="line"><span class="hljs-comment">// when an error occurs. The return value n is the number of bytes</span></span><br><span class="line"><span class="hljs-comment">// written. Any error encountered during the write is also returned.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// The Copy function uses WriterTo if available.</span></span><br><span class="line"><span class="hljs-keyword">type</span> WriterTo <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	WriteTo(w Writer) (n <span class="hljs-keyword">int64</span>, err error)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>ReaderFrom</code>从一个reader读取内容</li>
+<li><code>WriterTo</code>将当前当前writer的内容读取到另一个w中</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// ReaderAt is the interface that wraps the basic ReadAt method.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// ReadAt reads len(p) bytes into p starting at offset off in the</span></span><br><span class="line"><span class="hljs-comment">// underlying input source. It returns the number of bytes</span></span><br><span class="line"><span class="hljs-comment">// read (0 &lt;= n &lt;= len(p)) and any error encountered.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// When ReadAt returns n &lt; len(p), it returns a non-nil error</span></span><br><span class="line"><span class="hljs-comment">// explaining why more bytes were not returned. In this respect,</span></span><br><span class="line"><span class="hljs-comment">// ReadAt is stricter than Read.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// Even if ReadAt returns n &lt; len(p), it may use all of p as scratch</span></span><br><span class="line"><span class="hljs-comment">// space during the call. If some data is available but not len(p) bytes,</span></span><br><span class="line"><span class="hljs-comment">// ReadAt blocks until either all the data is available or an error occurs.</span></span><br><span class="line"><span class="hljs-comment">// In this respect ReadAt is different from Read.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// If the n = len(p) bytes returned by ReadAt are at the end of the</span></span><br><span class="line"><span class="hljs-comment">// input source, ReadAt may return either err == EOF or err == nil.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// If ReadAt is reading from an input source with a seek offset,</span></span><br><span class="line"><span class="hljs-comment">// ReadAt should not affect nor be affected by the underlying</span></span><br><span class="line"><span class="hljs-comment">// seek offset.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// Clients of ReadAt can execute parallel ReadAt calls on the</span></span><br><span class="line"><span class="hljs-comment">// same input source.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// Implementations must not retain p.</span></span><br><span class="line"><span class="hljs-keyword">type</span> ReaderAt <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	ReadAt(p []<span class="hljs-keyword">byte</span>, off <span class="hljs-keyword">int64</span>) (n <span class="hljs-keyword">int</span>, err error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// WriterAt is the interface that wraps the basic WriteAt method.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// WriteAt writes len(p) bytes from p to the underlying data stream</span></span><br><span class="line"><span class="hljs-comment">// at offset off. It returns the number of bytes written from p (0 &lt;= n &lt;= len(p))</span></span><br><span class="line"><span class="hljs-comment">// and any error encountered that caused the write to stop early.</span></span><br><span class="line"><span class="hljs-comment">// WriteAt must return a non-nil error if it returns n &lt; len(p).</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// If WriteAt is writing to a destination with a seek offset,</span></span><br><span class="line"><span class="hljs-comment">// WriteAt should not affect nor be affected by the underlying</span></span><br><span class="line"><span class="hljs-comment">// seek offset.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// Clients of WriteAt can execute parallel WriteAt calls on the same</span></span><br><span class="line"><span class="hljs-comment">// destination if the ranges do not overlap.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// Implementations must not retain p.</span></span><br><span class="line"><span class="hljs-keyword">type</span> WriterAt <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	WriteAt(p []<span class="hljs-keyword">byte</span>, off <span class="hljs-keyword">int64</span>) (n <span class="hljs-keyword">int</span>, err error)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从指定偏移量开始读取或者写</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// StringWriter is the interface that wraps the WriteString method.</span></span><br><span class="line"><span class="hljs-keyword">type</span> StringWriter <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	WriteString(s <span class="hljs-keyword">string</span>) (n <span class="hljs-keyword">int</span>, err error)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// WriteString writes the contents of the string s to w, which accepts a slice of bytes.</span></span><br><span class="line"><span class="hljs-comment">// If w implements StringWriter, its WriteString method is invoked directly.</span></span><br><span class="line"><span class="hljs-comment">// Otherwise, w.Write is called exactly once.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">WriteString</span><span class="hljs-params">(w Writer, s <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> sw, ok := w.(StringWriter); ok &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> sw.WriteString(s)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> w.Write([]<span class="hljs-keyword">byte</span>(s))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>WriteString</code>可以将字符串写入<code>Writer</code>中,如果该<code>Writer</code>是<code>WriteString</code>类型,则会调用该对象自己的<code>WriteString</code>方法</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ReadAtLeast</span><span class="hljs-params">(r Reader, buf []<span class="hljs-keyword">byte</span>, min <span class="hljs-keyword">int</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(buf) &lt; min &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, ErrShortBuffer</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">for</span> n &lt; min &amp;&amp; err == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">var</span> nn <span class="hljs-keyword">int</span></span><br><span class="line">		nn, err = r.Read(buf[n:])</span><br><span class="line">		n += nn</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> n &gt;= min &#123;</span><br><span class="line">		err = <span class="hljs-literal">nil</span></span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> n &gt; <span class="hljs-number">0</span> &amp;&amp; err == EOF &#123;</span><br><span class="line">		err = ErrUnexpectedEOF</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>如果当前buf长度小于最少读取的字节,返回太短的buffer错误</li>
+<li>循环读取当前reader中的内容到buffer,比较是已经读取到min长度</li>
+<li>如果当前读取的长度小于min并且错误等于EOF,代表reader里面没有足够对长度,抛出EOF错误</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">CopyN</span><span class="hljs-params">(dst Writer, src Reader, n <span class="hljs-keyword">int64</span>)</span> <span class="hljs-params">(written <span class="hljs-keyword">int64</span>, err error)</span></span> &#123;</span><br><span class="line">	written, err = Copy(dst, LimitReader(src, n))</span><br><span class="line">	<span class="hljs-keyword">if</span> written == n &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> n, <span class="hljs-literal">nil</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> written &lt; n &amp;&amp; err == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// src stopped early; must have been EOF.</span></span><br><span class="line">		err = EOF</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Copy</span><span class="hljs-params">(dst Writer, src Reader)</span> <span class="hljs-params">(written <span class="hljs-keyword">int64</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> copyBuffer(dst, src, <span class="hljs-literal">nil</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">CopyBuffer</span><span class="hljs-params">(dst Writer, src Reader, buf []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(written <span class="hljs-keyword">int64</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> buf != <span class="hljs-literal">nil</span> &amp;&amp; <span class="hljs-built_in">len</span>(buf) == <span class="hljs-number">0</span> &#123;</span><br><span class="line">		<span class="hljs-built_in">panic</span>(<span class="hljs-string">"empty buffer in io.CopyBuffer"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> copyBuffer(dst, src, buf)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">copyBuffer</span><span class="hljs-params">(dst Writer, src Reader, buf []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(written <span class="hljs-keyword">int64</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// If the reader has a WriteTo method, use it to do the copy.</span></span><br><span class="line">	<span class="hljs-comment">// Avoids an allocation and a copy.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> wt, ok := src.(WriterTo); ok &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> wt.WriteTo(dst)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Similarly, if the writer has a ReadFrom method, use it to do the copy.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> rt, ok := dst.(ReaderFrom); ok &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> rt.ReadFrom(src)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> buf == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		size := <span class="hljs-number">32</span> * <span class="hljs-number">1024</span></span><br><span class="line">		<span class="hljs-keyword">if</span> l, ok := src.(*LimitedReader); ok &amp;&amp; <span class="hljs-keyword">int64</span>(size) &gt; l.N &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> l.N &lt; <span class="hljs-number">1</span> &#123;</span><br><span class="line">				size = <span class="hljs-number">1</span></span><br><span class="line">			&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">				size = <span class="hljs-keyword">int</span>(l.N)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		buf = <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">byte</span>, size)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		nr, er := src.Read(buf)</span><br><span class="line">		<span class="hljs-keyword">if</span> nr &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">			nw, ew := dst.Write(buf[<span class="hljs-number">0</span>:nr])</span><br><span class="line">			<span class="hljs-keyword">if</span> nw &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">				written += <span class="hljs-keyword">int64</span>(nw)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> ew != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				err = ew</span><br><span class="line">				<span class="hljs-keyword">break</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> nr != nw &#123;</span><br><span class="line">				err = ErrShortWrite</span><br><span class="line">				<span class="hljs-keyword">break</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> er != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> er != EOF &#123;</span><br><span class="line">				err = er</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">break</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> written, err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>CopyN(dst Writer, src Reader, n int64) (written int64, err error)</code>调用<code>Copy</code>方法并包装当前reader为LimitReader</li>
+<li><code>Copy(dst Writer, src Reader) (written int64, err error)</code>调用<code>copyBuffer(dst, src, nil)</code>方法传入buf为nil,不是用缓冲区</li>
+<li><code>copyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error)</code>是这些方法中最关键的一个方法<ol>
+<li>如果当前reader方法实现WriterTo方法,则直接调用</li>
+<li>如果当前writer方法实现ReadFrom方法,则直接调用</li>
+<li>如果buf为空,处理直接为Copy或者CopyN的情况<ol>
+<li>首先如果强转为<code>LimitedReader</code>方法,如果可以则直接将buf的大小设置为LimitedReader.N的大小</li>
+<li>buf大小为32*1024,既为32mb大小</li>
+</ol>
+</li>
+<li>循环从read中读取到buf,然后从buf中写入到writer中,reader中的数据被读取完毕,或者出现读写大小不一样的错误</li>
+</ol>
+</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// LimitReader returns a Reader that reads from r</span></span><br><span class="line"><span class="hljs-comment">// but stops with EOF after n bytes.</span></span><br><span class="line"><span class="hljs-comment">// The underlying implementation is a *LimitedReader.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">LimitReader</span><span class="hljs-params">(r Reader, n <span class="hljs-keyword">int64</span>)</span> <span class="hljs-title">Reader</span></span> &#123; <span class="hljs-keyword">return</span> &amp;LimitedReader&#123;r, n&#125; &#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// A LimitedReader reads from R but limits the amount of</span></span><br><span class="line"><span class="hljs-comment">// data returned to just N bytes. Each call to Read</span></span><br><span class="line"><span class="hljs-comment">// updates N to reflect the new amount remaining.</span></span><br><span class="line"><span class="hljs-comment">// Read returns EOF when N &lt;= 0 or when the underlying R returns EOF.</span></span><br><span class="line"><span class="hljs-keyword">type</span> LimitedReader <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	R Reader <span class="hljs-comment">// underlying reader</span></span><br><span class="line">	N <span class="hljs-keyword">int64</span>  <span class="hljs-comment">// max bytes remaining</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(l *LimitedReader)</span> <span class="hljs-title">Read</span><span class="hljs-params">(p []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> l.N &lt;= <span class="hljs-number">0</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, EOF</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> <span class="hljs-keyword">int64</span>(<span class="hljs-built_in">len</span>(p)) &gt; l.N &#123;</span><br><span class="line">		p = p[<span class="hljs-number">0</span>:l.N]</span><br><span class="line">	&#125;</span><br><span class="line">	n, err = l.R.Read(p)</span><br><span class="line">	l.N -= <span class="hljs-keyword">int64</span>(n)</span><br><span class="line">	<span class="hljs-keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>限制被读取的大小,通过切片的方式来限制buf的大小</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// NewSectionReader returns a SectionReader that reads from r</span></span><br><span class="line"><span class="hljs-comment">// starting at offset off and stops with EOF after n bytes.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewSectionReader</span><span class="hljs-params">(r ReaderAt, off <span class="hljs-keyword">int64</span>, n <span class="hljs-keyword">int64</span>)</span> *<span class="hljs-title">SectionReader</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;SectionReader&#123;r, off, off, off + n&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// SectionReader implements Read, Seek, and ReadAt on a section</span></span><br><span class="line"><span class="hljs-comment">// of an underlying ReaderAt.</span></span><br><span class="line"><span class="hljs-keyword">type</span> SectionReader <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	r     ReaderAt</span><br><span class="line">	base  <span class="hljs-keyword">int64</span></span><br><span class="line">	off   <span class="hljs-keyword">int64</span></span><br><span class="line">	limit <span class="hljs-keyword">int64</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *SectionReader)</span> <span class="hljs-title">Read</span><span class="hljs-params">(p []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> s.off &gt;= s.limit &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, EOF</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> max := s.limit - s.off; <span class="hljs-keyword">int64</span>(<span class="hljs-built_in">len</span>(p)) &gt; max &#123;</span><br><span class="line">		p = p[<span class="hljs-number">0</span>:max]</span><br><span class="line">	&#125;</span><br><span class="line">	n, err = s.r.ReadAt(p, s.off)</span><br><span class="line">	s.off += <span class="hljs-keyword">int64</span>(n)</span><br><span class="line">	<span class="hljs-keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> errWhence = errors.New(<span class="hljs-string">"Seek: invalid whence"</span>)</span><br><span class="line"><span class="hljs-keyword">var</span> errOffset = errors.New(<span class="hljs-string">"Seek: invalid offset"</span>)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *SectionReader)</span> <span class="hljs-title">Seek</span><span class="hljs-params">(offset <span class="hljs-keyword">int64</span>, whence <span class="hljs-keyword">int</span>)</span> <span class="hljs-params">(<span class="hljs-keyword">int64</span>, error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">switch</span> whence &#123;</span><br><span class="line">	<span class="hljs-keyword">default</span>:</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, errWhence</span><br><span class="line">	<span class="hljs-keyword">case</span> SeekStart:</span><br><span class="line">		offset += s.base</span><br><span class="line">	<span class="hljs-keyword">case</span> SeekCurrent:</span><br><span class="line">		offset += s.off</span><br><span class="line">	<span class="hljs-keyword">case</span> SeekEnd:</span><br><span class="line">		offset += s.limit</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> offset &lt; s.base &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, errOffset</span><br><span class="line">	&#125;</span><br><span class="line">	s.off = offset</span><br><span class="line">	<span class="hljs-keyword">return</span> offset - s.base, <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *SectionReader)</span> <span class="hljs-title">ReadAt</span><span class="hljs-params">(p []<span class="hljs-keyword">byte</span>, off <span class="hljs-keyword">int64</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> off &lt; <span class="hljs-number">0</span> || off &gt;= s.limit-s.base &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, EOF</span><br><span class="line">	&#125;</span><br><span class="line">	off += s.base</span><br><span class="line">	<span class="hljs-keyword">if</span> max := s.limit - off; <span class="hljs-keyword">int64</span>(<span class="hljs-built_in">len</span>(p)) &gt; max &#123;</span><br><span class="line">		p = p[<span class="hljs-number">0</span>:max]</span><br><span class="line">		n, err = s.r.ReadAt(p, off)</span><br><span class="line">		<span class="hljs-keyword">if</span> err == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			err = EOF</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">return</span> n, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> s.r.ReadAt(p, off)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Size returns the size of the section in bytes.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *SectionReader)</span> <span class="hljs-title">Size</span><span class="hljs-params">()</span> <span class="hljs-title">int64</span></span> &#123; <span class="hljs-keyword">return</span> s.limit - s.base &#125;</span><br></pre></td></tr></table></figure>
+<p><code>SectionReader</code>部分读取,<code>base</code>是基础的读取的位置,<code>off</code>为偏移量,<code>limit</code>限制的最大偏移量.</p>
+<ul>
+<li><code>Seek(offset int64, whence int) (int64, error)</code>方法中<code>whence</code>是一个枚举类型有三个值<code>SeekStart</code>,<code>SeekCurrent</code>,<code>SeekEnd</code>从开头,当前位置,和结尾位置作为初始下标,返回寻找的下表位置</li>
+<li><code>(s *SectionReader) ReadAt(p []byte, off int64) (n int, err error)</code>从指定位置开始读取,如果当前偏移量超出了限制,就返回EOF,并且如果结尾的数量小于当前buf的大小,就对buf进行重新切片,再调用reader的<code>ReadAt（）</code>方法防止超出。</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// TeeReader returns a Reader that writes to w what it reads from r.</span></span><br><span class="line"><span class="hljs-comment">// All reads from r performed through it are matched with</span></span><br><span class="line"><span class="hljs-comment">// corresponding writes to w. There is no internal buffering -</span></span><br><span class="line"><span class="hljs-comment">// the write must complete before the read completes.</span></span><br><span class="line"><span class="hljs-comment">// Any error encountered while writing is reported as a read error.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">TeeReader</span><span class="hljs-params">(r Reader, w Writer)</span> <span class="hljs-title">Reader</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;teeReader&#123;r, w&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> teeReader <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	r Reader</span><br><span class="line">	w Writer</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *teeReader)</span> <span class="hljs-title">Read</span><span class="hljs-params">(p []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	n, err = t.r.Read(p)</span><br><span class="line">	<span class="hljs-keyword">if</span> n &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> n, err := t.w.Write(p[:n]); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> n, err</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将buffer中的所有内容全部都传输入到writer中</p>
+<h2 id="multi-go"><a href="#multi-go" class="headerlink" title="multi.go"></a>multi.go</h2><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> eofReader <span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(eofReader)</span> <span class="hljs-title">Read</span><span class="hljs-params">([]<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(<span class="hljs-keyword">int</span>, error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, EOF</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>定义一个eofReader实现reader接口作为EOF处理</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> multiReader <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	readers []Reader</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(mr *multiReader)</span> <span class="hljs-title">Read</span><span class="hljs-params">(p []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> <span class="hljs-built_in">len</span>(mr.readers) &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// Optimization to flatten nested multiReaders (Issue 13558).</span></span><br><span class="line">		<span class="hljs-keyword">if</span> <span class="hljs-built_in">len</span>(mr.readers) == <span class="hljs-number">1</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> r, ok := mr.readers[<span class="hljs-number">0</span>].(*multiReader); ok &#123;</span><br><span class="line">				mr.readers = r.readers</span><br><span class="line">				<span class="hljs-keyword">continue</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		n, err = mr.readers[<span class="hljs-number">0</span>].Read(p)</span><br><span class="line">		<span class="hljs-keyword">if</span> err == EOF &#123;</span><br><span class="line">			<span class="hljs-comment">// Use eofReader instead of nil to avoid nil panic</span></span><br><span class="line">			<span class="hljs-comment">// after performing flatten (Issue 18232).</span></span><br><span class="line">			mr.readers[<span class="hljs-number">0</span>] = eofReader&#123;&#125; <span class="hljs-comment">// permit earlier GC</span></span><br><span class="line">			mr.readers = mr.readers[<span class="hljs-number">1</span>:]</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> n &gt; <span class="hljs-number">0</span> || err != EOF &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> err == EOF &amp;&amp; <span class="hljs-built_in">len</span>(mr.readers) &gt; <span class="hljs-number">0</span> &#123;</span><br><span class="line">				<span class="hljs-comment">// Don't return EOF yet. More readers remain.</span></span><br><span class="line">				err = <span class="hljs-literal">nil</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, EOF</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// MultiReader returns a Reader that's the logical concatenation of</span></span><br><span class="line"><span class="hljs-comment">// the provided input readers. They're read sequentially. Once all</span></span><br><span class="line"><span class="hljs-comment">// inputs have returned EOF, Read will return EOF.  If any of the readers</span></span><br><span class="line"><span class="hljs-comment">// return a non-nil, non-EOF error, Read will return that error.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">MultiReader</span><span class="hljs-params">(readers ...Reader)</span> <span class="hljs-title">Reader</span></span> &#123;</span><br><span class="line">	r := <span class="hljs-built_in">make</span>([]Reader, <span class="hljs-built_in">len</span>(readers))</span><br><span class="line">	<span class="hljs-built_in">copy</span>(r, readers)</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;multiReader&#123;r&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>multiReader</code>是一个多readers多读取的一个结构体,实现了reader接口,构造方法为传入多个reader,调用系统内置<code>copy()</code>方法防止该multireader对原始对reader进行修改。</p>
+<ul>
+<li><code>Read(p []byte) (n int, err error)</code>,查看构造的reader是否有可用数量的reader,如果构造的reader本身也<code>multiReader</code>类型,那么将当前reader解包添加到readers中,然后调用<code>readers[0]</code>的<code>Read(p)</code>方法,返回结果之后,如果已经读取到结尾,当前reader从readers中剔除,但是这里不用nil来避免panic,而是使用一个<code>eofReader</code>来表示这个reader已经不可用了,同时加快GC。继续判断如果读取的字节是大于0或者错误不是是EOF就直接返回。实质上mulitReader就是一个序列化的读取reader,从<code>readers[0]</code>读取到<code>readers[n]</code>。</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> multiWriter <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	writers []Writer</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *multiWriter)</span> <span class="hljs-title">Write</span><span class="hljs-params">(p []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> _, w := <span class="hljs-keyword">range</span> t.writers &#123;</span><br><span class="line">		n, err = w.Write(p)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> n != <span class="hljs-built_in">len</span>(p) &#123;</span><br><span class="line">			err = ErrShortWrite</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-built_in">len</span>(p), <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">var</span> _ StringWriter = (*multiWriter)(<span class="hljs-literal">nil</span>)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(t *multiWriter)</span> <span class="hljs-title">WriteString</span><span class="hljs-params">(s <span class="hljs-keyword">string</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> p []<span class="hljs-keyword">byte</span> <span class="hljs-comment">// lazily initialized if/when needed</span></span><br><span class="line">	<span class="hljs-keyword">for</span> _, w := <span class="hljs-keyword">range</span> t.writers &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> sw, ok := w.(StringWriter); ok &#123;</span><br><span class="line">			n, err = sw.WriteString(s)</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> p == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				p = []<span class="hljs-keyword">byte</span>(s)</span><br><span class="line">			&#125;</span><br><span class="line">			n, err = w.Write(p)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> n != <span class="hljs-built_in">len</span>(s) &#123;</span><br><span class="line">			err = ErrShortWrite</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-built_in">len</span>(s), <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// MultiWriter creates a writer that duplicates its writes to all the</span></span><br><span class="line"><span class="hljs-comment">// provided writers, similar to the Unix tee(1) command.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// Each write is written to each listed writer, one at a time.</span></span><br><span class="line"><span class="hljs-comment">// If a listed writer returns an error, that overall write operation</span></span><br><span class="line"><span class="hljs-comment">// stops and returns the error; it does not continue down the list.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">MultiWriter</span><span class="hljs-params">(writers ...Writer)</span> <span class="hljs-title">Writer</span></span> &#123;</span><br><span class="line">	allWriters := <span class="hljs-built_in">make</span>([]Writer, <span class="hljs-number">0</span>, <span class="hljs-built_in">len</span>(writers))</span><br><span class="line">	<span class="hljs-keyword">for</span> _, w := <span class="hljs-keyword">range</span> writers &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> mw, ok := w.(*multiWriter); ok &#123;</span><br><span class="line">			allWriters = <span class="hljs-built_in">append</span>(allWriters, mw.writers...)</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			allWriters = <span class="hljs-built_in">append</span>(allWriters, w)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> &amp;multiWriter&#123;allWriters&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>multiWriter</code>和<code>multiReader</code>的实现过程非常相似,从<code>writers[0]</code>顺序写入到<code>writers[n]</code>中。</p>
+<h2 id="pipe-go"><a href="#pipe-go" class="headerlink" title="pipe.go"></a>pipe.go</h2><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// atomicError is a type-safe atomic value for errors.</span></span><br><span class="line"><span class="hljs-comment">// We use a struct&#123; error &#125; to ensure consistent use of a concrete type.</span></span><br><span class="line"><span class="hljs-keyword">type</span> atomicError <span class="hljs-keyword">struct</span>&#123; v atomic.Value &#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(a *atomicError)</span> <span class="hljs-title">Store</span><span class="hljs-params">(err error)</span></span> &#123;</span><br><span class="line">	a.v.Store(<span class="hljs-keyword">struct</span>&#123; error &#125;&#123;err&#125;)</span><br><span class="line">&#125;</span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(a *atomicError)</span> <span class="hljs-title">Load</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	err, _ := a.v.Load().(<span class="hljs-keyword">struct</span>&#123; error &#125;)</span><br><span class="line">	<span class="hljs-keyword">return</span> err.error</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ErrClosedPipe is the error used for read or write operations on a closed pipe.</span></span><br><span class="line"><span class="hljs-keyword">var</span> ErrClosedPipe = errors.New(<span class="hljs-string">"io: read/write on closed pipe"</span>)</span><br></pre></td></tr></table></figure>
+<p>该文件定一个原子错误的结构体,这个结构体是没有向外暴露的,仅内部使用。然后定一个关闭pipe的错误</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// A pipe is the shared pipe structure underlying PipeReader and PipeWriter.</span></span><br><span class="line"><span class="hljs-keyword">type</span> pipe <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	wrMu sync.Mutex <span class="hljs-comment">// Serializes Write operations</span></span><br><span class="line">	wrCh <span class="hljs-keyword">chan</span> []<span class="hljs-keyword">byte</span></span><br><span class="line">	rdCh <span class="hljs-keyword">chan</span> <span class="hljs-keyword">int</span></span><br><span class="line"></span><br><span class="line">	once sync.Once <span class="hljs-comment">// Protects closing done</span></span><br><span class="line">	done <span class="hljs-keyword">chan</span> <span class="hljs-keyword">struct</span>&#123;&#125;</span><br><span class="line">	rerr atomicError</span><br><span class="line">	werr atomicError</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>wrMu</code>piple需要保持序列化,所需要加锁</li>
+<li><code>wrCh</code>写管道</li>
+<li><code>rdCh</code>读管道,表示需要读取多少字节</li>
+<li><code>once</code>让关闭只被执行一次的操作</li>
+<li><code>done</code>监听是否关闭</li>
+<li><code>rerr</code>读错误</li>
+<li><code>werr</code>写错误</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(p *pipe)</span> <span class="hljs-title">Read</span><span class="hljs-params">(b []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> &lt;-p.done:</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, p.readCloseError()</span><br><span class="line">	<span class="hljs-keyword">default</span>:</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> bw := &lt;-p.wrCh:</span><br><span class="line">		nr := <span class="hljs-built_in">copy</span>(b, bw)</span><br><span class="line">		p.rdCh &lt;- nr</span><br><span class="line">		<span class="hljs-keyword">return</span> nr, <span class="hljs-literal">nil</span></span><br><span class="line">	<span class="hljs-keyword">case</span> &lt;-p.done:</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, p.readCloseError()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先判断管道是否被关闭,如果关闭直接返回关闭的错误,从写管道中读取内容,然后将管道中的内容<code>copy（）</code>出来,防止元数据发生改变后读取后的内容也跟着改变了,然后将当前读取了多少字节给读通道,在其中要判断是否管道是否发生关闭,防止这个时候管道被关闭。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(p *pipe)</span> <span class="hljs-title">readCloseError</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	rerr := p.rerr.Load()</span><br><span class="line">	<span class="hljs-keyword">if</span> werr := p.werr.Load(); rerr == <span class="hljs-literal">nil</span> &amp;&amp; werr != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> werr</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> ErrClosedPipe</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>返回读关闭错误</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(p *pipe)</span> <span class="hljs-title">CloseRead</span><span class="hljs-params">(err error)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> err == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		err = ErrClosedPipe</span><br><span class="line">	&#125;</span><br><span class="line">	p.rerr.Store(err)</span><br><span class="line">	p.once.Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-built_in">close</span>(p.done) &#125;)</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从读错误里面存储关闭管道的错误,然后调用close方法关闭p.done,来通知关闭了管道,使用once.Do()来防止被关闭多次,导致报错</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(p *pipe)</span> <span class="hljs-title">Write</span><span class="hljs-params">(b []<span class="hljs-keyword">byte</span>)</span> <span class="hljs-params">(n <span class="hljs-keyword">int</span>, err error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">case</span> &lt;-p.done:</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-number">0</span>, p.writeCloseError()</span><br><span class="line">	<span class="hljs-keyword">default</span>:</span><br><span class="line">		p.wrMu.Lock()</span><br><span class="line">		<span class="hljs-keyword">defer</span> p.wrMu.Unlock()</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> once := <span class="hljs-literal">true</span>; once || <span class="hljs-built_in">len</span>(b) &gt; <span class="hljs-number">0</span>; once = <span class="hljs-literal">false</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">case</span> p.wrCh &lt;- b:</span><br><span class="line">			nw := &lt;-p.rdCh</span><br><span class="line">			b = b[nw:]</span><br><span class="line">			n += nw</span><br><span class="line">		<span class="hljs-keyword">case</span> &lt;-p.done:</span><br><span class="line">			<span class="hljs-keyword">return</span> n, p.writeCloseError()</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> n, <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>写方法依然后是先判断管道有没有被关闭,如果没有关闭就对整个方法加速,然后将bytes写入到写管道中,然后从读管道中得到读取数量,作为下一次buf的开始位置,直到byte长度为0,也就是写入完毕,或者管道被关闭。最后返回当前写入的数量。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(p *pipe)</span> <span class="hljs-title">writeCloseError</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	werr := p.werr.Load()</span><br><span class="line">	<span class="hljs-keyword">if</span> rerr := p.rerr.Load(); werr == <span class="hljs-literal">nil</span> &amp;&amp; rerr != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> rerr</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> ErrClosedPipe</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(p *pipe)</span> <span class="hljs-title">CloseWrite</span><span class="hljs-params">(err error)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> err == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		err = EOF</span><br><span class="line">	&#125;</span><br><span class="line">	p.werr.Store(err)</span><br><span class="line">	p.once.Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123; <span class="hljs-built_in">close</span>(p.done) &#125;)</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面这两个方法和读操作是类似的。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>Go中的io操作有很多精妙的操作,比如不将数组中的对象置为nil,避免panic,使用另一个对象来代替,从而使原来数组的对象没有被引用到,使其防止到白色区域,下一次的时候就可以被GC回收掉。然后该文件定义了相当多的接口,很多都没有在这个包下实现,大多是在其他包中进行实现,该包没有承担过多的责任,使其扩展起来也可以很容易明白。定义了很多工具和通用的一些结构体,多个readers的类,管道,部分阅读器,TeeReader等类型。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="tag">Golang源码分析</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/11/26/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(4)-expvar/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Go源码分析(4) - expvar</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/11/19/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(2)-errors/">
+                <span class="level-item">Go源码分析(2) - errors</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '5799b745d0c2c76d329793af0e305718',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#io-go">
+        <span class="has-mr-6">1.1</span>
+        <span>io.go</span>
+        </a></li><li>
+        <a class="is-flex" href="#multi-go">
+        <span class="has-mr-6">1.2</span>
+        <span>multi.go</span>
+        </a></li><li>
+        <a class="is-flex" href="#pipe-go">
+        <span class="has-mr-6">1.3</span>
+        <span>pipe.go</span>
+        </a></li></ul><li>
+        <a class="is-flex" href="#总结">
+        <span class="has-mr-6">2</span>
+        <span>总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go源码分析(3) - io" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

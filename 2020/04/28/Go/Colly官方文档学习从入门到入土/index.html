@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Colly 官方文档学习从入门到入土 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="一、介绍 Colly 是用于构建 Web 爬虫的 Golang 框架。使用 Colly ,你可以构建各种复杂的 Web 抓取工具,从简单的抓取工具到处理数百万个网页的复杂的异步网站抓取工具。 Colly 提供了一个 API,用于执行网络请求和处理接收到的内容（例如,与 HTML 文档的 DOM 树进行交互）。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Colly 官方文档学习从入门到入土">
+<meta property="og:url" content="https://www.ulovecode.com/2020/04/28/Go/Colly%E5%AE%98%E6%96%B9%E6%96%87%E6%A1%A3%E5%AD%A6%E4%B9%A0%E4%BB%8E%E5%85%A5%E9%97%A8%E5%88%B0%E5%85%A5%E5%9C%9F/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="一、介绍 Colly 是用于构建 Web 爬虫的 Golang 框架。使用 Colly ,你可以构建各种复杂的 Web 抓取工具,从简单的抓取工具到处理数百万个网页的复杂的异步网站抓取工具。 Colly 提供了一个 API,用于执行网络请求和处理接收到的内容（例如,与 HTML 文档的 DOM 树进行交互）。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/39/06/39b8ac0a8ddff393e38de760c35eef06.jpg?x-oss-process=image/crop,x_152,y_446,w_1480,h_832/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-04-27T17:16:00.000Z">
+<meta property="article:modified_time" content="2020-04-27T17:16:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="爬虫">
+<meta property="article:tag" content="Go">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/39/06/39b8ac0a8ddff393e38de760c35eef06.jpg?x-oss-process=image/crop,x_152,y_446,w_1480,h_832/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Colly 官方文档学习从入门到入土" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/39/06/39b8ac0a8ddff393e38de760c35eef06.jpg?x-oss-process=image/crop,x_152,y_446,w_1480,h_832/resize,w_1280,h_847" alt="Colly 官方文档学习从入门到入土">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-04-27T17:16:00.000Z">2020-04-28</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    27 分钟 读完 (大约 4035 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Colly 官方文档学习从入门到入土
+            
+        </h1>
+        <div class="content">
+            <h2 id="一、介绍"><a href="#一、介绍" class="headerlink" title="一、介绍"></a><strong>一、介绍</strong></h2><p> Colly 是用于构建 Web 爬虫的 Golang 框架。使用 Colly ,你可以构建各种复杂的 Web 抓取工具,从简单的抓取工具到处理数百万个网页的复杂的异步网站抓取工具。 Colly 提供了一个 API,用于执行网络请求和处理接收到的内容（例如,与 HTML 文档的 DOM 树进行交互）。</p>
+<a id="more"></a>
+<h3 id="如何安装"><a href="#如何安装" class="headerlink" title="如何安装"></a><strong>如何安装</strong></h3><p>Colly 只有一个前置条件,那就是 Golang 编程语言。你可以使用其安装指南进行安装。</p>
+<h4 id="安装-Colly"><a href="#安装-Colly" class="headerlink" title="安装 Colly"></a><strong>安装 Colly</strong></h4><p>在终端上键入以下命令,然后按 Enter 键安装 Colly 。</p>
+<figure class="highlight bash hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go get -u github.com/gocolly/colly/...</span><br></pre></td></tr></table></figure>
+<h3 id="入门"><a href="#入门" class="headerlink" title="入门"></a><strong>入门</strong></h3><p>使用<code>Colly</code>之前,请确保你具有最新版本。有关更多详细信息,请参见安装指南。</p>
+<p>让我们从一些简单的例子开始。</p>
+<p>首先,你需要将<code>Colly</code>导入你的代码库：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">import</span> <span class="hljs-string">"github.com/gocolly/colly"</span></span><br></pre></td></tr></table></figure>
+<h4 id="Collector"><a href="#Collector" class="headerlink" title="Collector"></a><strong>Collector</strong></h4><p><code>Colly</code>的主要实体是一个 Collector 对象。Collector 在Collector作业运行时管理网络通信并负责执行附加的回调。要使用 colly ,你必须初始化一个 Collector：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c := colly.NewCollector()</span><br></pre></td></tr></table></figure>
+<h4 id="回调"><a href="#回调" class="headerlink" title="回调"></a><strong>回调</strong></h4><p>你可以将不同类型的回调函数附加到上,Collector 以控制收集作业或检索信息。请查看包装文档中的相关部分。</p>
+<h5 id="将回调添加到-Collector"><a href="#将回调添加到-Collector" class="headerlink" title="将回调添加到 Collector"></a><strong>将回调添加到 Collector</strong></h5><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">c.OnRequest(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Request)</span></span> &#123;</span><br><span class="line">    fmt.Println(<span class="hljs-string">"Visiting"</span>, r.URL)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">c.OnError(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(_ *colly.Response, err error)</span></span> &#123;</span><br><span class="line">    log.Println(<span class="hljs-string">"Something went wrong:"</span>, err)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">c.OnResponseHeaders(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">    fmt.Println(<span class="hljs-string">"Visited"</span>, r.Request.URL)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">c.OnResponse(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">    fmt.Println(<span class="hljs-string">"Visited"</span>, r.Request.URL)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">c.OnHTML(<span class="hljs-string">"a[href]"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">    e.Request.Visit(e.Attr(<span class="hljs-string">"href"</span>))</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">c.OnHTML(<span class="hljs-string">"tr td:nth-of-type(1)"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">    fmt.Println(<span class="hljs-string">"First column of a table row:"</span>, e.Text)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">c.OnXML(<span class="hljs-string">"//h1"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.XMLElement)</span></span> &#123;</span><br><span class="line">    fmt.Println(e.Text)</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">c.OnScraped(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">    fmt.Println(<span class="hljs-string">"Finished"</span>, r.Request.URL)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>1.OnRequest</strong><br>在请求之前调用</p>
+<p><strong>2.OnError</strong><br>如果请求期间发生错误,则调用</p>
+<p><strong>3.OnResponseHeaders</strong><br>在收到响应标头后调用</p>
+<p><strong>4.OnResponse</strong><br>收到回复后调用</p>
+<p><strong>5.OnHTML</strong><br><code>OnResponse</code>如果收到的内容是HTML ,则在之后调用</p>
+<p><strong>6.OnXML</strong><br><code>OnHTML</code>如果接收到的内容是HTML或XML ,则在之后调用</p>
+<p><strong>7.OnScraped</strong><br><code>OnXML</code>回调后调用</p>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a><strong>配置</strong></h3><p>Colly 是一个高度可定制的抓取框架。它具有合理的默认值,并提供了很多选项来更改它们。</p>
+<h4 id="Collector-配置"><a href="#Collector-配置" class="headerlink" title="Collector 配置"></a><strong>Collector 配置</strong></h4><p>Collector属性的完整列表可以在这里找到。建议使用初始化 Collector 的方法<code>colly.NewCollector(options...)</code>。</p>
+<p>使用默认设置创建Collector：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c1 := colly.NewCollector()</span><br></pre></td></tr></table></figure>
+<p>创建另一个 Collector 并更改<code>User-Agent</code>和<code>url</code>重新访问选项：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">c2 := colly.NewCollector(</span><br><span class="line">	colly.UserAgent(<span class="hljs-string">"xy"</span>),</span><br><span class="line">	colly.AllowURLRevisit(),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>通过覆盖 Collector 的属性,可以在抓取作业的任何时候更改配置。</p>
+<p>一个很好的例子是<code>User-Agent</code>切换器,它会在每个请求上更改<code>User-Agent</code>：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> letterBytes = <span class="hljs-string">"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">RandomString</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	b := <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">byte</span>, rand.Intn(<span class="hljs-number">10</span>)+<span class="hljs-number">10</span>)</span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-keyword">range</span> b &#123;</span><br><span class="line">		b[i] = letterBytes[rand.Intn(<span class="hljs-built_in">len</span>(letterBytes))]</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">string</span>(b)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">c := colly.NewCollector()</span><br><span class="line"></span><br><span class="line">c.OnRequest(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Request)</span></span> &#123;</span><br><span class="line">	r.Headers.Set(<span class="hljs-string">"User-Agent"</span>, RandomString())</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<h4 id="通过环境变量进行配置"><a href="#通过环境变量进行配置" class="headerlink" title="通过环境变量进行配置"></a><strong>通过环境变量进行配置</strong></h4><p>可以通过环境变量来更改 Collector 的默认配置。这使我们可以微调 Collector 而无需重新编译。环境解析是 Collector 初始化的最后一步,因此初始化之后的每个配置更改都会覆盖从环境解析的配置。</p>
+<h5 id="环境配置变量"><a href="#环境配置变量" class="headerlink" title="环境配置变量"></a><strong>环境配置变量</strong></h5><ul>
+<li>COLLY_ALLOWED_DOMAINS (comma separated list of domains)</li>
+<li>COLLY_CACHE_DIR (string)</li>
+<li>COLLY_DETECT_CHARSET (y/n)</li>
+<li>COLLY_DISABLE_COOKIES (y/n)</li>
+<li>COLLY_DISALLOWED_DOMAINS (comma separated list of domains)</li>
+<li>COLLY_IGNORE_ROBOTSTXT (y/n)</li>
+<li>COLLY_FOLLOW_REDIRECTS (y/n)</li>
+<li>COLLY_MAX_BODY_SIZE (int)</li>
+<li>COLLY_MAX_DEPTH (int - 0 means infinite)</li>
+<li>COLLY_PARSE_HTTP_ERROR_RESPONSE (y/n)</li>
+<li>COLLY_USER_AGENT (string)</li>
+</ul>
+<h4 id="HTTP-配置"><a href="#HTTP-配置" class="headerlink" title="HTTP 配置"></a><strong>HTTP 配置</strong></h4><p> Colly 使用 Golang 的默认 http 客户端作为网络层。可以通过更改默认的 HTTP roundtripper 来调整 HTTP 选项。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">c := colly.NewCollector()</span><br><span class="line">c.WithTransport(&amp;http.Transport&#123;</span><br><span class="line">	Proxy: http.ProxyFromEnvironment,</span><br><span class="line">	DialContext: (&amp;net.Dialer&#123;</span><br><span class="line">		Timeout:   <span class="hljs-number">30</span> * time.Second,</span><br><span class="line">		KeepAlive: <span class="hljs-number">30</span> * time.Second,</span><br><span class="line">		DualStack: <span class="hljs-literal">true</span>,</span><br><span class="line">	&#125;).DialContext,</span><br><span class="line">	MaxIdleConns:          <span class="hljs-number">100</span>,</span><br><span class="line">	IdleConnTimeout:       <span class="hljs-number">90</span> * time.Second,</span><br><span class="line">	TLSHandshakeTimeout:   <span class="hljs-number">10</span> * time.Second,</span><br><span class="line">	ExpectContinueTimeout: <span class="hljs-number">1</span> * time.Second,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="二、最佳实践"><a href="#二、最佳实践" class="headerlink" title="二、最佳实践"></a><strong>二、最佳实践</strong></h2><h3 id="使用多个-Collector"><a href="#使用多个-Collector" class="headerlink" title="使用多个 Collector"></a><strong>使用多个 Collector</strong></h3><p>如果任务足够复杂或具有不同类型的子任务,建议使用多个 Collector 来执行一个抓取作业。一个很好的例子是 Coursera 课程抓取工具,其中使用了两个 Collector -一个解析列表视图并处理分页,另一个则收集课程详细信息。</p>
+<p> Colly 具有一些内置方法来支持多个 Collector 的使用。</p>
+<blockquote>
+<p>Tips:用于<code>Collector.ID</code>调试以区分不同的 Collector</p>
+</blockquote>
+<h4 id="克隆采集器"><a href="#克隆采集器" class="headerlink" title="克隆采集器"></a><strong>克隆采集器</strong></h4><p><code>Clone()</code>如果 Collector 具有类似的配置,则可以使用 Collector 的方法。<code>Clone()</code>复制具有相同配置但没有附加回调的 Collector 。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">c := colly.NewCollector(</span><br><span class="line">	colly.UserAgent(<span class="hljs-string">"myUserAgent"</span>),</span><br><span class="line">	colly.AllowedDomains(<span class="hljs-string">"foo.com"</span>, <span class="hljs-string">"bar.com"</span>),</span><br><span class="line">)</span><br><span class="line"><span class="hljs-comment">// Custom User-Agent and allowed domains are cloned to c2</span></span><br><span class="line">c2 := c.Clone()</span><br></pre></td></tr></table></figure>
+<h5 id="在-Collector-之间传递自定义数据"><a href="#在-Collector-之间传递自定义数据" class="headerlink" title="在 Collector 之间传递自定义数据"></a><strong>在 Collector 之间传递自定义数据</strong></h5><p>使用 Collector 的<code>Request()</code>功能可以与其他 Collector 共享上下文。</p>
+<p>共享上下文示例：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">c.OnResponse(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">	r.Ctx.Put(r.Headers.Get(<span class="hljs-string">"Custom-Header"</span>))</span><br><span class="line">	c2.Request(<span class="hljs-string">"GET"</span>, <span class="hljs-string">"https://foo.com/"</span>, <span class="hljs-literal">nil</span>, r.Ctx, <span class="hljs-literal">nil</span>)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<h3 id="调试"><a href="#调试" class="headerlink" title="调试"></a><strong>调试</strong></h3><p>有时将一些<code>log.Println()</code>函数调用放置到你的回调中就足够了,但有时却不是。 Colly 具有用于 Collector 调试的内置功能。提供了调试器接口和其他类型的调试器实现。</p>
+<h4 id="将调试器附加到Collector"><a href="#将调试器附加到Collector" class="headerlink" title="将调试器附加到Collector"></a><strong>将调试器附加到Collector</strong></h4><p>附加基本的日志调试器需要 Colly 仓库中的<code>debug</code>（<code>github.com/gocolly/colly/debug</code>）包。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly/debug"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">    c := colly.NewCollector(colly.Debugger(&amp;debug.LogDebugger&#123;&#125;))</span><br><span class="line">    <span class="hljs-comment">// [..]</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="实现自定义调试器"><a href="#实现自定义调试器" class="headerlink" title="实现自定义调试器"></a><strong>实现自定义调试器</strong></h4><p>你可以通过实现 debug.Debugger 接口来创建任何类型的自定义调试器。一个很好的例子是 LogDebugger 。</p>
+<h3 id="分布式抓取"><a href="#分布式抓取" class="headerlink" title="分布式抓取"></a><strong>分布式抓取</strong></h3><p>分布式抓取可以根据抓取任务的要求以不同的方式实现。大多数时候,足以扩展网络通信层,这可以使用代理和 Colly 的代理切换器轻松实现。</p>
+<h4 id="代理切换器"><a href="#代理切换器" class="headerlink" title="代理切换器"></a><strong>代理切换器</strong></h4><p>当 HTTP 请求在多个代理之间分发时,使用代理切换器的抓取仍然保持集中。 Colly 支持通过其<code>SetProxyFunc()</code>成员进行代理切换。可以<code>SetProxyFunc()</code>使用的签名将任何自定义函数传递给<code>func(*http.Request) (*url.URL, error)</code>。</p>
+<blockquote>
+<p>Tips:带有<code>-D</code>标志的 SSH 服务器可以用作 socks5 代理。</p>
+</blockquote>
+<p>Colly 具有内置的代理切换器,可根据每个请求轮流代理列表。</p>
+<h5 id="用法"><a href="#用法" class="headerlink" title="用法"></a><strong>用法</strong></h5><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly/proxy"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	c := colly.NewCollector()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> p, err := proxy.RoundRobinProxySwitcher(</span><br><span class="line">		<span class="hljs-string">"socks5://127.0.0.1:1337"</span>,</span><br><span class="line">		<span class="hljs-string">"socks5://127.0.0.1:1338"</span>,</span><br><span class="line">		<span class="hljs-string">"http://127.0.0.1:8080"</span>,</span><br><span class="line">	); err == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		c.SetProxyFunc(p)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实现自定义代理切换器：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">var</span> proxies []*url.URL = []*url.URL&#123;</span><br><span class="line">	&amp;url.URL&#123;Host: <span class="hljs-string">"127.0.0.1:8080"</span>&#125;,</span><br><span class="line">	&amp;url.URL&#123;Host: <span class="hljs-string">"127.0.0.1:8081"</span>&#125;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">randomProxySwitcher</span><span class="hljs-params">(_ *http.Request)</span> <span class="hljs-params">(*url.URL, error)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> proxies[random.Intn(<span class="hljs-built_in">len</span>(proxies))], <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// ...</span></span><br><span class="line">c.SetProxyFunc(randomProxySwitcher)</span><br></pre></td></tr></table></figure>
+<h4 id="分布式抓取器"><a href="#分布式抓取器" class="headerlink" title="分布式抓取器"></a><strong>分布式抓取器</strong></h4><p>要管理独立的和分布式抓取器,最好的办法是将刮板包装在服务器中。服务器可以是任何类型的服务,例如 HTTP ,TCP 服务器或 Google App Engine 。使用自定义存储来实现集中和持久的 cookie 以及访问的 url 处理。</p>
+<blockquote>
+<p>Tips: Colly 具有内置的 Google App Engine 支持。如果你从 App Engine 标准环境中使用 Colly ,请不要忘记调用<code>Collector.Appengine(*http.Request)</code>。</p>
+</blockquote>
+<p>可以在此处找到示例实现。</p>
+<h5 id="分布式存储"><a href="#分布式存储" class="headerlink" title="分布式存储"></a><strong>分布式存储</strong></h5><p>默认情况下,访问的 URL 和 cookie 数据存储在内存中。这对于短寿命的刮板作业很方便,但是在处理大规模或长期运行的爬行作业时可能是一个严重的限制。</p>
+<p> Colly 能够用实现了<code>Colly / storage.Storage</code>接口的任何存储后端替换默认的内存存储。检查现有存储。</p>
+<h3 id="储存后端"><a href="#储存后端" class="headerlink" title="储存后端"></a><strong>储存后端</strong></h3><p> Colly 有一个内存中的存储后端,用于存储 cookie 和访问的 URL ,但是任何实现 Colly / storage.Storage 的自定义存储后端都可以覆盖它。</p>
+<h4 id="现有的存储后端"><a href="#现有的存储后端" class="headerlink" title="现有的存储后端"></a><strong>现有的存储后端</strong></h4><ul>
+<li>内存后端: Colly 的默认后端。使用Collector.SetStorage（）覆盖。</li>
+<li>Redis 后端:有关详细信息,请参见redis示例。</li>
+<li>boltdb 后端</li>
+<li>SQLite3 后端</li>
+<li>MongoDB 后端</li>
+<li>PostgreSQL 后端</li>
+</ul>
+<h3 id="爬虫程序配置"><a href="#爬虫程序配置" class="headerlink" title="爬虫程序配置"></a><strong>爬虫程序配置</strong></h3><p> Colly 的默认配置经过优化,可以在一项作业中抓取较少数量的站点。如果你想抓取数百万个网站,则此设置不是最佳选择。以下是一些调整：</p>
+<h4 id="使用永久性存储后端"><a href="#使用永久性存储后端" class="headerlink" title="使用永久性存储后端"></a><strong>使用永久性存储后端</strong></h4><p>默认情况下, Colly 将 cookie 和访问的 URL 存储在内存中。你可以用任何自定义后端替换内置的内存中存储后端。在这里查看更多详细信息。</p>
+<h4 id="将异步用于具有递归调用的长时间运行的作业"><a href="#将异步用于具有递归调用的长时间运行的作业" class="headerlink" title="将异步用于具有递归调用的长时间运行的作业"></a><strong>将异步用于具有递归调用的长时间运行的作业</strong></h4><p>默认情况下,在请求未完成时 Colly 会阻塞,因此<code>Collector.Visit</code>从回调递归调用会产生不断增长的堆栈。有了<code>Collector.Async = true</code>这可避免。（不要忘了<code>c.Wait()</code>与异步一起使用。）</p>
+<h4 id="禁用或限制连接保持活动状态"><a href="#禁用或限制连接保持活动状态" class="headerlink" title="禁用或限制连接保持活动状态"></a><strong>禁用或限制连接保持活动状态</strong></h4><p> Colly 使用 HTTP 保持活动来提高抓取速度。它需要打开文件描述符,因此长时间运行的作业很容易达到max-fd限制。</p>
+<p>可以使用以下代码禁用 HTTP Keep-alive：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">c := colly.NewCollector()</span><br><span class="line">c.WithTransport(&amp;http.Transport&#123;</span><br><span class="line">    DisableKeepAlives: <span class="hljs-literal">true</span>,</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<h3 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a><strong>扩展</strong></h3><p>扩展是 Colly 随附的小型帮助程序实用程序。插件列表可在此处获得。</p>
+<h4 id="用法-1"><a href="#用法-1" class="headerlink" title="用法"></a><strong>用法</strong></h4><p>以下示例启用了随机 User-Agent 切换器和 Referrer setter 扩展,并访问了 httpbin.org 两次。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">    <span class="hljs-string">"log"</span></span><br><span class="line"></span><br><span class="line">    <span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">    <span class="hljs-string">"github.com/gocolly/colly/extensions"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">    c := colly.NewCollector()</span><br><span class="line">    visited := <span class="hljs-literal">false</span></span><br><span class="line"></span><br><span class="line">    extensions.RandomUserAgent(c)</span><br><span class="line">    extensions.Referer(c)</span><br><span class="line"></span><br><span class="line">    c.OnResponse(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">        log.Println(<span class="hljs-keyword">string</span>(r.Body))</span><br><span class="line">        <span class="hljs-keyword">if</span> !visited &#123;</span><br><span class="line">            visited = <span class="hljs-literal">true</span></span><br><span class="line">            r.Request.Visit(<span class="hljs-string">"/get?q=2"</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    c.Visit(<span class="hljs-string">"http://httpbin.org/get"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="三、例子"><a href="#三、例子" class="headerlink" title="三、例子"></a><strong>三、例子</strong></h2><h4 id="基本"><a href="#基本" class="headerlink" title="基本"></a><strong>基本</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector(</span><br><span class="line">		<span class="hljs-comment">// Visit only domains: hackerspaces.org, wiki.hackerspaces.org</span></span><br><span class="line">		colly.AllowedDomains(<span class="hljs-string">"hackerspaces.org"</span>, <span class="hljs-string">"wiki.hackerspaces.org"</span>),</span><br><span class="line">	)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// On every a element which has href attribute call callback</span></span><br><span class="line">	c.OnHTML(<span class="hljs-string">"a[href]"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">		link := e.Attr(<span class="hljs-string">"href"</span>)</span><br><span class="line">		<span class="hljs-comment">// Print link</span></span><br><span class="line">		fmt.Printf(<span class="hljs-string">"Link found: %q -&gt; %s\n"</span>, e.Text, link)</span><br><span class="line">		<span class="hljs-comment">// Visit link found on page</span></span><br><span class="line">		<span class="hljs-comment">// Only those links are visited which are in AllowedDomains</span></span><br><span class="line">		c.Visit(e.Request.AbsoluteURL(link))</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Before making a request print "Visiting ..."</span></span><br><span class="line">	c.OnRequest(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Request)</span></span> &#123;</span><br><span class="line">		fmt.Println(<span class="hljs-string">"Visiting"</span>, r.URL.String())</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping on https://hackerspaces.org</span></span><br><span class="line">	c.Visit(<span class="hljs-string">"https://hackerspaces.org/"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="错误处理"><a href="#错误处理" class="headerlink" title="错误处理"></a><strong>错误处理</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Create a collector</span></span><br><span class="line">	c := colly.NewCollector()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Set HTML callback</span></span><br><span class="line">	<span class="hljs-comment">// Won't be called if error occurs</span></span><br><span class="line">	c.OnHTML(<span class="hljs-string">"*"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">		fmt.Println(e)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Set error handler</span></span><br><span class="line">	c.OnError(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response, err error)</span></span> &#123;</span><br><span class="line">		fmt.Println(<span class="hljs-string">"Request URL:"</span>, r.Request.URL, <span class="hljs-string">"failed with response:"</span>, r, <span class="hljs-string">"\nError:"</span>, err)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping</span></span><br><span class="line">	c.Visit(<span class="hljs-string">"https://definitely-not-a.website/"</span>)</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="登陆"><a href="#登陆" class="headerlink" title="登陆"></a><strong>登陆</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"log"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// create a new collector</span></span><br><span class="line">	c := colly.NewCollector()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// authenticate</span></span><br><span class="line">	err := c.Post(<span class="hljs-string">"http://example.com/login"</span>, <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]<span class="hljs-keyword">string</span>&#123;<span class="hljs-string">"username"</span>: <span class="hljs-string">"admin"</span>, <span class="hljs-string">"password"</span>: <span class="hljs-string">"admin"</span>&#125;)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// attach callbacks after login</span></span><br><span class="line">	c.OnResponse(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"response received"</span>, r.StatusCode)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// start scraping</span></span><br><span class="line">	c.Visit(<span class="hljs-string">"https://example.com/"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="最大深度"><a href="#最大深度" class="headerlink" title="最大深度"></a><strong>最大深度</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector(</span><br><span class="line">		<span class="hljs-comment">// MaxDepth is 1, so only the links on the scraped page</span></span><br><span class="line">		<span class="hljs-comment">// is visited, and no further links are followed</span></span><br><span class="line">		colly.MaxDepth(<span class="hljs-number">1</span>),</span><br><span class="line">	)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// On every a element which has href attribute call callback</span></span><br><span class="line">	c.OnHTML(<span class="hljs-string">"a[href]"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">		link := e.Attr(<span class="hljs-string">"href"</span>)</span><br><span class="line">		<span class="hljs-comment">// Print link</span></span><br><span class="line">		fmt.Println(link)</span><br><span class="line">		<span class="hljs-comment">// Visit link found on page</span></span><br><span class="line">		e.Request.Visit(link)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping on https://en.wikipedia.org</span></span><br><span class="line">	c.Visit(<span class="hljs-string">"https://en.wikipedia.org/"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="文件"><a href="#文件" class="headerlink" title="文件"></a><strong>文件</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"io/ioutil"</span></span><br><span class="line">	<span class="hljs-string">"net/http"</span></span><br><span class="line">	<span class="hljs-string">"os"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">generateFormData</span><span class="hljs-params">()</span> <span class="hljs-title">map</span>[<span class="hljs-title">string</span>][]<span class="hljs-title">byte</span></span> &#123;</span><br><span class="line">	f, _ := os.Open(<span class="hljs-string">"gocolly.jpg"</span>)</span><br><span class="line">	<span class="hljs-keyword">defer</span> f.Close()</span><br><span class="line"></span><br><span class="line">	imgData, _ := ioutil.ReadAll(f)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>][]<span class="hljs-keyword">byte</span>&#123;</span><br><span class="line">		<span class="hljs-string">"firstname"</span>: []<span class="hljs-keyword">byte</span>(<span class="hljs-string">"one"</span>),</span><br><span class="line">		<span class="hljs-string">"lastname"</span>:  []<span class="hljs-keyword">byte</span>(<span class="hljs-string">"two"</span>),</span><br><span class="line">		<span class="hljs-string">"email"</span>:     []<span class="hljs-keyword">byte</span>(<span class="hljs-string">"onetwo@example.com"</span>),</span><br><span class="line">		<span class="hljs-string">"file"</span>:      imgData,</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">setupServer</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> handler http.HandlerFunc = <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">		fmt.Println(<span class="hljs-string">"received request"</span>)</span><br><span class="line">		err := r.ParseMultipartForm(<span class="hljs-number">10000000</span>)</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			fmt.Println(<span class="hljs-string">"server: Error"</span>)</span><br><span class="line">			w.WriteHeader(<span class="hljs-number">500</span>)</span><br><span class="line">			w.Write([]<span class="hljs-keyword">byte</span>(<span class="hljs-string">"&lt;html&gt;&lt;body&gt;Internal Server Error&lt;/body&gt;&lt;/html&gt;"</span>))</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		w.WriteHeader(<span class="hljs-number">200</span>)</span><br><span class="line">		fmt.Println(<span class="hljs-string">"server: OK"</span>)</span><br><span class="line">		w.Write([]<span class="hljs-keyword">byte</span>(<span class="hljs-string">"&lt;html&gt;&lt;body&gt;Success&lt;/body&gt;&lt;/html&gt;"</span>))</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">go</span> http.ListenAndServe(<span class="hljs-string">":8080"</span>, handler)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Start a single route http server to post an image to.</span></span><br><span class="line">	setupServer()</span><br><span class="line"></span><br><span class="line">	c := colly.NewCollector(colly.AllowURLRevisit(), colly.MaxDepth(<span class="hljs-number">5</span>))</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// On every a element which has href attribute call callback</span></span><br><span class="line">	c.OnHTML(<span class="hljs-string">"html"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">		fmt.Println(e.Text)</span><br><span class="line">		time.Sleep(<span class="hljs-number">1</span> * time.Second)</span><br><span class="line">		e.Request.PostMultipart(<span class="hljs-string">"http://localhost:8080/"</span>, generateFormData())</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Before making a request print "Visiting ..."</span></span><br><span class="line">	c.OnRequest(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Request)</span></span> &#123;</span><br><span class="line">		fmt.Println(<span class="hljs-string">"Posting gocolly.jpg to"</span>, r.URL.String())</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping</span></span><br><span class="line">	c.PostMultipart(<span class="hljs-string">"http://localhost:8080/"</span>, generateFormData())</span><br><span class="line">	c.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="并行"><a href="#并行" class="headerlink" title="并行"></a><strong>并行</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector(</span><br><span class="line">		<span class="hljs-comment">// MaxDepth is 2, so only the links on the scraped page</span></span><br><span class="line">		<span class="hljs-comment">// and links on those pages are visited</span></span><br><span class="line">		colly.MaxDepth(<span class="hljs-number">2</span>),</span><br><span class="line">		colly.Async(<span class="hljs-literal">true</span>),</span><br><span class="line">	)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Limit the maximum parallelism to 2</span></span><br><span class="line">	<span class="hljs-comment">// This is necessary if the goroutines are dynamically</span></span><br><span class="line">	<span class="hljs-comment">// created to control the limit of simultaneous requests.</span></span><br><span class="line">	<span class="hljs-comment">//</span></span><br><span class="line">	<span class="hljs-comment">// Parallelism can be controlled also by spawning fixed</span></span><br><span class="line">	<span class="hljs-comment">// number of go routines.</span></span><br><span class="line">	c.Limit(&amp;colly.LimitRule&#123;DomainGlob: <span class="hljs-string">"*"</span>, Parallelism: <span class="hljs-number">2</span>&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// On every a element which has href attribute call callback</span></span><br><span class="line">	c.OnHTML(<span class="hljs-string">"a[href]"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">		link := e.Attr(<span class="hljs-string">"href"</span>)</span><br><span class="line">		<span class="hljs-comment">// Print link</span></span><br><span class="line">		fmt.Println(link)</span><br><span class="line">		<span class="hljs-comment">// Visit link found on page on a new thread</span></span><br><span class="line">		e.Request.Visit(link)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping on https://en.wikipedia.org</span></span><br><span class="line">	c.Visit(<span class="hljs-string">"https://en.wikipedia.org/"</span>)</span><br><span class="line">	<span class="hljs-comment">// Wait until threads are finished</span></span><br><span class="line">	c.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="代理切换器-1"><a href="#代理切换器-1" class="headerlink" title="代理切换器"></a><strong>代理切换器</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"bytes"</span></span><br><span class="line">	<span class="hljs-string">"log"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly/proxy"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector(colly.AllowURLRevisit())</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Rotate two socks5 proxies</span></span><br><span class="line">	rp, err := proxy.RoundRobinProxySwitcher(<span class="hljs-string">"socks5://127.0.0.1:1337"</span>, <span class="hljs-string">"socks5://127.0.0.1:1338"</span>)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line">	c.SetProxyFunc(rp)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Print the response</span></span><br><span class="line">	c.OnResponse(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">		log.Printf(<span class="hljs-string">"%s\n"</span>, bytes.Replace(r.Body, []<span class="hljs-keyword">byte</span>(<span class="hljs-string">"\n"</span>), <span class="hljs-literal">nil</span>, <span class="hljs-number">-1</span>))</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Fetch httpbin.org/ip five times</span></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">5</span>; i++ &#123;</span><br><span class="line">		c.Visit(<span class="hljs-string">"https://httpbin.org/ip"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="队列"><a href="#队列" class="headerlink" title="队列"></a><strong>队列</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly/queue"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	url := <span class="hljs-string">"https://httpbin.org/delay/1"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// create a request queue with 2 consumer threads</span></span><br><span class="line">	q, _ := queue.New(</span><br><span class="line">		<span class="hljs-number">2</span>, <span class="hljs-comment">// Number of consumer threads</span></span><br><span class="line">		&amp;queue.InMemoryQueueStorage&#123;MaxSize: <span class="hljs-number">10000</span>&#125;, <span class="hljs-comment">// Use default queue storage</span></span><br><span class="line">	)</span><br><span class="line"></span><br><span class="line">	c.OnRequest(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Request)</span></span> &#123;</span><br><span class="line">		fmt.Println(<span class="hljs-string">"visiting"</span>, r.URL)</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">5</span>; i++ &#123;</span><br><span class="line">		<span class="hljs-comment">// Add URLs to the queue</span></span><br><span class="line">		q.AddURL(fmt.Sprintf(<span class="hljs-string">"%s?n=%d"</span>, url, i))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Consume URLs</span></span><br><span class="line">	q.Run(c)</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="随机延迟"><a href="#随机延迟" class="headerlink" title="随机延迟"></a><strong>随机延迟</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"time"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly/debug"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	url := <span class="hljs-string">"https://httpbin.org/delay/2"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector(</span><br><span class="line">		<span class="hljs-comment">// Attach a debugger to the collector</span></span><br><span class="line">		colly.Debugger(&amp;debug.LogDebugger&#123;&#125;),</span><br><span class="line">		colly.Async(<span class="hljs-literal">true</span>),</span><br><span class="line">	)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Limit the number of threads started by colly to two</span></span><br><span class="line">	<span class="hljs-comment">// when visiting links which domains' matches "*httpbin.*" glob</span></span><br><span class="line">	c.Limit(&amp;colly.LimitRule&#123;</span><br><span class="line">		DomainGlob:  <span class="hljs-string">"*httpbin.*"</span>,</span><br><span class="line">		Parallelism: <span class="hljs-number">2</span>,</span><br><span class="line">		RandomDelay: <span class="hljs-number">5</span> * time.Second,</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping in four threads on https://httpbin.org/delay/2</span></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">4</span>; i++ &#123;</span><br><span class="line">		c.Visit(fmt.Sprintf(<span class="hljs-string">"%s?n=%d"</span>, url, i))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Start scraping on https://httpbin.org/delay/2</span></span><br><span class="line">	c.Visit(url)</span><br><span class="line">	<span class="hljs-comment">// Wait until threads are finished</span></span><br><span class="line">	c.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="速率限制"><a href="#速率限制" class="headerlink" title="速率限制"></a><strong>速率限制</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly/debug"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	url := <span class="hljs-string">"https://httpbin.org/delay/2"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector(</span><br><span class="line">		<span class="hljs-comment">// Turn on asynchronous requests</span></span><br><span class="line">		colly.Async(<span class="hljs-literal">true</span>),</span><br><span class="line">		<span class="hljs-comment">// Attach a debugger to the collector</span></span><br><span class="line">		colly.Debugger(&amp;debug.LogDebugger&#123;&#125;),</span><br><span class="line">	)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Limit the number of threads started by colly to two</span></span><br><span class="line">	<span class="hljs-comment">// when visiting links which domains' matches "*httpbin.*" glob</span></span><br><span class="line">	c.Limit(&amp;colly.LimitRule&#123;</span><br><span class="line">		DomainGlob:  <span class="hljs-string">"*httpbin.*"</span>,</span><br><span class="line">		Parallelism: <span class="hljs-number">2</span>,</span><br><span class="line">		<span class="hljs-comment">//Delay:      5 * time.Second,</span></span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping in five threads on https://httpbin.org/delay/2</span></span><br><span class="line">	<span class="hljs-keyword">for</span> i := <span class="hljs-number">0</span>; i &lt; <span class="hljs-number">5</span>; i++ &#123;</span><br><span class="line">		c.Visit(fmt.Sprintf(<span class="hljs-string">"%s?n=%d"</span>, url, i))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// Wait until threads are finished</span></span><br><span class="line">	c.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Reids-后端"><a href="#Reids-后端" class="headerlink" title="Reids 后端"></a><strong>Reids 后端</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"log"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly/queue"</span></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/redisstorage"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	urls := []<span class="hljs-keyword">string</span>&#123;</span><br><span class="line">		<span class="hljs-string">"http://httpbin.org/"</span>,</span><br><span class="line">		<span class="hljs-string">"http://httpbin.org/ip"</span>,</span><br><span class="line">		<span class="hljs-string">"http://httpbin.org/cookies/set?a=b&amp;c=d"</span>,</span><br><span class="line">		<span class="hljs-string">"http://httpbin.org/cookies"</span>,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	c := colly.NewCollector()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// create the redis storage</span></span><br><span class="line">	storage := &amp;redisstorage.Storage&#123;</span><br><span class="line">		Address:  <span class="hljs-string">"127.0.0.1:6379"</span>,</span><br><span class="line">		Password: <span class="hljs-string">""</span>,</span><br><span class="line">		DB:       <span class="hljs-number">0</span>,</span><br><span class="line">		Prefix:   <span class="hljs-string">"httpbin_test"</span>,</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// add storage to the collector</span></span><br><span class="line">	err := c.SetStorage(storage)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-built_in">panic</span>(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// delete previous data from storage</span></span><br><span class="line">	<span class="hljs-keyword">if</span> err := storage.Clear(); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// close redis client</span></span><br><span class="line">	<span class="hljs-keyword">defer</span> storage.Client.Close()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// create a new request queue with redis storage backend</span></span><br><span class="line">	q, _ := queue.New(<span class="hljs-number">2</span>, storage)</span><br><span class="line"></span><br><span class="line">	c.OnResponse(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"Cookies:"</span>, c.Cookies(r.Request.URL.String()))</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// add URLs to the queue</span></span><br><span class="line">	<span class="hljs-keyword">for</span> _, u := <span class="hljs-keyword">range</span> urls &#123;</span><br><span class="line">		q.AddURL(u)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-comment">// consume requests</span></span><br><span class="line">	q.Run(c)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="请求上下文"><a href="#请求上下文" class="headerlink" title="请求上下文"></a><strong>请求上下文</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Before making a request put the URL with</span></span><br><span class="line">	<span class="hljs-comment">// the key of "url" into the context of the request</span></span><br><span class="line">	c.OnRequest(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Request)</span></span> &#123;</span><br><span class="line">		r.Ctx.Put(<span class="hljs-string">"url"</span>, r.URL.String())</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// After making a request get "url" from</span></span><br><span class="line">	<span class="hljs-comment">// the context of the request</span></span><br><span class="line">	c.OnResponse(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">		fmt.Println(r.Ctx.Get(<span class="hljs-string">"url"</span>))</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping on https://en.wikipedia.org</span></span><br><span class="line">	c.Visit(<span class="hljs-string">"https://en.wikipedia.org/"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="爬虫服务器"><a href="#爬虫服务器" class="headerlink" title="爬虫服务器"></a><strong>爬虫服务器</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"encoding/json"</span></span><br><span class="line">	<span class="hljs-string">"log"</span></span><br><span class="line">	<span class="hljs-string">"net/http"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">type</span> pageInfo <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	StatusCode <span class="hljs-keyword">int</span></span><br><span class="line">	Links      <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]<span class="hljs-keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">handler</span><span class="hljs-params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">	URL := r.URL.Query().Get(<span class="hljs-string">"url"</span>)</span><br><span class="line">	<span class="hljs-keyword">if</span> URL == <span class="hljs-string">""</span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"missing URL argument"</span>)</span><br><span class="line">		<span class="hljs-keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	log.Println(<span class="hljs-string">"visiting"</span>, URL)</span><br><span class="line"></span><br><span class="line">	c := colly.NewCollector()</span><br><span class="line"></span><br><span class="line">	p := &amp;pageInfo&#123;Links: <span class="hljs-built_in">make</span>(<span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]<span class="hljs-keyword">int</span>)&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// count links</span></span><br><span class="line">	c.OnHTML(<span class="hljs-string">"a[href]"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">		link := e.Request.AbsoluteURL(e.Attr(<span class="hljs-string">"href"</span>))</span><br><span class="line">		<span class="hljs-keyword">if</span> link != <span class="hljs-string">""</span> &#123;</span><br><span class="line">			p.Links[link]++</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// extract status code</span></span><br><span class="line">	c.OnResponse(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response)</span></span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"response received"</span>, r.StatusCode)</span><br><span class="line">		p.StatusCode = r.StatusCode</span><br><span class="line">	&#125;)</span><br><span class="line">	c.OnError(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Response, err error)</span></span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"error:"</span>, r.StatusCode, err)</span><br><span class="line">		p.StatusCode = r.StatusCode</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	c.Visit(URL)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// dump results</span></span><br><span class="line">	b, err := json.Marshal(p)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		log.Println(<span class="hljs-string">"failed to serialize response:"</span>, err)</span><br><span class="line">		<span class="hljs-keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	w.Header().Add(<span class="hljs-string">"Content-Type"</span>, <span class="hljs-string">"application/json"</span>)</span><br><span class="line">	w.Write(b)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// example usage: curl -s 'http://127.0.0.1:7171/?url=http://go-colly.org/'</span></span><br><span class="line">	addr := <span class="hljs-string">":7171"</span></span><br><span class="line"></span><br><span class="line">	http.HandleFunc(<span class="hljs-string">"/"</span>, handler)</span><br><span class="line"></span><br><span class="line">	log.Println(<span class="hljs-string">"listening on"</span>, addr)</span><br><span class="line">	log.Fatal(http.ListenAndServe(addr, <span class="hljs-literal">nil</span>))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="网址过滤器"><a href="#网址过滤器" class="headerlink" title="网址过滤器"></a><strong>网址过滤器</strong></h4><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"regexp"</span></span><br><span class="line"></span><br><span class="line">	<span class="hljs-string">"github.com/gocolly/colly"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Instantiate default collector</span></span><br><span class="line">	c := colly.NewCollector(</span><br><span class="line">		<span class="hljs-comment">// Visit only root url and urls which start with "e" or "h" on httpbin.org</span></span><br><span class="line">		colly.URLFilters(</span><br><span class="line">			regexp.MustCompile(<span class="hljs-string">"http://httpbin\\.org/(|e.+)$"</span>),</span><br><span class="line">			regexp.MustCompile(<span class="hljs-string">"http://httpbin\\.org/h.+"</span>),</span><br><span class="line">		),</span><br><span class="line">	)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// On every a element which has href attribute call callback</span></span><br><span class="line">	c.OnHTML(<span class="hljs-string">"a[href]"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(e *colly.HTMLElement)</span></span> &#123;</span><br><span class="line">		link := e.Attr(<span class="hljs-string">"href"</span>)</span><br><span class="line">		<span class="hljs-comment">// Print link</span></span><br><span class="line">		fmt.Printf(<span class="hljs-string">"Link found: %q -&gt; %s\n"</span>, e.Text, link)</span><br><span class="line">		<span class="hljs-comment">// Visit link found on page</span></span><br><span class="line">		<span class="hljs-comment">// Only those links are visited which are matched by  any of the URLFilter regexps</span></span><br><span class="line">		c.Visit(e.Request.AbsoluteURL(link))</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Before making a request print "Visiting ..."</span></span><br><span class="line">	c.OnRequest(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(r *colly.Request)</span></span> &#123;</span><br><span class="line">		fmt.Println(<span class="hljs-string">"Visiting"</span>, r.URL.String())</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Start scraping on http://httpbin.org</span></span><br><span class="line">	c.Visit(<span class="hljs-string">"http://httpbin.org/"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go/" rel="tag">Go</a>, <a class="has-link-grey -link" href="/tags/%E7%88%AC%E8%99%AB/" rel="tag">爬虫</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/28/%E6%95%B0%E6%8D%AE%E5%BA%93/mysql/%E9%AB%98%E6%80%A7%E8%83%BDmysql(1)/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">高性能 MySQL ｜ MySQL 逻辑架构</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/04/23/Go/Golang%E8%AF%91%E6%96%87/%E6%88%91%E6%98%AF%E5%A6%82%E4%BD%95%E5%9C%A8%E5%A4%A7%E5%9E%8B%E4%BB%A3%E7%A0%81%E5%BA%93%E4%B8%8A%E4%BD%BF%E7%94%A8pprof%E8%B0%83%E6%9F%A5Go%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F/">
+                <span class="level-item">(译) 我是如何在大型代码库上使用 pprof 调查 Go 中的内存泄漏</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '0d06acf989eb29880d66a3643a35540c',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、介绍">
+        <span class="has-mr-6">1</span>
+        <span>一、介绍</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#如何安装">
+        <span class="has-mr-6">1.1</span>
+        <span>如何安装</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#安装-Colly">
+        <span class="has-mr-6">1.1.1</span>
+        <span>安装 Colly</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#入门">
+        <span class="has-mr-6">1.2</span>
+        <span>入门</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Collector">
+        <span class="has-mr-6">1.2.1</span>
+        <span>Collector</span>
+        </a></li><li>
+        <a class="is-flex" href="#回调">
+        <span class="has-mr-6">1.2.2</span>
+        <span>回调</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#配置">
+        <span class="has-mr-6">1.3</span>
+        <span>配置</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#Collector-配置">
+        <span class="has-mr-6">1.3.1</span>
+        <span>Collector 配置</span>
+        </a></li><li>
+        <a class="is-flex" href="#通过环境变量进行配置">
+        <span class="has-mr-6">1.3.2</span>
+        <span>通过环境变量进行配置</span>
+        </a></li><li>
+        <a class="is-flex" href="#HTTP-配置">
+        <span class="has-mr-6">1.3.3</span>
+        <span>HTTP 配置</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#二、最佳实践">
+        <span class="has-mr-6">2</span>
+        <span>二、最佳实践</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#使用多个-Collector">
+        <span class="has-mr-6">2.1</span>
+        <span>使用多个 Collector</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#克隆采集器">
+        <span class="has-mr-6">2.1.1</span>
+        <span>克隆采集器</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#调试">
+        <span class="has-mr-6">2.2</span>
+        <span>调试</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#将调试器附加到Collector">
+        <span class="has-mr-6">2.2.1</span>
+        <span>将调试器附加到Collector</span>
+        </a></li><li>
+        <a class="is-flex" href="#实现自定义调试器">
+        <span class="has-mr-6">2.2.2</span>
+        <span>实现自定义调试器</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#分布式抓取">
+        <span class="has-mr-6">2.3</span>
+        <span>分布式抓取</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#代理切换器">
+        <span class="has-mr-6">2.3.1</span>
+        <span>代理切换器</span>
+        </a></li><li>
+        <a class="is-flex" href="#分布式抓取器">
+        <span class="has-mr-6">2.3.2</span>
+        <span>分布式抓取器</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#储存后端">
+        <span class="has-mr-6">2.4</span>
+        <span>储存后端</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#现有的存储后端">
+        <span class="has-mr-6">2.4.1</span>
+        <span>现有的存储后端</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#爬虫程序配置">
+        <span class="has-mr-6">2.5</span>
+        <span>爬虫程序配置</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#使用永久性存储后端">
+        <span class="has-mr-6">2.5.1</span>
+        <span>使用永久性存储后端</span>
+        </a></li><li>
+        <a class="is-flex" href="#将异步用于具有递归调用的长时间运行的作业">
+        <span class="has-mr-6">2.5.2</span>
+        <span>将异步用于具有递归调用的长时间运行的作业</span>
+        </a></li><li>
+        <a class="is-flex" href="#禁用或限制连接保持活动状态">
+        <span class="has-mr-6">2.5.3</span>
+        <span>禁用或限制连接保持活动状态</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#扩展">
+        <span class="has-mr-6">2.6</span>
+        <span>扩展</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#用法-1">
+        <span class="has-mr-6">2.6.1</span>
+        <span>用法</span>
+        </a></li></ul></li></ul></li><li>
+        <a class="is-flex" href="#三、例子">
+        <span class="has-mr-6">3</span>
+        <span>三、例子</span>
+        </a><ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#基本">
+        <span class="has-mr-6">3.1.1</span>
+        <span>基本</span>
+        </a></li><li>
+        <a class="is-flex" href="#错误处理">
+        <span class="has-mr-6">3.1.2</span>
+        <span>错误处理</span>
+        </a></li><li>
+        <a class="is-flex" href="#登陆">
+        <span class="has-mr-6">3.1.3</span>
+        <span>登陆</span>
+        </a></li><li>
+        <a class="is-flex" href="#最大深度">
+        <span class="has-mr-6">3.1.4</span>
+        <span>最大深度</span>
+        </a></li><li>
+        <a class="is-flex" href="#文件">
+        <span class="has-mr-6">3.1.5</span>
+        <span>文件</span>
+        </a></li><li>
+        <a class="is-flex" href="#并行">
+        <span class="has-mr-6">3.1.6</span>
+        <span>并行</span>
+        </a></li><li>
+        <a class="is-flex" href="#代理切换器-1">
+        <span class="has-mr-6">3.1.7</span>
+        <span>代理切换器</span>
+        </a></li><li>
+        <a class="is-flex" href="#队列">
+        <span class="has-mr-6">3.1.8</span>
+        <span>队列</span>
+        </a></li><li>
+        <a class="is-flex" href="#随机延迟">
+        <span class="has-mr-6">3.1.9</span>
+        <span>随机延迟</span>
+        </a></li><li>
+        <a class="is-flex" href="#速率限制">
+        <span class="has-mr-6">3.1.10</span>
+        <span>速率限制</span>
+        </a></li><li>
+        <a class="is-flex" href="#Reids-后端">
+        <span class="has-mr-6">3.1.11</span>
+        <span>Reids 后端</span>
+        </a></li><li>
+        <a class="is-flex" href="#请求上下文">
+        <span class="has-mr-6">3.1.12</span>
+        <span>请求上下文</span>
+        </a></li><li>
+        <a class="is-flex" href="#爬虫服务器">
+        <span class="has-mr-6">3.1.13</span>
+        <span>爬虫服务器</span>
+        </a></li><li>
+        <a class="is-flex" href="#网址过滤器">
+        <span class="has-mr-6">3.1.14</span>
+        <span>网址过滤器</span>
+        </a></li></ul></ul></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Colly 官方文档学习从入门到入土" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

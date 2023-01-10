@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>(译) Go中的调度：第II部分 - Go Scheduler - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="这是三部分系列中的第二篇文章,它将提供对Go中调度程序背后的机制和语义的理解。本文重点介绍Go调度程序。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="(译) Go中的调度：第II部分 - Go Scheduler">
+<meta property="og:url" content="https://www.ulovecode.com/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACII%E9%83%A8%E5%88%86-Go%20Scheduler/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="这是三部分系列中的第二篇文章,它将提供对Go中调度程序背后的机制和语义的理解。本文重点介绍Go调度程序。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/19/fb/1927b4479c7ae61a6fd65b09dfa1b8fb.jpg?x-%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9Fs-process=image/crop,x_200,y_9,w_1079,h_800/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-08-07T02:28:00.000Z">
+<meta property="article:modified_time" content="2019-08-07T02:28:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go中的调度">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/19/fb/1927b4479c7ae61a6fd65b09dfa1b8fb.jpg?x-%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9Fs-process=image/crop,x_200,y_9,w_1079,h_800/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的调度：第II部分 - Go Scheduler" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="//static001.infoq.cn/resource/image/19/fb/1927b4479c7ae61a6fd65b09dfa1b8fb.jpg?x-操作系统s-process=image/crop,x_200,y_9,w_1079,h_800/resize,w_1280,h_847" alt="(译) Go中的调度：第II部分 - Go Scheduler">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-08-07T02:28:00.000Z">2019-08-07</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E8%AF%91%E6%96%87/">Golang译文</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    37 分钟 读完 (大约 5493 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                (译) Go中的调度：第II部分 - Go Scheduler
+            
+        </h1>
+        <div class="content">
+            <p>这是三部分系列中的第二篇文章,它将提供对Go中调度程序背后的机制和语义的理解。本文重点介绍Go调度程序。</p>
+<a id="more"></a>
+<p>三部分系列的索引：</p>
+<ol>
+<li><a href="https://www.ulovecode.com/2019/08/06/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACI%E9%83%A8%E5%88%86%20-%20操作系统%E8%B0%83%E5%BA%A6%E7%A8%8B%E5%BA%8F/">Go中的调度：第I部分 - 操作系统调度程序</a></li>
+<li><a href="https://www.ulovecode.com/2019/08/07/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACII%E9%83%A8%E5%88%86%20-%20Go%20Scheduler/#more">Go中的调度：第II部分 - Go Scheduler</a></li>
+<li><a href="https://www.ulovecode.com/2019/08/07/Go/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACIII%E9%83%A8%E5%88%86%20-%20%E5%B9%B6%E5%8F%91/#more">Go中的调度：第III部分 - 并发</a></li>
+</ol>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>在本调度系列的第一部分中,我解释了操作系统调度程序的各个方面,我认为这些方面对于理解和理解Go调度程序的语义非常重要。在这篇文章中,我将在语义层面解释Go调度程序的工作原理并关注高级行为。Go调度程序是一个复杂的系统,小的机器上的细节并不重要。重要的是拥有良好的工作和行为方式。这将使你能够做出更好的工程决策。</p>
+<h1 id="你的计划开始"><a href="#你的计划开始" class="headerlink" title="你的计划开始"></a>你的计划开始</h1><p>当你的Go程序启动时,它会为主机上标识的每个虚拟核心提供一个逻辑处理器（P）。如果你的处理器每个物理核心具有多个硬件线程（超线程）,则每个硬件线程将作为虚拟核心呈现给你的Go程序。为了更好地理解这一点,请查看我的MacBook Pro的系统报告。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure1.png" alt=""><br>图1</p>
+<p>你可以看到我有一个带有4个物理内核的处理器。本报告未公开的是每个物理核心的硬件线程数。英特尔酷睿i7处理器具有超线程功能,这意味着每个物理内核有2个硬件线程。这将向Go程序报告,8个虚拟核可用于并行执行操作系统线程。</p>
+<p>要测试这一点,请考虑以下程序：</p>
+<p>清单1</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> (</span><br><span class="line">	<span class="hljs-string">"fmt"</span></span><br><span class="line">	<span class="hljs-string">"runtime"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="hljs-comment">// NumCPU returns the number of logical</span></span><br><span class="line">    <span class="hljs-comment">// CPUs usable by the current process.</span></span><br><span class="line">    fmt.Println(runtime.NumCPU())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当我在本地机器上运行该程序时,NumCPU（）函数调用的结果将是值8.我在我的机器上运行的任何Go程序将被赋予8P。</p>
+<p>每个P被分配一个操作系统线程（“M”）。’M’代表机器。该线程仍由操作系统管理,操作系统仍负责将线程放在核心上执行,如上一篇文章所述。这意味着当我在我的机器上运行Go程序时,我有8个线程可用于执行我的工作,每个线程都单独连接到P.</p>
+<p>每个Go程序也都有一个初始的Goroutine（“G”）,这是Go程序的执行路径。Goroutine本质上是一个Coroutine,但这是Go,所以我们用“G”代替字母“C”,我们得到了Goroutine这个词。你可以将Goroutines视为应用程序级线程,它们在很多方面类似于操作系统线程。正如操作系统线程在核心上下载上下文一样,Goroutines在上下文中打开和关闭。</p>
+<p>最后一个难题是运行队列。Go调度程序中有两个不同的运行队列：全局运行队列（GRQ）和本地运行队列（LRQ）。每个P都有一个LRQ,用于管理指定在P的上下文中执行的Goroutines。这些Goroutines轮流在上下文中切换到分配给P的M。GRQ用于尚未分配给的Goroutines。还没有。有一个过程将Goroutines从GRQ转移到LRQ,我们将在后面讨论。</p>
+<p>图2提供了所有这些组件的图像。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure2.png" alt=""><br>图2</p>
+<h1 id="协作调度程序"><a href="#协作调度程序" class="headerlink" title="协作调度程序"></a>协作调度程序</h1><p>正如我们在第一篇文章中讨论的那样,操作系统调度程序是一个抢占式调度程序。从本质上讲,这意味着你无法预测调度程序在任何给定时间将要执行的操作。内核正在做出决策,一切都是非确定性的。运行在操作系统之上的应用程序无法控制内核中发生的事情,除非它们利用原子指令和互斥调用等同步原语。</p>
+<p>Go调度程序是Go运行时的一部分,Go运行时内置在应用程序中。这意味着Go调度程序在内核之上的用户空间中运行。Go调度程序的当前实现不是抢占式调度程序,而是协作调度程序。作为协作调度程序意味着调度程序需要在代码中的安全点处发生的明确定义的用户空间事件以做出调度决策。</p>
+<p>Go合作调度程序的优点在于它的表现和感觉先发制人。你无法预测Go调度程序将要执行的操作。这是因为这个合作调度程序的决策不是由开发人员掌握,而是在Go运行时。将Go调度程序视为抢占式调度程序非常重要,并且由于调度程序是非确定性的,因此这并不是一件容易的事。</p>
+<h1 id="Goroutine并发"><a href="#Goroutine并发" class="headerlink" title="Goroutine并发"></a>Goroutine并发</h1><p>就像线程一样,Goroutines拥有相同的三个高级状态。这些决定了Go调度程序在任何给定的Goroutine中所起的作用。Goroutine可以处于以下三种状态之一：Waiting,Runnable或Executing。</p>
+<ul>
+<li><p>等待：这意味着Goroutine已停止并等待某些事情继续进行。这可能是出于等待操作系统（系统调用）或同步调用（原子操作和互斥操作）等原因。这些类型的延迟是性能不佳的根本原因。</p>
+</li>
+<li><p>可运行：这意味着Goroutine需要时间在M上,因此它可以执行其指定的指令。如果你有很多想要时间的Goroutines,那么Goroutines必须等待更长时间才能得到时间。此外,随着更多Goroutines争夺时间,任何给定的Goroutine获得的个人时间缩短了。这种类型的调度延迟也可能是性能不佳的原因。</p>
+</li>
+<li><p>执行：这意味着Goroutine已被置于M并正在执行其指令。与应用程序相关的工作即将完成。这是每个人都想要的。</p>
+</li>
+</ul>
+<h1 id="上下文切换"><a href="#上下文切换" class="headerlink" title="上下文切换"></a>上下文切换</h1><p>Go调度程序需要明确定义的用户空间事件,这些事件发生在代码中的安全点以进行上下文切换。这些事件和安全点在函数调用中表现出来。函数调用对Go调度程序的运行状况至关重要。今天（使用Go 1.11或更低版本）,如果运行任何未进行函数调用的紧密循环,则会导致调度程序和垃圾回收中的延迟。函数调用在合理的时间范围内发生是至关重要的。</p>
+<p>注意：有一个1.12 的提议被接受在Go调度程序中应用非协作抢占技术,以允许抢占紧密循环。</p>
+<p>Go程序中发生了四类事件,允许调度程序做出调度决策。这并不意味着它总是会发生在其中一个事件上。这意味着调度程序获得了机会。</p>
+<ul>
+<li>使用关键字 go</li>
+<li>垃圾收集</li>
+<li>系统调用</li>
+<li>同步和编排</li>
+</ul>
+<h2 id="使用关键字-go"><a href="#使用关键字-go" class="headerlink" title="使用关键字 go"></a>使用关键字 go</h2><p>关键字go是你创建Goroutines的方式。一旦创建了新的Goroutine,它就为调度程序提供了做出调度决策的机会。</p>
+<h2 id="垃圾收集"><a href="#垃圾收集" class="headerlink" title="垃圾收集"></a>垃圾收集</h2><p>由于GC使用自己的Goroutines运行,因此那些Goroutines需要时间在M上运行。这会导致GC产生大量的调度混乱。但是,调度程序非常聪明地了解Goroutine正在做什么,它将利用这些智能做出明智的决策。一个聪明的决定是上下文切换一个Goroutine,它想要在GC期间接触那些没有接触堆的堆。当GC运行时,正在做出许多调度决策。</p>
+<h2 id="系统调用"><a href="#系统调用" class="headerlink" title="系统调用"></a>系统调用</h2><p>如果Goroutine进行系统调用会导致Goroutine阻塞M,有时调度程序能够将Goroutine从M上下文切换并将新的Goroutine上下文切换到相同的M.但是,有时新的M是需要继续执行在P中排队的Goroutines。如何工作将在下一节中更详细地解释。</p>
+<h2 id="同步和编排"><a href="#同步和编排" class="headerlink" title="同步和编排"></a>同步和编排</h2><p>当你运行的操作系统具有异步处理系统调用的能力时,可以使用称为网络轮询器的内容来更有效地处理系统调用。这是通过在这些相应的操作系统中使用kqueue（Mac操作系统）,epoll（Linux）或iocp（Windows）来实现的。</p>
+<p>基于网络的系统调用可以由我们今天使用的许多操作系统异步处理。这是网络轮询器获得其名称的地方,因为它的主要用途是处理网络操作。通过使用网络轮询器进行网络系统调用,调度程序可以防止Goroutines在进行系统调用时阻止M. 这有助于保持M可用于在P的LRQ中执行其他Goroutines而无需创建新的Ms.这有助于减少操作系统上的调度负载。</p>
+<p>查看其工作原理的最佳方法是运行示例。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure3.png" alt=""><br>图3</p>
+<p>图3显示了我们的基本调度图。Goroutine-1正在M上执行,并且还有3个Goroutines等待LRQ在M上等待。网络轮询器无所事事。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure4.png" alt=""><br>图4</p>
+<p>在图4中,Goroutine-1想要进行网络系统调用,因此Goroutine-1被移动到网络轮询器并处理异步网络系统调用。一旦Goroutine-1移动到网络轮询器,M现在可以从LRQ执行不同的Goroutine。在这种情况下,Goroutine-2在M.上下文切换。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure5.png" alt=""><br>图5</p>
+<p>在图5中,异步网络系统调用由网络轮询器完成,Goroutine-1被移回到L的LRQ中。一旦Goroutine-1可以在M上进行上下文切换,Go负责的Go相关代码可以再次执行。这里的最大优势是,要执行网络系统调用,不需要额外的Ms。网络轮询器具有操作系统线程,它正在处理有效的事件循环。</p>
+<h1 id="同步系统调用"><a href="#同步系统调用" class="headerlink" title="同步系统调用"></a>同步系统调用</h1><p>当Goroutine想要进行无法异步完成的系统调用时会发生什么？在这种情况下,网络轮询器不能被使用,并且进行系统调用的Goroutine将阻止M.这是不幸的,但是没有办法防止这种情况发生。不能异步进行的系统调用的一个示例是基于文件的系统调用。如果你正在使用CGO,则可能还有其他情况,调用C函数也会阻止M.</p>
+<p>注意：Windows操作系统确实能够异步进行基于文件的系统调用。从技术上讲,在Windows上运行时,可以使用网络轮询器。</p>
+<p>让我们来看看同步系统调用（如文件I / O）会导致M阻塞的情况。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure6.png" alt=""><br>图6</p>
+<p>图6再次显示了我们的基本调度图,但这次Goroutine-1将进行同步系统调用以阻止M1。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure7.png" alt=""><br>图7</p>
+<p>在图7中,调度程序能够识别Goroutine-1已导致M阻塞。此时,调度程序将M1与P分离,同时仍然附加阻塞Goroutine-1。然后调度器引入新的M2来为P服务。此时,可以从LRQ中选择Goroutine-2并且在M2上进行上下文切换。如果由于之前的交换而已经存在M,则此切换比必须创建新M更快。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure8.png" alt=""><br>图8</p>
+<p>在图8中,由Goroutine-1完成的阻塞系统调用完成。此时,Goroutine-1可以移回LRQ并再次由P服务。如果需要再次发生这种情况,则将M1放在侧面以备将来使用。</p>
+<h1 id="工作窃取"><a href="#工作窃取" class="headerlink" title="工作窃取"></a>工作窃取</h1><p>调度程序的另一个方面是它是一个工作窃取调度程序。这有助于在一些领域保持有效的调度。首先,你想要的最后一件事就是M进入等待状态,因为一旦发生这种情况,操作系统就会将M从核心上下文切换。这意味着即使有一个Goroutine处于可运行状态,P也无法完成任何工作,直到M在核心上进行上下文切换。窃取工作也有助于平衡所有P的Goroutines,从而更好地分配工作并更有效地完成工作。</p>
+<p>让我们来看一个例子。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure9.png" alt=""><br>图9</p>
+<p>在图9中,我们有一个多线程Go程序,其中两个P服务四个Goroutines,每个服务GRQ中有一个Goroutine。如果P的所有Goroutines中的一个服务很快就会发生什么？</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure10.png" alt=""><br>图10</p>
+<p>在图10中,P1没有更多的Goroutines来执行。但是Goroutines处于可运行状态,无论是在LRQ中还是在GRQ中。这是P1需要偷工作的时刻。窃取工作的规则如下。</p>
+<p>清单2</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">runtime.schedule() &#123;</span><br><span class="line">    <span class="hljs-comment">//只有1/61的时间,检查G的全局可运行队列</span></span><br><span class="line">    <span class="hljs-comment">//如果找不到,请检查本地队列。</span></span><br><span class="line">    <span class="hljs-comment">//如果没找到,</span></span><br><span class="line">    <span class="hljs-comment">//试图从其他Ps窃取</span></span><br><span class="line">    <span class="hljs-comment">//如果没有,请检查全局可运行队列。</span></span><br><span class="line">    <span class="hljs-comment">//如果找不到,轮询网络。</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因此,基于清单2中的这些规则,P1需要在其LRQ中检查P2 for Goroutines并获取其发现的一半。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure11.png" alt=""><br>图11</p>
+<p>在图11中,Goroutines的一半来自P2,现在P1可以执行那些Goroutines。</p>
+<p>如果P2完成为其所有Goroutines提供服务并且P1的LRQ中没有任何东西会发生什么？</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure12.png" alt=""><br>图12</p>
+<p>在图12中,P2完成了所有工作,现在需要窃取一些。首先,它将查看P1的LRQ,但它不会找到任何Goroutines。接下来,它将查看GRQ。那里会发现Goroutine-9。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure13.png" alt=""><br>图13</p>
+<p>在图13中,P2从GRQ窃取了Goroutine-9并开始执行工作。所有这些偷窃工作的好处在于它允许女士保持忙碌而不会闲着。这项工作窃取在内部被视为旋转M.这种旋转具有JBD在她的<a href="https://rakyll.org/scheduler/" target="_blank" rel="noopener">工作窃取</a>博客文章中解释得很好的其他好处。</p>
+<h1 id="实际例子"><a href="#实际例子" class="headerlink" title="实际例子"></a>实际例子</h1><p>有了相应的机制和语义,我想向你展示如何将所有这些结合在一起,以便Go调度程序随着时间的推移执行更多工作。想象一下用C编写的多线程应用程序,其中程序管理两个操作系统线程,它们相互传递消息。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure14.png" alt=""><br>图14</p>
+<p>在图14中,有2个线程来回传递消息。线程1在Core 1上进行上下文切换,现在正在执行,这允许线程1将其消息发送到线程2。</p>
+<p>注意：消息的传递方式并不重要。当业务流程继续进行时,重要的是线程的状态。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure15.png" alt=""><br>图15</p>
+<p>在图15中,一旦线程1完成发送消息,它现在需要等待响应。这将导致线程1从Core 1上下文关闭并进入等待状态。一旦线程2收到有关该消息的通知,它就会进入可运行状态。现在操作系统可以执行上下文切换并在Core上执行线程2,它恰好是Core 2.接下来,线程2处理消息并将新消息发送回线程1。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure16.png" alt=""><br>图16</p>
+<p>在图16中,线程上下文切换再次由线程2接收线程2的消息。现在线程2上下文 - 从执行状态切换到等待状态和线程1上下文 - 从等待状态切换到可运行状态最后回到执行状态,允许它处理并发回新消息。</p>
+<p>所有这些上下文切换和状态更改都需要时间来执行,这限制了工作的完成速度。由于每个上下文切换可能会产生约1000纳秒的延迟,并且希望硬件每纳秒执行12条指令,因此你可以查看12k指令,或多或少,在这些上下文切换期间不执行。由于这些线程也在不同的核心之间弹跳,因高速缓存行未命中而导致额外延迟的可能性也很高。</p>
+<p>让我们采用相同的例子,但使用Goroutines和Go调度程序。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure17.png" alt=""><br>图17 </p>
+<p>在图17中,有两个Goroutine正在编排,彼此之间来回传递消息。G1在M1上进行上下文切换,这恰好在Core 1上运行,这允许G1执行其工作。G1的工作是将其消息发送给G2。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure18.png" alt=""><br>图18</p>
+<p>在图18中,一旦G1完成发送消息,它现在需要等待响应。这将导致G1上下文关闭M1并进入等待状态。一旦G2收到有关该消息的通知,它就会进入可运行状态。现在,Go调度程序可以执行上下文切换并在M1上执行G2,M1仍然在Core 1上运行。接下来,G2处理消息并将新消息发送回G1。</p>
+<p><img src="https://www.ardanlabs.com/images/goinggo/94_figure19.png" alt=""><br>图19</p>
+<p>在图19中,当G2接收到由G2发送的消息时,事物再次上下文切换。现在G2上下文 - 从执行状态切换到等待状态,G1上下文 - 从等待状态切换到可运行状态,最后返回到执行状态,这允许它处理并发回新消息。</p>
+<p>表面上的事情似乎没有任何不同。无论你使用线程还是Goroutines,都会发生所有相同的上下文切换和状态更改。但是,使用线程和Goroutines之间存在一个主要区别,乍一看可能并不明显。</p>
+<p>在使用Goroutines的情况下,相同的操作系统线程和核心用于所有处理。这意味着,从操作系统的角度来看,操作系统线程永远不会进入等待状态; 不止一次。因此,在使用Goroutines时,使用Threads时我们丢失到上下文切换的所有指令都不会丢失。</p>
+<p>从本质上讲,Go已将IO / Blocking工作转变为操作系统级别的CPU限制工作。由于所有上下文切换都是在应用程序级别进行的,因此在使用Threads时,每个上下文切换都不会丢失相同的~12k指令（平均）。在Go中,那些相同的上下文切换花费大约200纳秒或~2.4k指令。调度程序还有助于提高缓存线效率和<a href="http://frankdenneman.nl/2016/07/07/numa-deep-dive-part-1-uma-numa" target="_blank" rel="noopener">NUMA</a>。这就是为什么我们不需要比虚拟核心更多的线程。在Go中,随着时间的推移,可以完成更多的工作,因为Go调度程序尝试使用更少的线程并在每个线程上执行更多操作,这有助于减少操作系统和硬件的负载。</p>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>Go调度程序在设计如何考虑操作系统和硬件如何工作的复杂性方面确实令人惊讶。在操作系统级别将IO /阻塞工作转换为CPU限制工作的能力是我们在利用更多CPU容量的过程中获得巨大成功的地方。这就是为什么你不需要比虚拟核心更多的操作系统线程。你可以合理地期望每个虚拟核心只需一个操作系统线程即可完成所有工作（CPU和阻塞IO绑定）。对于不需要阻止操作系统线程的系统调用的网络应用程序和其他应用程序,可以这样做。</p>
+<p>作为开发人员,你仍然需要了解你的应用在你正在处理的工作类型方面正在做什么。你无法创建无限数量的Goroutines并期望惊人的性能。少总是更多,但是通过理解这些Go-scheduler语义,你可以做出更好的工程决策。在下一篇文章中,我将探讨以保守方式利用并发性以获得更好性能的想法,同时仍然平衡可能需要添加到代码中的复杂性。</p>
+<p>原文:</p>
+<p><a href="https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part1.html" target="_blank" rel="noopener">1) Scheduling In Go : Part I - 操作系统 Scheduler</a><br><a href="https://www.ardanlabs.com/blog/2018/08/scheduling-in-go-part2.html" target="_blank" rel="noopener">2) Scheduling In Go : Part II - Go Scheduler</a><br><a href="https://www.ardanlabs.com/blog/2018/12/scheduling-in-go-part3.html" target="_blank" rel="noopener">3) Scheduling In Go : Part III - Concurrency</a></p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6/" rel="tag">Go中的调度</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/08/07/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACIII%E9%83%A8%E5%88%86-%E5%B9%B6%E5%8F%91/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Go中的调度：第III部分 - 并发</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/06/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E8%B0%83%E5%BA%A6%EF%BC%9A%E7%AC%ACI%E9%83%A8%E5%88%86-OS%E8%B0%83%E5%BA%A6%E7%A8%8B%E5%BA%8F/">
+                <span class="level-item">(译) Go中的调度：第I部分 - OS调度程序</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'b2d9bea26ca7fc5f257170fd6403aeaa',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#介绍">
+        <span class="has-mr-6">1</span>
+        <span>介绍</span>
+        </a></li><li>
+        <a class="is-flex" href="#你的计划开始">
+        <span class="has-mr-6">2</span>
+        <span>你的计划开始</span>
+        </a></li><li>
+        <a class="is-flex" href="#协作调度程序">
+        <span class="has-mr-6">3</span>
+        <span>协作调度程序</span>
+        </a></li><li>
+        <a class="is-flex" href="#Goroutine并发">
+        <span class="has-mr-6">4</span>
+        <span>Goroutine并发</span>
+        </a></li><li>
+        <a class="is-flex" href="#上下文切换">
+        <span class="has-mr-6">5</span>
+        <span>上下文切换</span>
+        </a><ul class="menu-list"><li>
+        <a class="is-flex" href="#使用关键字-go">
+        <span class="has-mr-6">5.1</span>
+        <span>使用关键字 go</span>
+        </a></li><li>
+        <a class="is-flex" href="#垃圾收集">
+        <span class="has-mr-6">5.2</span>
+        <span>垃圾收集</span>
+        </a></li><li>
+        <a class="is-flex" href="#系统调用">
+        <span class="has-mr-6">5.3</span>
+        <span>系统调用</span>
+        </a></li><li>
+        <a class="is-flex" href="#同步和编排">
+        <span class="has-mr-6">5.4</span>
+        <span>同步和编排</span>
+        </a></li></ul></li><li>
+        <a class="is-flex" href="#同步系统调用">
+        <span class="has-mr-6">6</span>
+        <span>同步系统调用</span>
+        </a></li><li>
+        <a class="is-flex" href="#工作窃取">
+        <span class="has-mr-6">7</span>
+        <span>工作窃取</span>
+        </a></li><li>
+        <a class="is-flex" href="#实际例子">
+        <span class="has-mr-6">8</span>
+        <span>实际例子</span>
+        </a></li><li>
+        <a class="is-flex" href="#结论">
+        <span class="has-mr-6">9</span>
+        <span>结论</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="(译) Go中的调度：第II部分 - Go Scheduler" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

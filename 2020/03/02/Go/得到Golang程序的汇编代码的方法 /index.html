@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>得到 Golang 程序的汇编代码的方法 - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="有多种方式可以获得Go程序的汇编代码, 尽管输出的格式有些不同,但是都是方便阅读的汇编代码,可以帮助我们更好的了解程序的底层运行方式。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="得到 Golang 程序的汇编代码的方法">
+<meta property="og:url" content="https://www.ulovecode.com/2020/03/02/Go/%E5%BE%97%E5%88%B0Golang%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%B1%87%E7%BC%96%E4%BB%A3%E7%A0%81%E7%9A%84%E6%96%B9%E6%B3%95%20/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="有多种方式可以获得Go程序的汇编代码, 尽管输出的格式有些不同,但是都是方便阅读的汇编代码,可以帮助我们更好的了解程序的底层运行方式。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/e2/8a/e2b40e93ac349381a5717d55ff2d698a.jpg?x-oss-process=image/crop,y_115,w_1279,h_718/resize,w_1280,h_847">
+<meta property="article:published_time" content="2020-03-01T18:14:00.000Z">
+<meta property="article:modified_time" content="2020-03-01T18:14:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Go">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/e2/8a/e2b40e93ac349381a5717d55ff2d698a.jpg?x-oss-process=image/crop,y_115,w_1279,h_718/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="得到 Golang 程序的汇编代码的方法" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/e2/8a/e2b40e93ac349381a5717d55ff2d698a.jpg?x-oss-process=image/crop,y_115,w_1279,h_718/resize,w_1280,h_847" alt="得到 Golang 程序的汇编代码的方法">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2020-03-01T18:14:00.000Z">2020-03-02</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    5 分钟 读完 (大约 807 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                得到 Golang 程序的汇编代码的方法
+            
+        </h1>
+        <div class="content">
+            <p>有多种方式可以获得Go程序的汇编代码, 尽管输出的格式有些不同,但是都是方便阅读的汇编代码,可以帮助我们更好的了解程序的底层运行方式。</p>
+<a id="more"></a>
+<h2 id="方法一-go-tool-compile"><a href="#方法一-go-tool-compile" class="headerlink" title="方法一: go tool compile"></a><strong>方法一: go tool compile</strong></h2><p>使用<code>go tool compile -N -l -S once.go</code>生成汇编代码：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">➜  awesomeProject <span class="hljs-keyword">go</span> tool compile -N -l -S main.<span class="hljs-keyword">go</span></span><br><span class="line"><span class="hljs-string">""</span>.main STEXT size=<span class="hljs-number">165</span> args=<span class="hljs-number">0x0</span> locals=<span class="hljs-number">0x58</span></span><br><span class="line">        <span class="hljs-number">0x0000</span> <span class="hljs-number">00000</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       TEXT    <span class="hljs-string">""</span>.main(SB), ABIInternal, $<span class="hljs-number">88</span><span class="hljs-number">-0</span></span><br><span class="line">        <span class="hljs-number">0x0000</span> <span class="hljs-number">00000</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       MOVQ    (TLS), CX</span><br><span class="line">        <span class="hljs-number">0x0009</span> <span class="hljs-number">00009</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       CMPQ    SP, <span class="hljs-number">16</span>(CX)</span><br><span class="line">        <span class="hljs-number">0x000d</span> <span class="hljs-number">00013</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       JLS     <span class="hljs-number">155</span></span><br><span class="line">        <span class="hljs-number">0x0013</span> <span class="hljs-number">00019</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       SUBQ    $<span class="hljs-number">88</span>, SP</span><br><span class="line">        <span class="hljs-number">0x0017</span> <span class="hljs-number">00023</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       MOVQ    BP, <span class="hljs-number">80</span>(SP)</span><br><span class="line">        <span class="hljs-number">0x001c</span> <span class="hljs-number">00028</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       LEAQ    <span class="hljs-number">80</span>(SP), BP</span><br><span class="line">        <span class="hljs-number">0x0021</span> <span class="hljs-number">00033</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       FUNCDATA        $<span class="hljs-number">0</span>, gclocals·<span class="hljs-number">7</span>d2d5fca80364273fb07d5820a76fef4(SB)</span><br><span class="line">        <span class="hljs-number">0x0021</span> <span class="hljs-number">00033</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       FUNCDATA        $<span class="hljs-number">1</span>, gclocals·d2eb33d7ca216c70530f751d6fdafd01(SB)</span><br><span class="line">        <span class="hljs-number">0x0021</span> <span class="hljs-number">00033</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>)       FUNCDATA        $<span class="hljs-number">3</span>, gclocals·<span class="hljs-number">9</span>fb7f0986f647f17cb53dda1484e0f7a(SB)</span><br><span class="line">        <span class="hljs-number">0x0021</span> <span class="hljs-number">00033</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>)       PCDATA  $<span class="hljs-number">2</span>, $<span class="hljs-number">1</span></span><br><span class="line">        <span class="hljs-number">0x0021</span> <span class="hljs-number">00033</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>)       PCDATA  $<span class="hljs-number">0</span>, $<span class="hljs-number">0</span></span><br><span class="line">        <span class="hljs-number">0x0021</span> <span class="hljs-number">00033</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>)       LEAQ    <span class="hljs-string">""</span>..autotmp_2+<span class="hljs-number">24</span>(SP), AX</span><br><span class="line">        <span class="hljs-number">0x0026</span> <span class="hljs-number">00038</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>)       PCDATA  $<span class="hljs-number">0</span>, $<span class="hljs-number">1</span></span><br><span class="line">        <span class="hljs-number">0x0026</span> <span class="hljs-number">00038</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>)       MOVQ    AX, <span class="hljs-string">""</span>..autotmp_1+<span class="hljs-number">48</span>(SP)</span><br><span class="line">        <span class="hljs-number">0x002b</span> <span class="hljs-number">00043</span> (main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>)       PCDATA  $<span class="hljs-number">2</span>, $<span class="hljs-number">0</span></span><br><span class="line">        ....</span><br></pre></td></tr></table></figure>
+<h2 id="方法二-go-tool-objdump"><a href="#方法二-go-tool-objdump" class="headerlink" title="方法二: go tool objdump"></a><strong>方法二: go tool objdump</strong></h2><p>首先先编译程序:<code>go tool compile -N -l once.go</code>,</p>
+<p>使用<code>go tool objdump once.o</code>反汇编出代码 (或者使用<code>go tool objdump -s Do once.o</code>反汇编特定的函数：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">➜  awesomeProject <span class="hljs-keyword">go</span> tool compile -N -l main.<span class="hljs-keyword">go</span></span><br><span class="line">➜  awesomeProject <span class="hljs-keyword">go</span> tool objdump  main.o</span><br><span class="line">TEXT %<span class="hljs-number">22</span>%<span class="hljs-number">22.</span>main(SB) gofile../Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span></span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>            <span class="hljs-number">0x4cf</span>                   <span class="hljs-number">65488</span>b0c2500000000      MOVQ GS:<span class="hljs-number">0</span>, CX           [<span class="hljs-number">5</span>:<span class="hljs-number">9</span>]R_TLS_LE</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>            <span class="hljs-number">0x4d8</span>                   <span class="hljs-number">483</span>b6110                CMPQ <span class="hljs-number">0x10</span>(CX), SP</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>            <span class="hljs-number">0x4dc</span>                   <span class="hljs-number">0</span>f8688000000            JBE <span class="hljs-number">0x56a</span></span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>            <span class="hljs-number">0x4e2</span>                   <span class="hljs-number">4883</span>ec58                SUBQ $<span class="hljs-number">0x58</span>, SP</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>            <span class="hljs-number">0x4e6</span>                   <span class="hljs-number">48896</span>c2450              MOVQ BP, <span class="hljs-number">0x50</span>(SP)</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>            <span class="hljs-number">0x4eb</span>                   <span class="hljs-number">488</span>d6c2450              LEAQ <span class="hljs-number">0x50</span>(SP), BP</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>            <span class="hljs-number">0x4f0</span>                   <span class="hljs-number">488</span>d442418              LEAQ <span class="hljs-number">0x18</span>(SP), AX</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>            <span class="hljs-number">0x4f5</span>                   <span class="hljs-number">4889442430</span>              MOVQ AX, <span class="hljs-number">0x30</span>(SP)</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>            <span class="hljs-number">0x4fa</span>                   <span class="hljs-number">8400</span>                    TESTB AL, <span class="hljs-number">0</span>(AX)</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>            <span class="hljs-number">0x4fc</span>                   <span class="hljs-number">488</span>b0500000000          MOVQ <span class="hljs-number">0</span>(IP), AX          [<span class="hljs-number">3</span>:<span class="hljs-number">7</span>]R_PCREL:%<span class="hljs-number">22</span>%<span class="hljs-number">22.</span>statictmp</span><br><span class="line">_0</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>            <span class="hljs-number">0x503</span>                   <span class="hljs-number">4889442418</span>              MOVQ AX, <span class="hljs-number">0x18</span>(SP)</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>            <span class="hljs-number">0x508</span>                   <span class="hljs-number">0</span>f100500000000          MOVUPS <span class="hljs-number">0</span>(IP), X0        [<span class="hljs-number">3</span>:<span class="hljs-number">7</span>]R_PCREL:%<span class="hljs-number">22</span>%<span class="hljs-number">22.</span>statictmp</span><br><span class="line">_0+<span class="hljs-number">8</span></span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>            <span class="hljs-number">0x50f</span>                   <span class="hljs-number">0</span>f11442420              MOVUPS X0, <span class="hljs-number">0x20</span>(SP)</span><br><span class="line">  main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>            <span class="hljs-number">0x514</span>                   <span class="hljs-number">488</span>b442430              MOVQ <span class="hljs-number">0x30</span>(SP), AX</span><br><span class="line">  ....</span><br></pre></td></tr></table></figure>
+<h2 id="方法三-go-build-gcflags-S"><a href="#方法三-go-build-gcflags-S" class="headerlink" title="方法三: go build -gcflags -S"></a><strong>方法三: go build -gcflags -S</strong></h2><p>使用<code>go build -gcflags -S once.go</code>也可以得到汇编代码：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">➜  awesomeProject <span class="hljs-keyword">go</span> build -gcflags -S  main.<span class="hljs-keyword">go</span></span><br><span class="line"># command-line-arguments</span><br><span class="line"><span class="hljs-string">""</span>.main STEXT size=<span class="hljs-number">112</span> args=<span class="hljs-number">0x0</span> locals=<span class="hljs-number">0x38</span></span><br><span class="line">        <span class="hljs-number">0x0000</span> <span class="hljs-number">00000</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) TEXT    <span class="hljs-string">""</span>.main(SB), ABIInternal, $<span class="hljs-number">56</span><span class="hljs-number">-0</span></span><br><span class="line">        <span class="hljs-number">0x0000</span> <span class="hljs-number">00000</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) MOVQ    (TLS), CX</span><br><span class="line">        <span class="hljs-number">0x0009</span> <span class="hljs-number">00009</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) CMPQ    SP, <span class="hljs-number">16</span>(CX)</span><br><span class="line">        <span class="hljs-number">0x000d</span> <span class="hljs-number">00013</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) JLS     <span class="hljs-number">105</span></span><br><span class="line">        <span class="hljs-number">0x000f</span> <span class="hljs-number">00015</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) SUBQ    $<span class="hljs-number">56</span>, SP</span><br><span class="line">        <span class="hljs-number">0x0013</span> <span class="hljs-number">00019</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) MOVQ    BP, <span class="hljs-number">48</span>(SP)</span><br><span class="line">        <span class="hljs-number">0x0018</span> <span class="hljs-number">00024</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) LEAQ    <span class="hljs-number">48</span>(SP), BP</span><br><span class="line">        <span class="hljs-number">0x001d</span> <span class="hljs-number">00029</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) FUNCDATA        $<span class="hljs-number">0</span>, gclocals·<span class="hljs-number">33</span>cdeccccebe8032</span><br><span class="line"><span class="hljs-number">9</span>f1fdbee7f5874cb(SB)</span><br><span class="line">        <span class="hljs-number">0x001d</span> <span class="hljs-number">00029</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) FUNCDATA        $<span class="hljs-number">1</span>, gclocals·<span class="hljs-number">33</span>cdeccccebe8032</span><br><span class="line"><span class="hljs-number">9</span>f1fdbee7f5874cb(SB)</span><br><span class="line">        <span class="hljs-number">0x001d</span> <span class="hljs-number">00029</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">22</span>) FUNCDATA        $<span class="hljs-number">3</span>, gclocals·<span class="hljs-number">9</span>fb7f0986f647f17</span><br><span class="line">cb53dda1484e0f7a(SB)</span><br><span class="line">        <span class="hljs-number">0x001d</span> <span class="hljs-number">00029</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>) PCDATA  $<span class="hljs-number">2</span>, $<span class="hljs-number">0</span></span><br><span class="line">        <span class="hljs-number">0x001d</span> <span class="hljs-number">00029</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>) PCDATA  $<span class="hljs-number">0</span>, $<span class="hljs-number">0</span></span><br><span class="line">        <span class="hljs-number">0x001d</span> <span class="hljs-number">00029</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>) MOVQ    <span class="hljs-string">""</span>.statictmp_0(SB), AX</span><br><span class="line">        <span class="hljs-number">0x0024</span> <span class="hljs-number">00036</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>) MOVQ    AX, <span class="hljs-string">""</span>..autotmp_2+<span class="hljs-number">24</span>(SP)</span><br><span class="line">        <span class="hljs-number">0x0029</span> <span class="hljs-number">00041</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>) MOVUPS  <span class="hljs-string">""</span>.statictmp_0+<span class="hljs-number">8</span>(SB), X0</span><br><span class="line">        <span class="hljs-number">0x0030</span> <span class="hljs-number">00048</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">23</span>) MOVUPS  X0, <span class="hljs-string">""</span>..autotmp_2+<span class="hljs-number">32</span>(SP)</span><br><span class="line">        <span class="hljs-number">0x0035</span> <span class="hljs-number">00053</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) CALL    runtime.printlock(SB)</span><br><span class="line">        <span class="hljs-number">0x003a</span> <span class="hljs-number">00058</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) PCDATA  $<span class="hljs-number">2</span>, $<span class="hljs-number">1</span></span><br><span class="line">        <span class="hljs-number">0x003a</span> <span class="hljs-number">00058</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) LEAQ    <span class="hljs-string">""</span>..autotmp_2+<span class="hljs-number">24</span>(SP), AX</span><br><span class="line">        <span class="hljs-number">0x003f</span> <span class="hljs-number">00063</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) PCDATA  $<span class="hljs-number">2</span>, $<span class="hljs-number">0</span></span><br><span class="line">        <span class="hljs-number">0x003f</span> <span class="hljs-number">00063</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) MOVQ    AX, (SP)</span><br><span class="line">        <span class="hljs-number">0x0043</span> <span class="hljs-number">00067</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) MOVQ    $<span class="hljs-number">3</span>, <span class="hljs-number">8</span>(SP)</span><br><span class="line">        <span class="hljs-number">0x004c</span> <span class="hljs-number">00076</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) MOVQ    $<span class="hljs-number">3</span>, <span class="hljs-number">16</span>(SP)</span><br><span class="line">        <span class="hljs-number">0x0055</span> <span class="hljs-number">00085</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) CALL    runtime.printslice(SB)</span><br><span class="line">        <span class="hljs-number">0x005a</span> <span class="hljs-number">00090</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">24</span>) CALL    runtime.printunlock(SB)</span><br><span class="line">        <span class="hljs-number">0x005f</span> <span class="hljs-number">00095</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">25</span>) MOVQ    <span class="hljs-number">48</span>(SP), BP</span><br><span class="line">        <span class="hljs-number">0x0064</span> <span class="hljs-number">00100</span> (/Users/zhubowen/golangProjects/awesomeProject/main.<span class="hljs-keyword">go</span>:<span class="hljs-number">25</span>) ADDQ    $<span class="hljs-number">56</span>, SP</span><br><span class="line">        ....</span><br></pre></td></tr></table></figure>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li><code>go tool compile</code>和<code>go build -gcflags -S</code>生成的是过程中的汇编。</li>
+<li>最终的机器码的汇编可以通过<code>go tool objdump</code>生成。</li>
+</ul>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Go/" rel="tag">Go</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/04/02/%E9%9D%A2%E8%AF%95/Golang%E9%9D%A2%E8%AF%95%E9%A2%98/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">Golang 面试题</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2020/02/27/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(5)-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/">
+                <span class="level-item">Go源码分析(5) - 数据结构</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '52eae791223adce330f3dd2e5a8b135e',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#方法一-go-tool-compile">
+        <span class="has-mr-6">1.1</span>
+        <span>方法一: go tool compile</span>
+        </a></li><li>
+        <a class="is-flex" href="#方法二-go-tool-objdump">
+        <span class="has-mr-6">1.2</span>
+        <span>方法二: go tool objdump</span>
+        </a></li><li>
+        <a class="is-flex" href="#方法三-go-build-gcflags-S">
+        <span class="has-mr-6">1.3</span>
+        <span>方法三: go build -gcflags -S</span>
+        </a></li></ul><li>
+        <a class="is-flex" href="#总结">
+        <span class="has-mr-6">2</span>
+        <span>总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="得到 Golang 程序的汇编代码的方法" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

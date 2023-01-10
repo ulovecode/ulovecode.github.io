@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Go源码分析(4) - expvar - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="今天是要分析的是一个封装好的关于 int,string,float, map 等基本类型原子操作包,还有一些公共发布变量。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go源码分析(4) - expvar">
+<meta property="og:url" content="https://www.ulovecode.com/2019/11/26/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(4)-expvar/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="今天是要分析的是一个封装好的关于 int,string,float, map 等基本类型原子操作包,还有一些公共发布变量。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/34/5e/34166be22044f114d4742e3f7e64145e.jpg?x-oss-process=image/crop,y_121,w_1920,h_1080/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-11-26T05:44:00.000Z">
+<meta property="article:modified_time" content="2019-11-26T05:44:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Golang源码分析">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/34/5e/34166be22044f114d4742e3f7e64145e.jpg?x-oss-process=image/crop,y_121,w_1920,h_1080/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go源码分析(4) - expvar" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/34/5e/34166be22044f114d4742e3f7e64145e.jpg?x-oss-process=image/crop,y_121,w_1920,h_1080/resize,w_1280,h_847" alt="Go源码分析(4) - expvar">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-11-26T05:44:00.000Z">2019-11-26</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">Golang源码分析</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    16 分钟 读完 (大约 2355 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Go源码分析(4) - expvar
+            
+        </h1>
+        <div class="content">
+            <p>今天是要分析的是一个封装好的关于 int,string,float, map 等基本类型原子操作包,还有一些公共发布变量。</p>
+<a id="more"></a>
+<h2 id="Int"><a href="#Int" class="headerlink" title="Int"></a>Int</h2><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Int is a 64-bit integer variable that satisfies the Var interface.</span></span><br><span class="line"><span class="hljs-keyword">type</span> Int <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	i <span class="hljs-keyword">int64</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Int)</span> <span class="hljs-title">Value</span><span class="hljs-params">()</span> <span class="hljs-title">int64</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> atomic.LoadInt64(&amp;v.i)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Int)</span> <span class="hljs-title">String</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> strconv.FormatInt(atomic.LoadInt64(&amp;v.i), <span class="hljs-number">10</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Int)</span> <span class="hljs-title">Add</span><span class="hljs-params">(delta <span class="hljs-keyword">int64</span>)</span></span> &#123;</span><br><span class="line">	atomic.AddInt64(&amp;v.i, delta)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Int)</span> <span class="hljs-title">Set</span><span class="hljs-params">(value <span class="hljs-keyword">int64</span>)</span></span> &#123;</span><br><span class="line">	atomic.StoreInt64(&amp;v.i, value)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以int64作为基本类型,然后使用atomic包下等原子操作。</p>
+<h2 id="Float"><a href="#Float" class="headerlink" title="Float"></a>Float</h2><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Float is a 64-bit float variable that satisfies the Var interface.</span></span><br><span class="line"><span class="hljs-keyword">type</span> Float <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	f <span class="hljs-keyword">uint64</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Float)</span> <span class="hljs-title">Value</span><span class="hljs-params">()</span> <span class="hljs-title">float64</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> math.Float64frombits(atomic.LoadUint64(&amp;v.f))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Float)</span> <span class="hljs-title">String</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> strconv.FormatFloat(</span><br><span class="line">		math.Float64frombits(atomic.LoadUint64(&amp;v.f)), <span class="hljs-string">'g'</span>, <span class="hljs-number">-1</span>, <span class="hljs-number">64</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Add adds delta to v.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Float)</span> <span class="hljs-title">Add</span><span class="hljs-params">(delta <span class="hljs-keyword">float64</span>)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		cur := atomic.LoadUint64(&amp;v.f)</span><br><span class="line">		curVal := math.Float64frombits(cur)</span><br><span class="line">		nxtVal := curVal + delta</span><br><span class="line">		nxt := math.Float64bits(nxtVal)</span><br><span class="line">		<span class="hljs-keyword">if</span> atomic.CompareAndSwapUint64(&amp;v.f, cur, nxt) &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Set sets v to value.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Float)</span> <span class="hljs-title">Set</span><span class="hljs-params">(value <span class="hljs-keyword">float64</span>)</span></span> &#123;</span><br><span class="line">	atomic.StoreUint64(&amp;v.f, math.Float64bits(value))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以uint64作为基本类型,来实现float类型等原子操作。</p>
+<ul>
+<li><code>Add(delta float64)</code>使用cas算法不断拿到最新值,重复进行cas设置,直到成功为止。</li>
+</ul>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Float64bits returns the IEEE 754 binary representation of f,</span></span><br><span class="line"><span class="hljs-comment">// with the sign bit of f and the result in the same bit position,</span></span><br><span class="line"><span class="hljs-comment">// and Float64bits(Float64frombits(x)) == x.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Float64bits</span><span class="hljs-params">(f <span class="hljs-keyword">float64</span>)</span> <span class="hljs-title">uint64</span></span> &#123; <span class="hljs-keyword">return</span> *(*<span class="hljs-keyword">uint64</span>)(unsafe.Pointer(&amp;f)) &#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Float64frombits returns the floating-point number corresponding</span></span><br><span class="line"><span class="hljs-comment">// to the IEEE 754 binary representation b, with the sign bit of b</span></span><br><span class="line"><span class="hljs-comment">// and the result in the same bit position.</span></span><br><span class="line"><span class="hljs-comment">// Float64frombits(Float64bits(x)) == x.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Float64frombits</span><span class="hljs-params">(b <span class="hljs-keyword">uint64</span>)</span> <span class="hljs-title">float64</span></span> &#123; <span class="hljs-keyword">return</span> *(*<span class="hljs-keyword">float64</span>)(unsafe.Pointer(&amp;b)) &#125;</span><br></pre></td></tr></table></figure>
+<p>在其中使用到了<code>func Float64bits(f float64) uint64</code>将float类型转换为uint64类型进行存储,使用<code>Float64frombits(b uint64) float64</code>将uint64类型转换为float类型。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// LoadUint64 atomically loads *addr.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">LoadUint64</span><span class="hljs-params">(addr *<span class="hljs-keyword">uint64</span>)</span> <span class="hljs-params">(val <span class="hljs-keyword">uint64</span>)</span></span></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// StoreUint64 atomically stores val into *addr.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">StoreUint64</span><span class="hljs-params">(addr *<span class="hljs-keyword">uint64</span>, val <span class="hljs-keyword">uint64</span>)</span></span></span><br></pre></td></tr></table></figure>
+<p>转换为uint64类型,使用atomic包下到存储和去出uint64类型。</p>
+<h2 id="Map"><a href="#Map" class="headerlink" title="Map"></a>Map</h2><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Var is an abstract type for all exported variables.</span></span><br><span class="line"><span class="hljs-keyword">type</span> Var <span class="hljs-keyword">interface</span> &#123;</span><br><span class="line">	<span class="hljs-comment">// String returns a valid JSON value for the variable.</span></span><br><span class="line">	<span class="hljs-comment">// Types with String methods that do not return valid JSON</span></span><br><span class="line">	<span class="hljs-comment">// (such as time.Time) must not be used as a Var.</span></span><br><span class="line">	String() <span class="hljs-keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Map is a string-to-Var map variable that satisfies the Var interface.</span></span><br><span class="line"><span class="hljs-keyword">type</span> Map <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	m      sync.Map <span class="hljs-comment">// map[string]Var</span></span><br><span class="line">	keysMu sync.RWMutex</span><br><span class="line">	keys   []<span class="hljs-keyword">string</span> <span class="hljs-comment">// sorted</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从定义上很清楚的知道<code>Var</code>是一个抽象接口,<code>String()</code>方法返回的是一个json字符串<br><code>Map</code>类型是一个<code>string</code>类型作为key, 实现了Var接口类型的值作为value的键值对,结构体如下：</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// KeyValue represents a single entry in a Map.</span></span><br><span class="line"><span class="hljs-keyword">type</span> KeyValue <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	Key   <span class="hljs-keyword">string</span></span><br><span class="line">	Value Var</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Map</code>本身也是一个实现了Var接口对类型,其,<code>String()</code>方法会返回<code>Map</code>内的全部键值对作为json字符串</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Map)</span> <span class="hljs-title">String</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">var</span> b strings.Builder</span><br><span class="line">	fmt.Fprintf(&amp;b, <span class="hljs-string">"&#123;"</span>)</span><br><span class="line">	first := <span class="hljs-literal">true</span></span><br><span class="line">	v.Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(kv KeyValue)</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> !first &#123;</span><br><span class="line">			fmt.Fprintf(&amp;b, <span class="hljs-string">", "</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		fmt.Fprintf(&amp;b, <span class="hljs-string">"%q: %v"</span>, kv.Key, kv.Value)</span><br><span class="line">		first = <span class="hljs-literal">false</span></span><br><span class="line">	&#125;)</span><br><span class="line">	fmt.Fprintf(&amp;b, <span class="hljs-string">"&#125;"</span>)</span><br><span class="line">	<span class="hljs-keyword">return</span> b.String()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到其中调用<code>Map</code>本身的<code>Do()</code>方法,首先要对整个方法加读锁,这个Do()方法里面有一个循环遍历map的所有的键,然后通过key取出value,包装成<code>KeyValue</code>结构体,然后被传入<code>f func(KeyValue)</code>调用。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Do calls f for each entry in the map.</span></span><br><span class="line"><span class="hljs-comment">// The map is locked during the iteration,</span></span><br><span class="line"><span class="hljs-comment">// but existing entries may be concurrently updated.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Map)</span> <span class="hljs-title">Do</span><span class="hljs-params">(f <span class="hljs-keyword">func</span>(KeyValue)</span>)</span> &#123;</span><br><span class="line">	v.keysMu.RLock()</span><br><span class="line">	<span class="hljs-keyword">defer</span> v.keysMu.RUnlock()</span><br><span class="line">	<span class="hljs-keyword">for</span> _, k := <span class="hljs-keyword">range</span> v.keys &#123;</span><br><span class="line">		i, _ := v.m.Load(k)</span><br><span class="line">		f(KeyValue&#123;k, i.(Var)&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来我看看添加key的方法</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// addKey updates the sorted list of keys in v.keys.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Map)</span> <span class="hljs-title">addKey</span><span class="hljs-params">(key <span class="hljs-keyword">string</span>)</span></span> &#123;</span><br><span class="line">	v.keysMu.Lock()</span><br><span class="line">	<span class="hljs-keyword">defer</span> v.keysMu.Unlock()</span><br><span class="line">	<span class="hljs-comment">// Using insertion sort to place key into the already-sorted v.keys.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> i := sort.SearchStrings(v.keys, key); i &gt;= <span class="hljs-built_in">len</span>(v.keys) &#123;</span><br><span class="line">		v.keys = <span class="hljs-built_in">append</span>(v.keys, key)</span><br><span class="line">	&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> v.keys[i] != key &#123;</span><br><span class="line">		v.keys = <span class="hljs-built_in">append</span>(v.keys, <span class="hljs-string">""</span>)</span><br><span class="line">		<span class="hljs-built_in">copy</span>(v.keys[i+<span class="hljs-number">1</span>:], v.keys[i:])</span><br><span class="line">		v.keys[i] = key</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先加了一个读锁,使用插入排序将键放入已排序的v.keys中。通过key在keys中找到要插入的合适的位置,然后将keys的长度加1,将<code>i - n-1</code>位置的值移动到<code>i+1 - n</code>上,然后将keys[i]设置为key。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Map)</span> <span class="hljs-title">Get</span><span class="hljs-params">(key <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">Var</span></span> &#123;</span><br><span class="line">	i, _ := v.m.Load(key)</span><br><span class="line">	av, _ := i.(Var)</span><br><span class="line">	<span class="hljs-keyword">return</span> av</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Map)</span> <span class="hljs-title">Set</span><span class="hljs-params">(key <span class="hljs-keyword">string</span>, av Var)</span></span> &#123;</span><br><span class="line">	<span class="hljs-comment">// Before we store the value, check to see whether the key is new. Try a Load</span></span><br><span class="line">	<span class="hljs-comment">// before LoadOrStore: LoadOrStore causes the key interface to escape even on</span></span><br><span class="line">	<span class="hljs-comment">// the Load path.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> _, ok := v.m.Load(key); !ok &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> _, dup := v.m.LoadOrStore(key, av); !dup &#123;</span><br><span class="line">			v.addKey(key)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	v.m.Store(key, av)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这两个方法很简单,一个是取值,通过sync.map的Load方法,一个是设置值,但是这里除了用sync.map的LoadOrStore方法,还需要将key加入到keys中。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Add adds delta to the *Int value stored under the given map key.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Map)</span> <span class="hljs-title">Add</span><span class="hljs-params">(key <span class="hljs-keyword">string</span>, delta <span class="hljs-keyword">int64</span>)</span></span> &#123;</span><br><span class="line">	i, ok := v.m.Load(key)</span><br><span class="line">	<span class="hljs-keyword">if</span> !ok &#123;</span><br><span class="line">		<span class="hljs-keyword">var</span> dup <span class="hljs-keyword">bool</span></span><br><span class="line">		i, dup = v.m.LoadOrStore(key, <span class="hljs-built_in">new</span>(Int))</span><br><span class="line">		<span class="hljs-keyword">if</span> !dup &#123;</span><br><span class="line">			v.addKey(key)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Add to Int; ignore otherwise.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> iv, ok := i.(*Int); ok &#123;</span><br><span class="line">		iv.Add(delta)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// AddFloat adds delta to the *Float value stored under the given map key.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Map)</span> <span class="hljs-title">AddFloat</span><span class="hljs-params">(key <span class="hljs-keyword">string</span>, delta <span class="hljs-keyword">float64</span>)</span></span> &#123;</span><br><span class="line">	i, ok := v.m.Load(key)</span><br><span class="line">	<span class="hljs-keyword">if</span> !ok &#123;</span><br><span class="line">		<span class="hljs-keyword">var</span> dup <span class="hljs-keyword">bool</span></span><br><span class="line">		i, dup = v.m.LoadOrStore(key, <span class="hljs-built_in">new</span>(Float))</span><br><span class="line">		<span class="hljs-keyword">if</span> !dup &#123;</span><br><span class="line">			v.addKey(key)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// Add to Float; ignore otherwise.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> iv, ok := i.(*Float); ok &#123;</span><br><span class="line">		iv.Add(delta)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>两个都是添加的方法,一个是value为Int的方法,一个是value为Float的方法,先找到这个是否有这个key,如果没有就创建这个key,设置value为一个默认值,然后将累加值再后面进行相加（如果没有这个值的话,默认值就是0）。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Deletes the given key from the map.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *Map)</span> <span class="hljs-title">Delete</span><span class="hljs-params">(key <span class="hljs-keyword">string</span>)</span></span> &#123;</span><br><span class="line">	v.keysMu.Lock()</span><br><span class="line">	<span class="hljs-keyword">defer</span> v.keysMu.Unlock()</span><br><span class="line">	i := sort.SearchStrings(v.keys, key)</span><br><span class="line">	<span class="hljs-keyword">if</span> i &lt; <span class="hljs-built_in">len</span>(v.keys) &amp;&amp; key == v.keys[i] &#123;</span><br><span class="line">		v.keys = <span class="hljs-built_in">append</span>(v.keys[:i], v.keys[i+<span class="hljs-number">1</span>:]...)</span><br><span class="line">		v.m.Delete(key)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>删除这个key,首先也是用过插入排序的方法吗,该值在目标索引的位置,然后通过切片的方法,重新拼装一个keys,然后再从sync.map中删除这个keyvalue</p>
+<h2 id="String"><a href="#String" class="headerlink" title="String"></a>String</h2><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// String is a string variable, and satisfies the Var interface.</span></span><br><span class="line"><span class="hljs-keyword">type</span> String <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	s atomic.Value <span class="hljs-comment">// string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *String)</span> <span class="hljs-title">Value</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	p, _ := v.s.Load().(<span class="hljs-keyword">string</span>)</span><br><span class="line">	<span class="hljs-keyword">return</span> p</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// String implements the Var interface. To get the unquoted string</span></span><br><span class="line"><span class="hljs-comment">// use Value.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *String)</span> <span class="hljs-title">String</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	s := v.Value()</span><br><span class="line">	b, _ := json.Marshal(s)</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">string</span>(b)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(v *String)</span> <span class="hljs-title">Set</span><span class="hljs-params">(value <span class="hljs-keyword">string</span>)</span></span> &#123;</span><br><span class="line">	v.s.Store(value)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个<code>String</code>结构体也很简单,同样也是实现了<code>Var</code>接口,每一个操作都是原子操作</p>
+<h2 id="Func"><a href="#Func" class="headerlink" title="Func"></a>Func</h2><figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Func implements Var by calling the function</span></span><br><span class="line"><span class="hljs-comment">// and formatting the returned value using JSON.</span></span><br><span class="line"><span class="hljs-keyword">type</span> Func <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span> <span class="hljs-title">interface</span></span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(f Func)</span> <span class="hljs-title">Value</span><span class="hljs-params">()</span> <span class="hljs-title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> f()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(f Func)</span> <span class="hljs-title">String</span><span class="hljs-params">()</span> <span class="hljs-title">string</span></span> &#123;</span><br><span class="line">	v, _ := json.Marshal(f())</span><br><span class="line">	<span class="hljs-keyword">return</span> <span class="hljs-keyword">string</span>(v)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Func通过调用函数并使用JSON格式化返回值来实现Var。类型Func Func（）接口{}</p>
+<p>使用方法如下:</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">TestFunc</span><span class="hljs-params">(t *testing.T)</span></span> &#123;</span><br><span class="line">	RemoveAll()</span><br><span class="line">	<span class="hljs-keyword">var</span> x <span class="hljs-keyword">interface</span>&#123;&#125; = []<span class="hljs-keyword">string</span>&#123;<span class="hljs-string">"a"</span>, <span class="hljs-string">"b"</span>&#125;</span><br><span class="line">	f := Func(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span> <span class="hljs-title">interface</span></span>&#123;&#125; &#123; <span class="hljs-keyword">return</span> x &#125;)</span><br><span class="line">	<span class="hljs-keyword">if</span> s, exp := f.String(),<span class="hljs-string">`["a","b"]`</span>; s != exp &#123;</span><br><span class="line">		t.Errorf(<span class="hljs-string">`f.String() = %q, want %q`</span>, s, exp)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> v := f.Value(); !reflect.DeepEqual(v, x) &#123;</span><br><span class="line">		t.Errorf(<span class="hljs-string">`f.Value() = %q, want %q`</span>, v, x)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	x = <span class="hljs-number">17</span></span><br><span class="line">	<span class="hljs-keyword">if</span> s, exp := f.String(),<span class="hljs-string">`17`</span>; s != exp &#123;</span><br><span class="line">		t.Errorf(<span class="hljs-string">`f.String() = %q, want %q`</span>, s, exp)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="All-published-variables"><a href="#All-published-variables" class="headerlink" title="All published variables"></a>All published variables</h2><p>下面是所有所有已发布的变量。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// All published variables.</span></span><br><span class="line"><span class="hljs-keyword">var</span> (</span><br><span class="line">	vars      sync.Map <span class="hljs-comment">// map[string]Var</span></span><br><span class="line">	varKeysMu sync.RWMutex</span><br><span class="line">	varKeys   []<span class="hljs-keyword">string</span> <span class="hljs-comment">// sorted</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Publish declares a named exported variable. This should be called from a</span></span><br><span class="line"><span class="hljs-comment">// package's init function when it creates its Vars. If the name is already</span></span><br><span class="line"><span class="hljs-comment">// registered then this will log.Panic.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Publish</span><span class="hljs-params">(name <span class="hljs-keyword">string</span>, v Var)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> _, dup := vars.LoadOrStore(name, v); dup &#123;</span><br><span class="line">		log.Panicln(<span class="hljs-string">"Reuse of exported var name:"</span>, name)</span><br><span class="line">	&#125;</span><br><span class="line">	varKeysMu.Lock()</span><br><span class="line">	<span class="hljs-keyword">defer</span> varKeysMu.Unlock()</span><br><span class="line">	varKeys = <span class="hljs-built_in">append</span>(varKeys, name)</span><br><span class="line">	sort.Strings(varKeys)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Get retrieves a named exported variable. It returns nil if the name has</span></span><br><span class="line"><span class="hljs-comment">// not been registered.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Get</span><span class="hljs-params">(name <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">Var</span></span> &#123;</span><br><span class="line">	i, _ := vars.Load(name)</span><br><span class="line">	v, _ := i.(Var)</span><br><span class="line">	<span class="hljs-keyword">return</span> v</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这一部分代码的作用就是一些公共遍历被存储的地方,vars是一个存储keyvalue的map,varKeysMu则是一个读写锁,varKeys则是一个keys的集合,这个和<code>Map</code>的数据类型很像。</p>
+<ul>
+<li><code>Publish(name string, v Var)</code>  Publish声明一个命名的导出变量。当包创建变量时,应该从包的init函数调用它。如果名称已经注册,则这将导致log.Panic。</li>
+<li><code>Get(name string) Var</code>Get检索命名的导出变量。如果名称尚未注册,则返回nil。</li>
+</ul>
+<p>下面是创建新导出变量的工具函数。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Convenience functions for creating new exported variables.</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewInt</span><span class="hljs-params">(name <span class="hljs-keyword">string</span>)</span> *<span class="hljs-title">Int</span></span> &#123;</span><br><span class="line">	v := <span class="hljs-built_in">new</span>(Int)</span><br><span class="line">	Publish(name, v)</span><br><span class="line">	<span class="hljs-keyword">return</span> v</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewFloat</span><span class="hljs-params">(name <span class="hljs-keyword">string</span>)</span> *<span class="hljs-title">Float</span></span> &#123;</span><br><span class="line">	v := <span class="hljs-built_in">new</span>(Float)</span><br><span class="line">	Publish(name, v)</span><br><span class="line">	<span class="hljs-keyword">return</span> v</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewMap</span><span class="hljs-params">(name <span class="hljs-keyword">string</span>)</span> *<span class="hljs-title">Map</span></span> &#123;</span><br><span class="line">	v := <span class="hljs-built_in">new</span>(Map).Init()</span><br><span class="line">	Publish(name, v)</span><br><span class="line">	<span class="hljs-keyword">return</span> v</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewString</span><span class="hljs-params">(name <span class="hljs-keyword">string</span>)</span> *<span class="hljs-title">String</span></span> &#123;</span><br><span class="line">	v := <span class="hljs-built_in">new</span>(String)</span><br><span class="line">	Publish(name, v)</span><br><span class="line">	<span class="hljs-keyword">return</span> v</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Do(f func(KeyValue))</code>方法为每个导出的变量调用f。全局变量映射在迭代期间被锁定,但是现有的条目可以同时更新。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Do calls f for each exported variable.</span></span><br><span class="line"><span class="hljs-comment">// The global variable map is locked during the iteration,</span></span><br><span class="line"><span class="hljs-comment">// but existing entries may be concurrently updated.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Do</span><span class="hljs-params">(f <span class="hljs-keyword">func</span>(KeyValue)</span>)</span> &#123;</span><br><span class="line">	varKeysMu.RLock()</span><br><span class="line">	<span class="hljs-keyword">defer</span> varKeysMu.RUnlock()</span><br><span class="line">	<span class="hljs-keyword">for</span> _, k := <span class="hljs-keyword">range</span> varKeys &#123;</span><br><span class="line">		val, _ := vars.Load(k)</span><br><span class="line">		f(KeyValue&#123;k, val.(Var)&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>expvarHandler(w http.ResponseWriter, r *http.Request)</code>,通过http服务器,查看当前所有的公共发布变量,同样保存了机器的命令行启动参数以及内存状态</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">expvarHandler</span><span class="hljs-params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">	w.Header().Set(<span class="hljs-string">"Content-Type"</span>, <span class="hljs-string">"application/json; charset=utf-8"</span>)</span><br><span class="line">	fmt.Fprintf(w, <span class="hljs-string">"&#123;\n"</span>)</span><br><span class="line">	first := <span class="hljs-literal">true</span></span><br><span class="line">	Do(<span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(kv KeyValue)</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> !first &#123;</span><br><span class="line">			fmt.Fprintf(w, <span class="hljs-string">",\n"</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		first = <span class="hljs-literal">false</span></span><br><span class="line">		fmt.Fprintf(w, <span class="hljs-string">"%q: %s"</span>, kv.Key, kv.Value)</span><br><span class="line">	&#125;)</span><br><span class="line">	fmt.Fprintf(w, <span class="hljs-string">"\n&#125;\n"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-comment">// Handler returns the expvar HTTP Handler.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// This is only needed to install the handler in a non-standard location.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">Handler</span><span class="hljs-params">()</span> <span class="hljs-title">http</span>.<span class="hljs-title">Handler</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> http.HandlerFunc(expvarHandler)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">cmdline</span><span class="hljs-params">()</span> <span class="hljs-title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">	<span class="hljs-keyword">return</span> os.Args</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">memstats</span><span class="hljs-params">()</span> <span class="hljs-title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">	stats := <span class="hljs-built_in">new</span>(runtime.MemStats)</span><br><span class="line">	runtime.ReadMemStats(stats)</span><br><span class="line">	<span class="hljs-keyword">return</span> *stats</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">init</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	http.HandleFunc(<span class="hljs-string">"/debug/vars"</span>, expvarHandler)</span><br><span class="line">	Publish(<span class="hljs-string">"cmdline"</span>, Func(cmdline))</span><br><span class="line">	Publish(<span class="hljs-string">"memstats"</span>, Func(memstats))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>init()</code>会初始化的将公共变量发布到http服务器,如果服务器开启的话就可以访问到这些信息 。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>个人认为expvar是一个很有用的工具包,可以替代繁琐的atomic包下的内容,同时map也是,并且<code>String（）</code>方法返回的json字符串也是很有用的。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="tag">Golang源码分析</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2020/02/27/Linux/%E4%BD%BF%E7%94%A8Git%E4%BB%A3%E7%90%86%E4%B8%BAGithub%E6%8F%90%E9%80%9F/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">使用 Git 代理为 Github 提速</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/11/23/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(3)-io/">
+                <span class="level-item">Go源码分析(3) - io</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: 'fc55767c35605e9b78a7cf13ca916bd5',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><ul class="menu-list"><li>
+        <a class="is-flex" href="#Int">
+        <span class="has-mr-6">1.1</span>
+        <span>Int</span>
+        </a></li><li>
+        <a class="is-flex" href="#Float">
+        <span class="has-mr-6">1.2</span>
+        <span>Float</span>
+        </a></li><li>
+        <a class="is-flex" href="#Map">
+        <span class="has-mr-6">1.3</span>
+        <span>Map</span>
+        </a></li><li>
+        <a class="is-flex" href="#String">
+        <span class="has-mr-6">1.4</span>
+        <span>String</span>
+        </a></li><li>
+        <a class="is-flex" href="#Func">
+        <span class="has-mr-6">1.5</span>
+        <span>Func</span>
+        </a></li><li>
+        <a class="is-flex" href="#All-published-variables">
+        <span class="has-mr-6">1.6</span>
+        <span>All published variables</span>
+        </a></li></ul><li>
+        <a class="is-flex" href="#总结">
+        <span class="has-mr-6">2</span>
+        <span>总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go源码分析(4) - expvar" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>

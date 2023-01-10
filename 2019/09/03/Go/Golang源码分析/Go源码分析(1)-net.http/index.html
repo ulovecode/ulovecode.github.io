@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html  lang="zh">
+<head>
+    <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<title>Go源码分析(1) - net.http - Jovan&#39;s Blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+    <meta name="description" content="Golang 中 net&#x2F;http 包下是非常关键的源码,gin 中的框架也是实现了 Golang 中的handler接口的SeverHttp方法才能够适配,可以见的该包是网络编程的核心,我针对于其中一部分源码进行了分析,希望能够帮助大家更好的理解 Golang 网络编程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go源码分析(1) - net.http">
+<meta property="og:url" content="https://www.ulovecode.com/2019/09/03/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/Go%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90(1)-net.http/index.html">
+<meta property="og:site_name" content="Jovan&#39;s Blog">
+<meta property="og:description" content="Golang 中 net&#x2F;http 包下是非常关键的源码,gin 中的框架也是实现了 Golang 中的handler接口的SeverHttp方法才能够适配,可以见的该包是网络编程的核心,我针对于其中一部分源码进行了分析,希望能够帮助大家更好的理解 Golang 网络编程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://static001.infoq.cn/resource/image/b9/d5/b94709fcfd7aed80ab31963ba9eca3d5.jpg?x-oss-process=image/crop,y_104,w_1279,h_718/resize,w_1280,h_847">
+<meta property="article:published_time" content="2019-09-02T18:06:00.000Z">
+<meta property="article:modified_time" content="2019-09-02T18:06:00.000Z">
+<meta property="article:author" content="Jovan">
+<meta property="article:tag" content="Golang源码分析">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://static001.infoq.cn/resource/image/b9/d5/b94709fcfd7aed80ab31963ba9eca3d5.jpg?x-oss-process=image/crop,y_104,w_1279,h_718/resize,w_1280,h_847">
+
+
+
+
+
+
+
+    <link rel="icon" href="//md.ulovecode.com/static/images/avatar/logo.jpg">
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/bulma@0.7.5/css/bulma.min.css">
+<link rel="stylesheet" href="https://s3.pstatp.com/cdn/expire-1-M/font-awesome/5.8.1/css/all.min.css">
+<!--<link rel="stylesheet" href="https://fonts.proxy.ustclug.org/css?family=Noto+Serif+SC:500|Source+Code+Pro:500&display=swap">-->
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-regular.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-light.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/lxgw-wenkai-webfont/1.6.0/lxgwwenkaimono-bold.css">
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-regular.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-light.css">-->
+<!--<link rel="stylesheet" href="https://code.bdstatic.com/npm/lxgw-wenkai-lite-webfont@1.6.0/lxgwwenkailite-bold.css">-->
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/highlight.js@10.1.0/styles/github.css">
+
+
+    
+        
+    
+        
+    
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css">
+    <link rel="stylesheet" href="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css">
+    
+
+    
+        
+
+<link rel="stylesheet" href="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.css">
+
+
+    
+        
+    
+        
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/back-to-top.css">
+
+
+    
+        
+
+    
+        
+    
+        
+
+    
+        
+    
+        
+    
+
+    
+        
+    
+
+
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/style.css">
+
+<meta name="generator" content="Hexo 4.2.1"></head>
+<body class="is-3-column">
+    <nav class="navbar navbar-main">
+    <div class="container">
+        <div class="navbar-brand is-flex-center">
+            <a class="navbar-item navbar-logo" href="/">
+            
+                <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go源码分析(1) - net.http" height="28">
+            
+            </a>
+        </div>
+        <div class="navbar-menu">
+            
+            <div class="navbar-start">
+                
+                <a class="navbar-item"
+                href="/">主页</a>
+                
+                <a class="navbar-item"
+                href="/archives">归档</a>
+                
+                <a class="navbar-item"
+                href="/categories">分类</a>
+                
+                <a class="navbar-item"
+                href="/about">关于</a>
+                
+            </div>
+            
+            <div class="navbar-end">
+                
+                    
+                    
+                    <a class="navbar-item" target="_blank" title="Download on GitHub" href="https://github.com/ulovecode">
+                        
+                        <i class="fab fa-github"></i>
+                        
+                    </a>
+                    
+                
+                
+                <a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;">
+                    <i class="fas fa-list-ul"></i>
+                </a>
+                
+                
+                <a class="navbar-item search" title="搜索" href="javascript:;">
+                    <i class="fas fa-search"></i>
+                </a>
+                
+            </div>
+        </div>
+    </div>
+</nav>
+    
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-8-tablet is-8-desktop is-9-widescreen has-order-2 column-main"><div class="card">
+    
+    <div class="card-image">
+        <span  class="image is-7by1">
+            <img class="thumbnail" src="https://static001.infoq.cn/resource/image/b9/d5/b94709fcfd7aed80ab31963ba9eca3d5.jpg?x-oss-process=image/crop,y_104,w_1279,h_718/resize,w_1280,h_847" alt="Go源码分析(1) - net.http">
+        </span>
+    </div>
+    
+    <div class="card-content article ">
+        
+        <div class="level article-meta is-size-7 is-uppercase is-mobile is-overflow-x-auto">
+            <div class="level-left">
+                <time class="level-item has-text-grey" datetime="2019-09-02T18:06:00.000Z">2019-09-03</time>
+                
+                <div class="level-item">
+                <a class="has-link-grey -link" href="/categories/Go/">Go</a>&nbsp;/&nbsp;<a class="has-link-grey -link" href="/categories/Go/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">Golang源码分析</a>
+                </div>
+                
+                
+                <span class="level-item has-text-grey">
+                    
+                    
+                    16 分钟 读完 (大约 2446 个字)
+                </span>
+                
+                
+            </div>
+        </div>
+        
+        <h1 class="title is-size-3 is-size-4-mobile has-text-weight-normal">
+            
+                Go源码分析(1) - net.http
+            
+        </h1>
+        <div class="content">
+            <p>Golang 中 net/http 包下是非常关键的源码,gin 中的框架也是实现了 Golang 中的<code>handler</code>接口的<code>SeverHttp</code>方法才能够适配,可以见的该包是网络编程的核心,我针对于其中一部分源码进行了分析,希望能够帮助大家更好的理解 Golang 网络编程。</p>
+<a id="more"></a>
+<h1 id="一、分析过程"><a href="#一、分析过程" class="headerlink" title="一、分析过程"></a>一、分析过程</h1><p>通过自顶向下的分析方式来分析整个源码,不关心其他实现,只关心整个调用的核心过程。</p>
+<h1 id="二、编写一个正常运行的例子"><a href="#二、编写一个正常运行的例子" class="headerlink" title="二、编写一个正常运行的例子"></a>二、编写一个正常运行的例子</h1><p>随便写一个例子,查看其调用链 ,<code>http.NewServeMux()</code>返回一个多路复用的服务,其结构如下:</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="hljs-keyword">import</span> <span class="hljs-string">"net/http"</span></span><br><span class="line"></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">	mux := http.NewServeMux()</span><br><span class="line"></span><br><span class="line">	mux.HandleFunc(<span class="hljs-string">"/a"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(writer http.ResponseWriter, request *http.Request)</span></span> &#123;</span><br><span class="line">		writer.Write([]<span class="hljs-keyword">byte</span>(<span class="hljs-string">"aaaaaa"</span>))</span><br><span class="line">	&#125;)</span><br><span class="line">	mux.HandleFunc(<span class="hljs-string">"/b"</span>, <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">(writer http.ResponseWriter, request *http.Request)</span></span> &#123;</span><br><span class="line">		writer.Write([]<span class="hljs-keyword">byte</span>(<span class="hljs-string">"bbbbbb"</span>))</span><br><span class="line">	&#125;)</span><br><span class="line">	http.ListenAndServe(<span class="hljs-string">":3000"</span>,mux)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>m     map[string]muxEntry</code>包含了请求路径对应的映射方法, 内部过程是并发的,需要加锁。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> ServeMux <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	mu    sync.RWMutex</span><br><span class="line">	m     <span class="hljs-keyword">map</span>[<span class="hljs-keyword">string</span>]muxEntry</span><br><span class="line">	es    []muxEntry <span class="hljs-comment">// slice of entries sorted from longest to shortest.</span></span><br><span class="line">	hosts <span class="hljs-keyword">bool</span>       <span class="hljs-comment">// whether any patterns contain hostnames</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看一下<code>mux.HandleFunc</code>这个方法,将路径与处理该路径的方法对应其内部调用了<code>mux.Handle(pattern, HandlerFunc(handler))</code>,其作用也不言而喻,将路由器表以及对应的处理方法注册到多路服务中。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// HandleFunc registers the handler function for the given pattern.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(mux *ServeMux)</span> <span class="hljs-title">HandleFunc</span><span class="hljs-params">(pattern <span class="hljs-keyword">string</span>, handler <span class="hljs-keyword">func</span>(ResponseWriter, *Request)</span>)</span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> handler == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-built_in">panic</span>(<span class="hljs-string">"http: nil handler"</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	mux.Handle(pattern, HandlerFunc(handler))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>http.ListenAndServe(&quot;:3000&quot;,mux)</code>监听了<code>3000</code>端口,传入创建好的多路复用服务,其内部又包装了一个<code>Server</code>,然后通过<code>server.ListenAndServe()</code>开启内部调用过程。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// ListenAndServe listens on the TCP network address addr and then calls</span></span><br><span class="line"><span class="hljs-comment">// Serve with handler to handle requests on incoming connections.</span></span><br><span class="line"><span class="hljs-comment">// Accepted connections are configured to enable TCP keep-alives.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// The handler is typically nil, in which case the DefaultServeMux is used.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// ListenAndServe always returns a non-nil error.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">ListenAndServe</span><span class="hljs-params">(addr <span class="hljs-keyword">string</span>, handler Handler)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	server := &amp;Server&#123;Addr: addr, Handler: handler&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> server.ListenAndServe()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="三、内部调用过程"><a href="#三、内部调用过程" class="headerlink" title="三、内部调用过程"></a>三、内部调用过程</h1><p><code>ListenAndServe()</code>方法中使用<code>ln, err := net.Listen(&quot;tcp&quot;, addr)</code>打开了tcp连接（这个过程在后序的文章会进行分析）,最后调用了<code>srv.Serve(tcpKeepAliveListener{ln.(*net.TCPListener)})</code>处理。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(srv *Server)</span> <span class="hljs-title">ListenAndServe</span><span class="hljs-params">()</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> srv.shuttingDown() &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> ErrServerClosed</span><br><span class="line">	&#125;</span><br><span class="line">	addr := srv.Addr</span><br><span class="line">	<span class="hljs-keyword">if</span> addr == <span class="hljs-string">""</span> &#123;</span><br><span class="line">		addr = <span class="hljs-string">":http"</span></span><br><span class="line">	&#125;</span><br><span class="line">	ln, err := net.Listen(<span class="hljs-string">"tcp"</span>, addr)</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">return</span> srv.Serve(tcpKeepAliveListener&#123;ln.(*net.TCPListener)&#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Serve(l net.Listener) error</code>方法是一个监听端口消息的处理器。其过程可以简化描述为首先监听请求,如果当前有错误信息,直接关闭服务,如果没有错误信息,创建新的连接去处理这个请求。</p>
+<p>接受<code>Listener l</code>上的传入连接,创建一个每个新服务<code>goroutine</code>。服务<code>goroutines</code>读取请求和调用<code>srv.Handler</code>来回复他们的请求。整个过程最重要的就是整个<code>for</code>循环,他做了什么呢？</p>
+<ol>
+<li><code>rw, e := l.Accept()</code>  Accept等待并返回与侦听器的下一个连接</li>
+<li><code>&lt;-srv.getDoneChan()</code>如果收到结束的通知,就停止监听</li>
+<li><code>if ne, ok := e.(net.Error); ok &amp;&amp; ne.Temporary()</code>如果发生错误就进行重试<ol>
+<li><code>tempDelay = 5 * time.Millisecond</code>重试时间最初设置为5毫秒</li>
+<li><code>tempDelay *= 2</code>每次重试时间为2的指数级</li>
+<li><code>max := 1 * time.Second ；tempDelay = max</code>重试时间最大为1秒钟</li>
+<li><code>time.Sleep(tempDelay)</code>执行休眠的过程（非阻塞）</li>
+</ol>
+</li>
+<li><code>c := srv.newConn(rw)</code>建立连接</li>
+<li><code>c.setState(c.rwc, StateNew) // before Serve can return</code>设置连接状态为<code>StateNew</code></li>
+<li><code>go c.serve(ctx)</code>创建一个协程去处理</li>
+</ol>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Serve accepts incoming connections on the Listener l, creating a</span></span><br><span class="line"><span class="hljs-comment">// new service goroutine for each. The service goroutines read requests and</span></span><br><span class="line"><span class="hljs-comment">// then call srv.Handler to reply to them.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// HTTP/2 support is only enabled if the Listener returns *tls.Conn</span></span><br><span class="line"><span class="hljs-comment">// connections and they were configured with "h2" in the TLS</span></span><br><span class="line"><span class="hljs-comment">// Config.NextProtos.</span></span><br><span class="line"><span class="hljs-comment">//</span></span><br><span class="line"><span class="hljs-comment">// Serve always returns a non-nil error and closes l.</span></span><br><span class="line"><span class="hljs-comment">// After Shutdown or Close, the returned error is ErrServerClosed.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(srv *Server)</span> <span class="hljs-title">Serve</span><span class="hljs-params">(l net.Listener)</span> <span class="hljs-title">error</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> fn := testHookServerServe; fn != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		fn(srv, l) <span class="hljs-comment">// call hook with unwrapped listener</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	l = &amp;onceCloseListener&#123;Listener: l&#125;</span><br><span class="line">	<span class="hljs-keyword">defer</span> l.Close()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> err := srv.setupHTTP2_Serve(); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> !srv.trackListener(&amp;l, <span class="hljs-literal">true</span>) &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> ErrServerClosed</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">defer</span> srv.trackListener(&amp;l, <span class="hljs-literal">false</span>)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">var</span> tempDelay time.Duration     <span class="hljs-comment">// how long to sleep on accept failure</span></span><br><span class="line">	baseCtx := context.Background() <span class="hljs-comment">// base is always background, per Issue 16220</span></span><br><span class="line">	ctx := context.WithValue(baseCtx, ServerContextKey, srv)</span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		rw, e := l.Accept()</span><br><span class="line">		<span class="hljs-keyword">if</span> e != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">select</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">case</span> &lt;-srv.getDoneChan():</span><br><span class="line">				<span class="hljs-keyword">return</span> ErrServerClosed</span><br><span class="line">			<span class="hljs-keyword">default</span>:</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> ne, ok := e.(net.Error); ok &amp;&amp; ne.Temporary() &#123;</span><br><span class="line">				<span class="hljs-keyword">if</span> tempDelay == <span class="hljs-number">0</span> &#123;</span><br><span class="line">					tempDelay = <span class="hljs-number">5</span> * time.Millisecond</span><br><span class="line">				&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">					tempDelay *= <span class="hljs-number">2</span></span><br><span class="line">				&#125;</span><br><span class="line">				<span class="hljs-keyword">if</span> max := <span class="hljs-number">1</span> * time.Second; tempDelay &gt; max &#123;</span><br><span class="line">					tempDelay = max</span><br><span class="line">				&#125;</span><br><span class="line">				srv.logf(<span class="hljs-string">"http: Accept error: %v; retrying in %v"</span>, e, tempDelay)</span><br><span class="line">				time.Sleep(tempDelay)</span><br><span class="line">				<span class="hljs-keyword">continue</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">return</span> e</span><br><span class="line">		&#125;</span><br><span class="line">		tempDelay = <span class="hljs-number">0</span></span><br><span class="line">		c := srv.newConn(rw)</span><br><span class="line">		c.setState(c.rwc, StateNew) <span class="hljs-comment">// before Serve can return</span></span><br><span class="line">		<span class="hljs-keyword">go</span> c.serve(ctx)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>传入是一个<code>tcpKeepAliveListener</code>,所以会设置keepAlive,其默认设置为设置为3分钟保持活动之间的时间间隔,保持tcp连接不会马上中断。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(ln tcpKeepAliveListener)</span> <span class="hljs-title">Accept</span><span class="hljs-params">()</span> <span class="hljs-params">(net.Conn, error)</span></span> &#123;</span><br><span class="line">	tc, err := ln.AcceptTCP()</span><br><span class="line">	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	tc.SetKeepAlive(<span class="hljs-literal">true</span>)</span><br><span class="line">	tc.SetKeepAlivePeriod(<span class="hljs-number">3</span> * time.Minute)</span><br><span class="line">	<span class="hljs-keyword">return</span> tc, <span class="hljs-literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 处理整个过程的关键又到了<code>c.serve(ctx)</code>这个方法,核心就是将<code>c.server</code>的参数传给一个实现了<code>Handler</code>接口的类去处理这件事情。</p>
+ <figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// Serve a new connection.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(c *conn)</span> <span class="hljs-title">serve</span><span class="hljs-params">(ctx context.Context)</span></span> &#123;</span><br><span class="line">	c.remoteAddr = c.rwc.RemoteAddr().String()</span><br><span class="line">	ctx = context.WithValue(ctx, LocalAddrContextKey, c.rwc.LocalAddr())</span><br><span class="line">	<span class="hljs-keyword">defer</span> <span class="hljs-function"><span class="hljs-keyword">func</span><span class="hljs-params">()</span></span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> err := <span class="hljs-built_in">recover</span>(); err != <span class="hljs-literal">nil</span> &amp;&amp; err != ErrAbortHandler &#123;</span><br><span class="line">			<span class="hljs-keyword">const</span> size = <span class="hljs-number">64</span> &lt;&lt; <span class="hljs-number">10</span></span><br><span class="line">			buf := <span class="hljs-built_in">make</span>([]<span class="hljs-keyword">byte</span>, size)</span><br><span class="line">			buf = buf[:runtime.Stack(buf, <span class="hljs-literal">false</span>)]</span><br><span class="line">			c.server.logf(<span class="hljs-string">"http: panic serving %v: %v\n%s"</span>, c.remoteAddr, err, buf)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> !c.hijacked() &#123;</span><br><span class="line">			c.<span class="hljs-built_in">close</span>()</span><br><span class="line">			c.setState(c.rwc, StateClosed)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> tlsConn, ok := c.rwc.(*tls.Conn); ok &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> d := c.server.ReadTimeout; d != <span class="hljs-number">0</span> &#123;</span><br><span class="line">			c.rwc.SetReadDeadline(time.Now().Add(d))</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> d := c.server.WriteTimeout; d != <span class="hljs-number">0</span> &#123;</span><br><span class="line">			c.rwc.SetWriteDeadline(time.Now().Add(d))</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> err := tlsConn.Handshake(); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-comment">// If the handshake failed due to the client not speaking</span></span><br><span class="line">			<span class="hljs-comment">// TLS, assume they're speaking plaintext HTTP and write a</span></span><br><span class="line">			<span class="hljs-comment">// 400 response on the TLS conn's underlying net.Conn.</span></span><br><span class="line">			<span class="hljs-keyword">if</span> re, ok := err.(tls.RecordHeaderError); ok &amp;&amp; re.Conn != <span class="hljs-literal">nil</span> &amp;&amp; tlsRecordHeaderLooksLikeHTTP(re.RecordHeader) &#123;</span><br><span class="line">				io.WriteString(re.Conn, <span class="hljs-string">"HTTP/1.0 400 Bad Request\r\n\r\nClient sent an HTTP request to an HTTPS server.\n"</span>)</span><br><span class="line">				re.Conn.Close()</span><br><span class="line">				<span class="hljs-keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			c.server.logf(<span class="hljs-string">"http: TLS handshake error from %s: %v"</span>, c.rwc.RemoteAddr(), err)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		c.tlsState = <span class="hljs-built_in">new</span>(tls.ConnectionState)</span><br><span class="line">		*c.tlsState = tlsConn.ConnectionState()</span><br><span class="line">		<span class="hljs-keyword">if</span> proto := c.tlsState.NegotiatedProtocol; validNPN(proto) &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> fn := c.server.TLSNextProto[proto]; fn != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				h := initNPNRequest&#123;tlsConn, serverHandler&#123;c.server&#125;&#125;</span><br><span class="line">				fn(c.server, tlsConn, h)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// HTTP/1.x from here on.</span></span><br><span class="line"></span><br><span class="line">	ctx, cancelCtx := context.WithCancel(ctx)</span><br><span class="line">	c.cancelCtx = cancelCtx</span><br><span class="line">	<span class="hljs-keyword">defer</span> cancelCtx()</span><br><span class="line"></span><br><span class="line">	c.r = &amp;connReader&#123;conn: c&#125;</span><br><span class="line">	c.bufr = newBufioReader(c.r)</span><br><span class="line">	c.bufw = newBufioWriterSize(checkConnErrorWriter&#123;c&#125;, <span class="hljs-number">4</span>&lt;&lt;<span class="hljs-number">10</span>)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">for</span> &#123;</span><br><span class="line">		w, err := c.readRequest(ctx)</span><br><span class="line">		<span class="hljs-keyword">if</span> c.r.remain != c.server.initialReadLimitSize() &#123;</span><br><span class="line">			<span class="hljs-comment">// If we read any bytes off the wire, we're active.</span></span><br><span class="line">			c.setState(c.rwc, StateActive)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">			<span class="hljs-keyword">const</span> errorHeaders = <span class="hljs-string">"\r\nContent-Type: text/plain; charset=utf-8\r\nConnection: close\r\n\r\n"</span></span><br><span class="line"></span><br><span class="line">			<span class="hljs-keyword">if</span> err == errTooLarge &#123;</span><br><span class="line">				<span class="hljs-comment">// Their HTTP client may or may not be</span></span><br><span class="line">				<span class="hljs-comment">// able to read this if we're</span></span><br><span class="line">				<span class="hljs-comment">// responding to them and hanging up</span></span><br><span class="line">				<span class="hljs-comment">// while they're still writing their</span></span><br><span class="line">				<span class="hljs-comment">// request. Undefined behavior.</span></span><br><span class="line">				<span class="hljs-keyword">const</span> publicErr = <span class="hljs-string">"431 Request Header Fields Too Large"</span></span><br><span class="line">				fmt.Fprintf(c.rwc, <span class="hljs-string">"HTTP/1.1 "</span>+publicErr+errorHeaders+publicErr)</span><br><span class="line">				c.closeWriteAndWait()</span><br><span class="line">				<span class="hljs-keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">if</span> isCommonNetReadError(err) &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span> <span class="hljs-comment">// don't reply</span></span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			publicErr := <span class="hljs-string">"400 Bad Request"</span></span><br><span class="line">			<span class="hljs-keyword">if</span> v, ok := err.(badRequestError); ok &#123;</span><br><span class="line">				publicErr = publicErr + <span class="hljs-string">": "</span> + <span class="hljs-keyword">string</span>(v)</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			fmt.Fprintf(c.rwc, <span class="hljs-string">"HTTP/1.1 "</span>+publicErr+errorHeaders+publicErr)</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">// Expect 100 Continue support</span></span><br><span class="line">		req := w.req</span><br><span class="line">		<span class="hljs-keyword">if</span> req.expectsContinue() &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> req.ProtoAtLeast(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>) &amp;&amp; req.ContentLength != <span class="hljs-number">0</span> &#123;</span><br><span class="line">				<span class="hljs-comment">// Wrap the Body reader with one that replies on the connection</span></span><br><span class="line">				req.Body = &amp;expectContinueReader&#123;readCloser: req.Body, resp: w&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> req.Header.get(<span class="hljs-string">"Expect"</span>) != <span class="hljs-string">""</span> &#123;</span><br><span class="line">			w.sendExpectationFailed()</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		c.curReq.Store(w)</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">if</span> requestBodyRemains(req.Body) &#123;</span><br><span class="line">			registerOnHitEOF(req.Body, w.conn.r.startBackgroundRead)</span><br><span class="line">		&#125; <span class="hljs-keyword">else</span> &#123;</span><br><span class="line">			w.conn.r.startBackgroundRead()</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-comment">// HTTP cannot have multiple simultaneous active requests.[*]</span></span><br><span class="line">		<span class="hljs-comment">// Until the server replies to this request, it can't read another,</span></span><br><span class="line">		<span class="hljs-comment">// so we might as well run the handler in this goroutine.</span></span><br><span class="line">		<span class="hljs-comment">// [*] Not strictly true: HTTP pipelining. We could let them all process</span></span><br><span class="line">		<span class="hljs-comment">// in parallel even if their responses need to be serialized.</span></span><br><span class="line">		<span class="hljs-comment">// But we're not going to implement HTTP pipelining because it</span></span><br><span class="line">		<span class="hljs-comment">// was never deployed in the wild and the answer is HTTP/2.</span></span><br><span class="line">		serverHandler&#123;c.server&#125;.ServeHTTP(w, w.req)</span><br><span class="line">		w.cancelCtx()</span><br><span class="line">		<span class="hljs-keyword">if</span> c.hijacked() &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		w.finishRequest()</span><br><span class="line">		<span class="hljs-keyword">if</span> !w.shouldReuseConnection() &#123;</span><br><span class="line">			<span class="hljs-keyword">if</span> w.requestBodyLimitHit || w.closedRequestBodyEarly() &#123;</span><br><span class="line">				c.closeWriteAndWait()</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line">		c.setState(c.rwc, StateIdle)</span><br><span class="line">		c.curReq.Store((*response)(<span class="hljs-literal">nil</span>))</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">if</span> !w.conn.server.doKeepAlives() &#123;</span><br><span class="line">			<span class="hljs-comment">// We're in shutdown mode. We might've replied</span></span><br><span class="line">			<span class="hljs-comment">// to the user without "Connection: close" and</span></span><br><span class="line">			<span class="hljs-comment">// they might think they can send another</span></span><br><span class="line">			<span class="hljs-comment">// request, but such is life with HTTP/1.1.</span></span><br><span class="line">			<span class="hljs-keyword">return</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">if</span> d := c.server.idleTimeout(); d != <span class="hljs-number">0</span> &#123;</span><br><span class="line">			c.rwc.SetReadDeadline(time.Now().Add(d))</span><br><span class="line">			<span class="hljs-keyword">if</span> _, err := c.bufr.Peek(<span class="hljs-number">4</span>); err != <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">				<span class="hljs-keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		c.rwc.SetReadDeadline(time.Time&#123;&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>serverHandler{c.server}.ServeHTTP(w, w.req)</code>  调用<code>ServeHTTP</code>方法.</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">type</span> serverHandler <span class="hljs-keyword">struct</span> &#123;</span><br><span class="line">	srv *Server</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个结构体,实现了<code>Handler</code>接口的<code>ServeHTTP(ResponseWriter, *Request)</code>方法</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(sh serverHandler)</span> <span class="hljs-title">ServeHTTP</span><span class="hljs-params">(rw ResponseWriter, req *Request)</span></span> &#123;</span><br><span class="line">	handler := sh.srv.Handler</span><br><span class="line">	<span class="hljs-keyword">if</span> handler == <span class="hljs-literal">nil</span> &#123;</span><br><span class="line">		handler = DefaultServeMux</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="hljs-keyword">if</span> req.RequestURI == <span class="hljs-string">"*"</span> &amp;&amp; req.Method == <span class="hljs-string">"OPTIONS"</span> &#123;</span><br><span class="line">		handler = globalOptionsHandler&#123;&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	handler.ServeHTTP(rw, req)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后就将<code>c.server</code>传入的参数<code>sh.srv.Handler</code>直接调用<code>handler.ServeHTTP(rw, req)</code>。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// ServeHTTP dispatches the request to the handler whose</span></span><br><span class="line"><span class="hljs-comment">// pattern most closely matches the request URL.</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(mux *ServeMux)</span> <span class="hljs-title">ServeHTTP</span><span class="hljs-params">(w ResponseWriter, r *Request)</span></span> &#123;</span><br><span class="line">	<span class="hljs-keyword">if</span> r.RequestURI == <span class="hljs-string">"*"</span> &#123;</span><br><span class="line">		<span class="hljs-keyword">if</span> r.ProtoAtLeast(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>) &#123;</span><br><span class="line">			w.Header().Set(<span class="hljs-string">"Connection"</span>, <span class="hljs-string">"close"</span>)</span><br><span class="line">		&#125;</span><br><span class="line">		w.WriteHeader(StatusBadRequest)</span><br><span class="line">		<span class="hljs-keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	h, _ := mux.Handler(r)</span><br><span class="line">	h.ServeHTTP(w, r)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先会调用<code>h, _ := mux.Handler(r)</code>方法,对请求对数据进行查找路径,重定向,加工之类对操作,调用<code>mux.handler(host, r.URL.Path)</code>在路由表里查找路径对应对方法,返回的一个对应该请求的处理<code>handler</code>。<code>handler</code>再调用<code>ServeHTTP</code>方法进行处理。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(mux *ServeMux)</span> <span class="hljs-title">Handler</span><span class="hljs-params">(r *Request)</span> <span class="hljs-params">(h Handler, pattern <span class="hljs-keyword">string</span>)</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// CONNECT requests are not canonicalized.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> r.Method == <span class="hljs-string">"CONNECT"</span> &#123;</span><br><span class="line">		<span class="hljs-comment">// If r.URL.Path is /tree and its handler is not registered,</span></span><br><span class="line">		<span class="hljs-comment">// the /tree -&gt; /tree/ redirect applies to CONNECT requests</span></span><br><span class="line">		<span class="hljs-comment">// but the path canonicalization does not.</span></span><br><span class="line">		<span class="hljs-keyword">if</span> u, ok := mux.redirectToPathSlash(r.URL.Host, r.URL.Path, r.URL); ok &#123;</span><br><span class="line">			<span class="hljs-keyword">return</span> RedirectHandler(u.String(), StatusMovedPermanently), u.Path</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="hljs-keyword">return</span> mux.handler(r.Host, r.URL.Path)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// All other requests have any port stripped and path cleaned</span></span><br><span class="line">	<span class="hljs-comment">// before passing to mux.handler.</span></span><br><span class="line">	host := stripHostPort(r.Host)</span><br><span class="line">	path := cleanPath(r.URL.Path)</span><br><span class="line"></span><br><span class="line">	<span class="hljs-comment">// If the given path is /tree and its handler is not registered,</span></span><br><span class="line">	<span class="hljs-comment">// redirect for /tree/.</span></span><br><span class="line">	<span class="hljs-keyword">if</span> u, ok := mux.redirectToPathSlash(host, path, r.URL); ok &#123;</span><br><span class="line">		<span class="hljs-keyword">return</span> RedirectHandler(u.String(), StatusMovedPermanently), u.Path</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">if</span> path != r.URL.Path &#123;</span><br><span class="line">		_, pattern = mux.handler(host, path)</span><br><span class="line">		url := *r.URL</span><br><span class="line">		url.Path = path</span><br><span class="line">		<span class="hljs-keyword">return</span> RedirectHandler(url.String(), StatusMovedPermanently), pattern</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="hljs-keyword">return</span> mux.handler(host, r.URL.Path)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最终处理流程还是交给了<code>HandlerFunc</code>去处理了这些请求。</p>
+<figure class="highlight go hljs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-comment">// ServeHTTP calls f(w, r).</span></span><br><span class="line"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(f HandlerFunc)</span> <span class="hljs-title">ServeHTTP</span><span class="hljs-params">(w ResponseWriter, r *Request)</span></span> &#123;</span><br><span class="line">	f(w, r)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="四、总结"><a href="#四、总结" class="headerlink" title="四、总结"></a>四、总结</h1><p>整个过程我们在总结一下,我用一个流程符号来表示一下整个调用过程吧</p>
+<pre><code>http.ListenAndServe(&quot;:3000&quot;,mux) -&gt; 
+server.ListenAndServe()  -&gt; 
+srv.Serve(tcpKeepAliveListener{ln.(*net.TCPListener)}) -&gt;  
+c.serve(ctx) -&gt;
+serverHandler{c.server}.ServeHTTP(w, w.req) -&gt;         
+h, _ := mux.Handler(r) -&gt; 
+h.ServeHTTP(w, r)
+</code></pre><p>对于调用过程,我的理解是一共分成了三层,第一层为<code>server</code>这一层对请求进行处理,处理错误请求,是否需要创建连接。第二层 为<code>connect</code>创建http请求,处理安全认证.第三层为<code>serverHandler</code>,进行路由,查找对应的方法,调用最终的处理。每一层的职责进行处理,分工明确,采用委托的方式来实现自定义的处理。如果文中有错误或者可以补充的,不吝指教。</p>
+
+        </div>
+        
+        <div class="level is-size-7 is-uppercase">
+            <div class="level-start">
+                <div class="level-item">
+                    <span class="is-size-6 has-text-grey has-mr-7">#</span>
+                    <a class="has-link-grey -link" href="/tags/Golang%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="tag">Golang源码分析</a>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="menu-label has-text-centered">喜欢这篇文章？打赏一下作者吧</h3>
+        <div class="buttons is-centered">
+            
+                
+<a class="button is-info donate">
+    <span class="icon is-small">
+        <i class="fab fa-alipay"></i>
+    </span>
+    <span>支付宝</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/alipay_v1.jpg" alt="支付宝"></div>
+</a>
+
+                
+                
+<a class="button is-success donate">
+    <span class="icon is-small">
+        <i class="fab fa-weixin"></i>
+    </span>
+    <span>微信</span>
+    <div class="qrcode"><img src="//md.ulovecode.com/static/images/avatar/wechatpay_v1.jpg" alt="微信"></div>
+</a>
+
+                
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card card-transparent">
+    <div class="level post-navigation is-flex-wrap is-mobile">
+        
+        <div class="level-start">
+            <a class="level level-item has-link-grey  article-nav-prev" href="/2019/09/09/Algorithm/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/Raft%E8%AE%BA%E6%96%87(%E8%AF%91%E6%96%87)/">
+                <i class="level-item fas fa-chevron-left"></i>
+                <span class="level-item">(译) Raft 论文</span>
+            </a>
+        </div>
+        
+        
+        <div class="level-end">
+            <a class="level level-item has-link-grey  article-nav-next" href="/2019/08/08/Go/Golang%E8%AF%91%E6%96%87/Go%E4%B8%AD%E7%9A%84%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%EF%BC%9A%E7%AC%AC%E4%B8%89%E9%83%A8%E5%88%86-GC%E6%AD%A5%E4%BC%90/">
+                <span class="level-item">(译) Go中的垃圾收集：第三部分 - GC步伐</span>
+                <i class="level-item fas fa-chevron-right"></i>
+            </a>
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-content">
+        <h3 class="title is-5 has-text-weight-normal">评论</h3>
+        
+    <div id="comment-container"></div>
+`    <link rel="stylesheet" href="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.css">
+    <script src="https://code.bdstatic.com/npm/gitalk@1.7.2/dist/gitalk.min.js"></script>
+    <script>
+        var gitalk = new Gitalk({
+            clientID: 'ceb3f7e3fadb589ca8f2',
+            clientSecret: 'ab52c871230e4d10ee2c2b54a8f9681727302b4d',
+            id: '8e4f2338fe5e0bc543d3feaf9d7a05d9',
+            repo: 'ulovecode.github.io',
+            owner: 'ulovecode',
+            admin: "ulovecode",
+        })
+        gitalk.render('comment-container')
+    </script>
+
+    </div>
+</div>
+</div>
+                
+
+
+
+
+<div class="column is-4-tablet is-4-desktop is-3-widescreen  has-order-1 column-left ">
+    
+        
+<div class="card widget">
+    <div class="card-content">
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    
+                        <img class="image is-128x128 has-mb-6" src="https://md.ulovecode.com/static/images/avatar/avatar_v1.jpg?imageView2/0/w/460/h/460" alt="Jovan">
+                    
+                    
+                    <p class="is-size-4 is-block">
+                        Jovan
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-block">
+                        Keep moving.Don&#39;t settle.
+                    </p>
+                    
+                    
+                    <p class="is-size-6 is-flex is-flex-center has-text-grey">
+                        <i class="fas fa-map-marker-alt has-mr-7"></i>
+                        <span>Shanghai，China</span>
+                    </p>
+                    
+                </div>
+            </div>
+        </nav>
+        <nav class="level is-mobile">
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        文章
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        52
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        分类
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        14
+                    </p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered is-marginless">
+                <div>
+                    <p class="heading">
+                        标签
+                    </p>
+                    <p class="title has-text-weight-normal">
+                        27
+                    </p>
+                </div>
+            </div>
+        </nav>
+        <div class="level">
+            <a class="level-item button is-link is-rounded" href="https://github.com/ulovecode" target="_blank">
+                follow</a>
+        </div>
+        
+        
+        <div class="level is-mobile">
+            
+            <a class="level-item button is-white is-marginless" target="_blank"
+                title="Github" href="https://github.com/ulovecode">
+                
+                <i class="fab fa-github"></i>
+                
+            </a>
+            
+        </div>
+        
+    </div>
+</div>
+    
+        
+<div class="card widget" id="toc">
+    <div class="card-content">
+        <div class="menu">
+            <h3 class="menu-label">
+                目录
+            </h3>
+            <ul class="menu-list"><li>
+        <a class="is-flex" href="#一、分析过程">
+        <span class="has-mr-6">1</span>
+        <span>一、分析过程</span>
+        </a></li><li>
+        <a class="is-flex" href="#二、编写一个正常运行的例子">
+        <span class="has-mr-6">2</span>
+        <span>二、编写一个正常运行的例子</span>
+        </a></li><li>
+        <a class="is-flex" href="#三、内部调用过程">
+        <span class="has-mr-6">3</span>
+        <span>三、内部调用过程</span>
+        </a></li><li>
+        <a class="is-flex" href="#四、总结">
+        <span class="has-mr-6">4</span>
+        <span>四、总结</span>
+        </a></li></ul>
+        </div>
+    </div>
+</div>
+
+    
+    
+        <div class="column-right-shadow is-hidden-widescreen ">
+        
+        </div>
+    
+</div>
+
+                
+            </div>
+        </div>
+    </section>
+    <footer class="footer">
+    <div class="container">
+        <div class="level">
+            <div class="level-start has-text-centered-mobile">
+<!--                <a class="footer-logo is-block has-mb-6" href="/">-->
+<!--                -->
+<!--                    <img src="//md.ulovecode.com/static/images/avatar/logo.jpg" alt="Go源码分析(1) - net.http" height="28">-->
+<!--                -->
+<!--                </a>-->
+<!--                <p class="is-size-7">-->
+<!--                &copy; 2023 Jovan&nbsp;-->
+<!--                Powered by <a href="https://hexo.io/" target="_blank">Hexo</a> & <a-->
+<!--                        href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank">Icarus</a>-->
+<!--                -->
+<!--                </p>-->
+                <p class="is-size-7">
+                    
+                </p>
+            </div>
+<!--    备案号信息        -->
+            <center>
+            <a href="http://www.beian.miit.gov.cn/" target="_blank" style="color: rgba(0,0,0,0.65)"  noopenerrel="" > 鄂ICP备17027965号-1</a>
+            </center>
+            <div class="level-end">
+            
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="https://code.bdstatic.com/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://code.bdstatic.com/npm/moment@2.22.2/min/moment-with-locales.min.js"></script>
+<script>moment.locale("zh-CN");</script>
+
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script>
+    <script src="https://code.bdstatic.com/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/gallery.js" defer></script>
+    
+
+    
+    
+
+<div id="outdated">
+    <h6>Your browser is out-of-date!</h6>
+    <p>Update your browser to view this website correctly. <a id="btnUpdateBrowser" href="http://outdatedbrowser.com/" target="_blank" rel="noopener">Update
+            my browser now </a></p>
+    <p class="last"><a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a></p>
+</div>
+<script src="https://code.bdstatic.com/npm/outdatedbrowser@1.1.5/outdatedbrowser/outdatedbrowser.min.js" defer></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        outdatedBrowser({
+            bgColor: '#f25648',
+            color: '#ffffff',
+            lowerThan: 'flex'
+        });
+    });
+</script>
+
+
+    
+    
+    
+    
+
+<a id="back-to-top" title="回到顶端" href="javascript:;">
+    <i class="fas fa-chevron-up"></i>
+</a>
+<script src="https://md.ulovecode.com/static/js/back-to-top.js" defer></script>
+
+
+    
+    
+
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    <script src="https://code.bdstatic.com/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script>
+    <script src="https://md.ulovecode.com/static/js/clipboard.js" defer></script>
+    
+
+    
+    
+    
+
+
+<script src="https://md.ulovecode.com/static/js/main.js" defer></script>
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="想要查找什么..." />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '页面',
+                CATEGORIES: '分类',
+                TAGS: '标签',
+                UNTITLED: '(无标题)',
+            },
+            CONTENT_URL: 'https://md.ulovecode.com/static/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script src="https://md.ulovecode.com/static/js/insight.js" defer></script>
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/search.css">
+<link rel="stylesheet" href="https://md.ulovecode.com/static/css/insight.css">
+    
+</body>
+</html>
